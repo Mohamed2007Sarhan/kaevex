@@ -1,0 +1,31 @@
+{
+  "name": "aegiscore-dashboard",
+  "private": true,
+  "version": "9.0.0",
+  "description": "AegisCore Security Platform — Web Dashboard",
+  "author": "AegisCore Security Systems",
+  "scripts": {
+    "dev":        "vite",
+    "build":      "tsc && vite build",
+    "preview":    "vite preview",
+    "start":      "node tray.js",
+    "tray":       "node tray.js",
+    "install-tray": "npm install systray2 --save"
+  },
+  "dependencies": {
+    "react":         "^18.2.0",
+    "react-dom":     "^18.2.0",
+    "lucide-react":  "^0.294.0",
+    "framer-motion": "^10.12.16"
+  },
+  "devDependencies": {
+    "@types/react":        "^18.0.28",
+    "@types/react-dom":    "^18.0.11",
+    "@vitejs/plugin-react": "^2.2.0",
+    "typescript":          "^4.9.5",
+    "vite":                "^3.2.7"
+  },
+  "optionalDependencies": {
+    "systray2": "^1.0.6"
+  }
+}

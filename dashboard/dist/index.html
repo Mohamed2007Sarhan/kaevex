@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Shield favicon (inline SVG as data URI) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L90 20 L90 50 C90 72 72 88 50 95 C28 88 10 72 10 50 L10 20 Z' fill='%230ea5e9' stroke='%230284c7' stroke-width='2'/><path d='M36 50 L46 60 L65 40' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AegisCore — Advanced Endpoint, Network &amp; Web Security Platform" />
+    <meta name="author" content="AegisCore Security Systems" />
+
+    <title>AegisCore Security Platform</title>
+
+    <!-- Prevent FOUC -->
+    <style>
+      body { margin: 0; background: #0d1117; }
+      #splash {
+        position: fixed; inset: 0;
+        background: #0d1117;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 1rem; z-index: 99999;
+        transition: opacity 0.4s;
+      }
+      #splash svg { animation: pulse 1.5s infinite; }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      #splash p {
+        color: #64748b; font-family: system-ui, sans-serif;
+        font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index.24846980.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react.2e42860f.js">
+    <link rel="modulepreload" crossorigin href="/assets/motion.24227eee.js">
+    <link rel="modulepreload" crossorigin href="/assets/icons.58f2ad0f.js">
+    <link rel="stylesheet" href="/assets/index.646bcf73.css">
+  </head>
+  <body>
+    <!-- Loading splash (hidden once React mounts) -->
+    <div id="splash">
+      <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 5 L90 20 L90 50 C90 72 72 88 50 95 C28 88 10 72 10 50 L10 20 Z"
+              fill="#0ea5e9" stroke="#0284c7" stroke-width="2"/>
+        <path d="M36 50 L46 60 L65 40" stroke="white" stroke-width="6"
+              fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>AegisCore Security Platform</p>
+    </div>
+
+    <div id="root"></div>
+
+    <script>
+      // Remove splash when React mounts
+      window.__aegisReady = function() {
+        var s = document.getElementById('splash');
+        if (s) { s.style.opacity = '0'; setTimeout(function(){ s.remove(); }, 400); }
+      };
+    </script>
+
+    
+  </body>
+</html>

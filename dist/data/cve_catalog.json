@@ -1,0 +1,246 @@
+﻿{
+  "os_cves": [
+    {
+      "minBuild": 10240,
+      "maxBuild": 26300,
+      "cveId": "CVE-2024-38077",
+      "cvss": 98,
+      "desc": "Remote Desktop Licensing RCE",
+      "mitigation": "Disable RDL Service / Apply Hotfix"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 26300,
+      "cveId": "CVE-2024-30078",
+      "cvss": 88,
+      "desc": "Windows Wi-Fi Driver RCE (Zero-Click)",
+      "mitigation": "KB5039212 / Disable Wi-Fi Autoconfig"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 26300,
+      "cveId": "CVE-2024-21307",
+      "cvss": 78,
+      "desc": "Windows Hyper-V Denial of Service",
+      "mitigation": "Enable Core Isolation / Apply KB5034441"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 22631,
+      "cveId": "CVE-2023-36884",
+      "cvss": 83,
+      "desc": "Windows MSHTML Platform Office RCE",
+      "mitigation": "Enable FEATURE_BLOCK_CROSS_PROTOCOL"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 22000,
+      "cveId": "CVE-2022-30190",
+      "cvss": 78,
+      "desc": "MSDT URL Protocol RCE (Follina)",
+      "mitigation": "Unregister ms-msdt protocol"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 19045,
+      "cveId": "CVE-2021-34527",
+      "cvss": 88,
+      "desc": "PrintNightmare Spooler RCE",
+      "mitigation": "RestrictDriverInstallationToAdmins"
+    },
+    {
+      "minBuild": 10240,
+      "maxBuild": 18363,
+      "cveId": "CVE-2020-0601",
+      "cvss": 81,
+      "desc": "CurveBall CryptoAPI Spoofing",
+      "mitigation": "Apply KB4534273 / Update CryptoAPI"
+    },
+    {
+      "minBuild": 7600,
+      "maxBuild": 17763,
+      "cveId": "CVE-2017-0144",
+      "cvss": 81,
+      "desc": "EternalBlue SMBv1 Remote Code Exec",
+      "mitigation": "Disable SMBv1 Protocol"
+    }
+  ],
+  "app_cves": [
+    {
+      "appMatch": "WinRAR",
+      "vulnVerMax": "7.21",
+      "cveId": "CVE-2025-11547",
+      "cvss": 82,
+      "fixedVer": "7.21",
+      "wingetId": "RARLab.WinRAR"
+    },
+    {
+      "appMatch": "Git",
+      "vulnVerMax": "2.55.4",
+      "cveId": "CVE-2025-48384",
+      "cvss": 78,
+      "fixedVer": "2.55.4",
+      "wingetId": "Git.Git"
+    },
+    {
+      "appMatch": "Node.js",
+      "vulnVerMax": "24.21.0",
+      "cveId": "CVE-2025-32460",
+      "cvss": 78,
+      "fixedVer": "24.21.1",
+      "wingetId": "OpenJS.NodeJS.LTS"
+    },
+    {
+      "appMatch": "Python 3.13",
+      "vulnVerMax": "3.13.99999",
+      "cveId": "CVE-2025-0938",
+      "cvss": 75,
+      "fixedVer": "3.13.16",
+      "wingetId": "Python.Python.3.13"
+    },
+    {
+      "appMatch": "Python 3.14",
+      "vulnVerMax": "3.14.99999",
+      "cveId": "CVE-2025-4517",
+      "cvss": 72,
+      "fixedVer": "3.14.8",
+      "wingetId": "Python.Python.3.14"
+    },
+    {
+      "appMatch": "Brave",
+      "vulnVerMax": "153.0.0.0",
+      "cveId": "CVE-2025-6554",
+      "cvss": 88,
+      "fixedVer": "153.1.0.0",
+      "wingetId": "BraveSoftware.BraveBrowser"
+    },
+    {
+      "appMatch": "Microsoft Edge",
+      "vulnVerMax": "153.0.0.0",
+      "cveId": "CVE-2025-21298",
+      "cvss": 83,
+      "fixedVer": "153.0.4200.0",
+      "wingetId": "Microsoft.Edge"
+    },
+    {
+      "appMatch": "Visual Studio Code",
+      "vulnVerMax": "1.140.0",
+      "cveId": "CVE-2025-24991",
+      "cvss": 78,
+      "fixedVer": "1.140.0",
+      "wingetId": "Microsoft.VisualStudioCode"
+    },
+    {
+      "appMatch": "7-Zip",
+      "vulnVerMax": "23.01",
+      "cveId": "CVE-2023-31102",
+      "cvss": 77,
+      "fixedVer": "23.01+",
+      "wingetId": "7zip.7zip"
+    },
+    {
+      "appMatch": "VLC",
+      "vulnVerMax": "3.0.18",
+      "cveId": "CVE-2023-47359",
+      "cvss": 95,
+      "fixedVer": "3.0.21",
+      "wingetId": "VideoLAN.VLC"
+    },
+    {
+      "appMatch": "PuTTY",
+      "vulnVerMax": "0.82",
+      "cveId": "CVE-2024-31497",
+      "cvss": 59,
+      "fixedVer": "0.83",
+      "wingetId": "PuTTY.PuTTY"
+    },
+    {
+      "appMatch": "Notepad++",
+      "vulnVerMax": "8.6.8",
+      "cveId": "CVE-2024-49030",
+      "cvss": 75,
+      "fixedVer": "8.7.0",
+      "wingetId": "Notepad++.Notepad++"
+    },
+    {
+      "appMatch": "OpenSSL",
+      "vulnVerMax": "3.3.0",
+      "cveId": "CVE-2024-2511",
+      "cvss": 75,
+      "fixedVer": "3.3.1",
+      "wingetId": ""
+    },
+    {
+      "appMatch": "Firefox",
+      "vulnVerMax": "130.0",
+      "cveId": "CVE-2024-8385",
+      "cvss": 82,
+      "fixedVer": "130.0.1",
+      "wingetId": "Mozilla.Firefox"
+    },
+    {
+      "appMatch": "Google Chrome",
+      "vulnVerMax": "128.0",
+      "cveId": "CVE-2024-7971",
+      "cvss": 88,
+      "fixedVer": "128.0.6613.115",
+      "wingetId": "Google.Chrome"
+    },
+    {
+      "appMatch": "Wireshark",
+      "vulnVerMax": "4.2.4",
+      "cveId": "CVE-2024-4853",
+      "cvss": 75,
+      "fixedVer": "4.2.5",
+      "wingetId": "WiresharkFoundation.Wireshark"
+    },
+    {
+      "appMatch": "Adobe Acrobat",
+      "vulnVerMax": "24.001",
+      "cveId": "CVE-2024-20726",
+      "cvss": 82,
+      "fixedVer": "24.001.20629",
+      "wingetId": "Adobe.Acrobat.Reader.64-bit"
+    },
+    {
+      "appMatch": "TeamViewer",
+      "vulnVerMax": "15.53",
+      "cveId": "CVE-2024-7479",
+      "cvss": 88,
+      "fixedVer": "15.54.4",
+      "wingetId": "TeamViewer.TeamViewer"
+    },
+    {
+      "appMatch": "Zoom",
+      "vulnVerMax": "6.0.0",
+      "cveId": "CVE-2024-24691",
+      "cvss": 88,
+      "fixedVer": "6.0.12",
+      "wingetId": "Zoom.Zoom"
+    },
+    {
+      "appMatch": "OpenVPN",
+      "vulnVerMax": "2.6.5",
+      "cveId": "CVE-2023-46849",
+      "cvss": 88,
+      "fixedVer": "2.6.6",
+      "wingetId": "OpenVPNTechnologies.OpenVPN"
+    },
+    {
+      "appMatch": "KeePass",
+      "vulnVerMax": "2.56.0",
+      "cveId": "CVE-2024-49507",
+      "cvss": 68,
+      "fixedVer": "2.57",
+      "wingetId": "DominikReichl.KeePass"
+    },
+    {
+      "appMatch": "FileZilla",
+      "vulnVerMax": "3.63.0",
+      "cveId": "CVE-2023-34538",
+      "cvss": 75,
+      "fixedVer": "3.64.0",
+      "wingetId": "TimKosse.FileZilla.Client"
+    }
+  ]
+}
