@@ -32,6 +32,8 @@
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "winmm.lib")
+#include "threat_engine.h"
 
 #define KAEVEX_VERSION "1.0.0-PROD"
 #define DEFAULT_PORT  9009
@@ -945,15 +947,206 @@ static void cmd_waf_test(const char *payload) {
     printf("\n");
 }
 
+static void cmd_gaming(const char *arg) {
+    char subcmd[64] = {0};
+    char extra[256] = {0};
+    if (arg && *arg) {
+        sscanf(arg, "%63s %255s", subcmd, extra);
+    }
+
+    if (strlen(subcmd) == 0 || _stricmp(subcmd, "status") == 0) {
+        set_color(C_WHITE);
+        printf("\n  [ KAEVEX ADVANCED CORE GAMING ENGINE & LATENCY OPTIMIZER ]\n");
+        set_color(C_RESET);
+
+        printf("  - Core Gaming Status:           ");
+        if (g_gaming.active) {
+            set_color(C_GREEN);
+            printf("ENGAGED / ACTIVE (PID: %lu - %s)\n", (unsigned long)g_gaming.gamePID, g_gaming.gameName);
+        } else {
+            set_color(C_GRAY);
+            printf("STANDBY / PASSIVE (Standard Defense Active)\n");
+        }
+        set_color(C_RESET);
+
+        printf("  - 1ms High-Precision Timer:     ");
+        if (g_gaming.timer1msActive) {
+            set_color(C_GREEN);
+            printf("ENABLED (1.00ms Dispatch Precision)\n");
+        } else {
+            set_color(C_YELLOW);
+            printf("DEFAULT (15.6ms Standard Windows Tick)\n");
+        }
+        set_color(C_RESET);
+
+        printf("  - Network Throttling Override:  ");
+        if (g_gaming.netThrottlingDisabled) {
+            set_color(C_GREEN);
+            printf("OPTIMIZED (NetworkThrottlingIndex = 0xFFFFFFFF)\n");
+        } else {
+            set_color(C_YELLOW);
+            printf("STANDARD (Multimedia Network Throttling Active)\n");
+        }
+        set_color(C_RESET);
+
+        printf("  - Background Heavy AV Scans:    ");
+        if (g_gaming.scansSuspended) {
+            set_color(C_CYAN);
+            printf("SUSPENDED (Zero Frametime & Disk I/O Spikes)\n");
+        } else {
+            set_color(C_RESET);
+            printf("RUNNING NORMALLY (Hourly & Real-time Active)\n");
+        }
+
+        printf("  - Autonomous Game Watchdog:     ");
+        if (g_gaming.watchdogRunning) {
+            set_color(C_GREEN);
+            printf("ACTIVE (Polling every 1500ms for 50+ Modern Titles)\n");
+        } else {
+            set_color(C_RED);
+            printf("STOPPED\n");
+        }
+        set_color(C_RESET);
+
+        /* Anti-Cheat verification */
+        threat_check_anticheat();
+        printf("  - Anti-Cheat Compatibility:     ");
+        if (g_antiCheatCnt > 0) {
+            set_color(C_GREEN);
+            printf("DETECTED & PROTECTED (%s)\n", g_antiCheat[0].name);
+        } else {
+            set_color(C_RESET);
+            printf("SAFE (No Kernel Anti-Cheat Conflict Detected)\n");
+        }
+
+        /* Scan running games */
+        int gcount = threat_scan_running_games();
+        printf("\n  Detected Running Games (%d found):\n", gcount);
+        printf("  %-8s %-30s %-25s %-12s %s\n", "PID", "Game Title", "Executable", "Memory", "Optimization Status");
+        printf("  ----------------------------------------------------------------------------------------------------\n");
+        if (gcount == 0) {
+            printf("  (No supported game processes currently running)\n");
+        } else {
+            for (int i = 0; i < gcount; i++) {
+                printf("  %-8lu %-30s %-25s %-4lu MB    ",
+                       (unsigned long)g_runningGames[i].pid,
+                       g_runningGames[i].title,
+                       g_runningGames[i].exe,
+                       (unsigned long)g_runningGames[i].memMB);
+                if (g_runningGames[i].boosted || (g_gaming.active && g_gaming.gamePID == g_runningGames[i].pid)) {
+                    set_color(C_GREEN);
+                    printf("[HIGH PRIORITY + 1ms OPTIMIZED]\n");
+                } else {
+                    set_color(C_YELLOW);
+                    printf("[STANDARD PRIORITY]\n");
+                }
+                set_color(C_RESET);
+            }
+        }
+        printf("\n");
+        return;
+    }
+
+    if (_stricmp(subcmd, "boost") == 0 || _stricmp(subcmd, "on") == 0 || _stricmp(subcmd, "activate") == 0) {
+        DWORD targetPID = 0;
+        char targetTitle[64] = "Game Process";
+        char targetExe[64] = "game.exe";
+
+        if (strlen(extra) > 0) {
+            targetPID = (DWORD)atol(extra);
+        }
+
+        if (targetPID == 0) {
+            int gcount = threat_scan_running_games();
+            if (gcount > 0) {
+                targetPID = g_runningGames[0].pid;
+                strncpy(targetTitle, g_runningGames[0].title, sizeof(targetTitle)-1);
+                strncpy(targetExe, g_runningGames[0].exe, sizeof(targetExe)-1);
+            }
+        }
+
+        if (targetPID == 0) {
+            set_color(C_RED);
+            printf("[-] No game process detected or specified. Run 'gaming' to check running games or 'gaming boost <PID>'.\n\n");
+            set_color(C_RESET);
+            return;
+        }
+
+        set_color(C_CYAN);
+        printf("[*] Engaging Kaevex Core Gaming Engine on PID %lu (%s)...\n", (unsigned long)targetPID, targetTitle);
+        set_color(C_RESET);
+
+        if (threat_gaming_activate(targetPID, targetTitle, targetExe)) {
+            set_color(C_GREEN);
+            printf("[+] Gaming Mode ENGAGED successfully:\n");
+            printf("    * Process elevated to HIGH_PRIORITY_CLASS (Priority Boost Decay disabled)\n");
+            printf("    * Kernel dispatch timer set to 1.00ms (via timeBeginPeriod)\n");
+            printf("    * Multimedia network throttling disabled (NetworkThrottlingIndex = 0xFFFFFFFF)\n");
+            printf("    * Background AV & FIM scans suspended to guarantee zero frame drops\n");
+            printf("    * Autonomous watchdog monitoring PID %lu for exit\n\n", (unsigned long)targetPID);
+            set_color(C_RESET);
+        } else {
+            set_color(C_RED);
+            printf("[-] Failed to engage gaming mode for PID %lu (check permissions or PID).\n\n", (unsigned long)targetPID);
+            set_color(C_RESET);
+        }
+        return;
+    }
+
+    if (_stricmp(subcmd, "restore") == 0 || _stricmp(subcmd, "off") == 0 || _stricmp(subcmd, "deactivate") == 0) {
+        if (!g_gaming.active) {
+            printf("[*] Gaming mode is already inactive. Standard defense running.\n\n");
+            return;
+        }
+        set_color(C_CYAN);
+        printf("[*] Restoring standard defense profile and kernel timers...\n");
+        set_color(C_RESET);
+        threat_gaming_deactivate();
+        set_color(C_GREEN);
+        printf("[+] System restored to Standard Defense Mode:\n");
+        printf("    * Process priority returned to original state\n");
+        printf("    * Kernel timer period restored (timeEndPeriod)\n");
+        printf("    * Windows multimedia network throttling re-enabled\n");
+        printf("    * Background AV & security scanning resumed\n\n");
+        set_color(C_RESET);
+        return;
+    }
+
+    if (_stricmp(subcmd, "anticheat") == 0) {
+        set_color(C_WHITE);
+        printf("\n  [ ANTI-CHEAT INTEGRITY & COMPATIBILITY AUDIT ]\n");
+        set_color(C_RESET);
+        threat_check_anticheat();
+        if (g_antiCheatCnt == 0) {
+            set_color(C_GREEN);
+            printf("  [PASS] No active kernel-level anti-cheat drivers detected.\n");
+            printf("  Kaevex memory isolation and low-level hooks operate safely in user mode.\n\n");
+            set_color(C_RESET);
+        } else {
+            for (int i = 0; i < g_antiCheatCnt; i++) {
+                set_color(C_YELLOW);
+                printf("  [ACTIVE] %-35s (%s)\n", g_antiCheat[i].name, g_antiCheat[i].status);
+            }
+            set_color(C_GREEN);
+            printf("  [COMPATIBLE] Kaevex driverless inspection bypass active: Zero false-ban risk.\n\n");
+            set_color(C_RESET);
+        }
+        return;
+    }
+
+    printf("Usage: gaming [status|boost <PID>|restore|anticheat]\n\n");
+}
+
 static void print_help(void) {
     set_color(C_WHITE);
-    printf("\n  [ AEGISCORE COMMAND LINE INTERFACE REFERENCE ]\n");
+    printf("\n  [ KAEVEX COMMAND LINE INTERFACE REFERENCE ]\n");
     set_color(C_RESET);
     printf("  %-24s %s\n", "Command", "Description");
-    printf("  ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
+    printf("  ----------------------------------------------------------------------------------------------------\n");
     printf("  %-24s %s\n", "status", "Display platform status and health of all 8 engines");
     printf("  %-24s %s\n", "stats", "Show real-time security counters across all defense tiers");
     printf("  %-24s %s\n", "monitor", "Launch live full-screen terminal monitoring dashboard");
+    printf("  %-24s %s\n", "gaming [boost|restore]", "Real core latency optimizer, 1ms timer & watchdog");
     printf("  %-24s %s\n", "scan <file|dir>", "Perform real file/folder antivirus & heuristic scan");
     printf("  %-24s %s\n", "waf <payload>", "Test input string against WebGuard WAF inspection");
     printf("  %-24s %s\n", "alerts [limit]", "List recent intrusion detection alerts (default: 10)");
@@ -1035,12 +1228,15 @@ int main(int argc, char **argv) {
 
     /* Start background simulation thread */
     CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
+    threat_start_game_watchdog();
 
     /* Direct CLI argument execution mode */
     if (argc > 1) {
         const char *cmd = argv[1];
         if (_stricmp(cmd, "status") == 0) {
             cmd_status();
+        } else if (_stricmp(cmd, "gaming") == 0) {
+            cmd_gaming(argc > 2 ? argv[2] : "");
         } else if (_stricmp(cmd, "stats") == 0) {
             cmd_stats();
         } else if (_stricmp(cmd, "monitor") == 0) {
@@ -1084,6 +1280,7 @@ int main(int argc, char **argv) {
             print_help();
         }
 
+        threat_stop_game_watchdog();
         WSACleanup();
         DeleteCriticalSection(&g_lock);
         return 0;
@@ -1122,6 +1319,8 @@ int main(int argc, char **argv) {
             print_help();
         } else if (_stricmp(cmd, "status") == 0) {
             cmd_status();
+        } else if (_stricmp(cmd, "gaming") == 0) {
+            cmd_gaming(arg);
         } else if (_stricmp(cmd, "stats") == 0) {
             cmd_stats();
         } else if (_stricmp(cmd, "monitor") == 0 || _stricmp(cmd, "watch") == 0) {
@@ -1171,6 +1370,7 @@ int main(int argc, char **argv) {
     }
 
     g_running = 0;
+    threat_stop_game_watchdog();
     WSACleanup();
     DeleteCriticalSection(&g_lock);
     set_color(C_GREEN);

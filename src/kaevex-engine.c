@@ -60,6 +60,8 @@
 #include <stdarg.h>
 
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "winmm.lib")
+#include "threat_engine.h"
 
 /* ????????? Constants ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 #define API_PORT        9009
@@ -1024,6 +1026,93 @@ static DWORD WINAPI conn_handler(LPVOID arg) {
         send_json(s,"{\"status\":\"ok\"}"); goto done;
     }
 
+    /* ?????? /gaming/ ?????? */
+    if (strcmp(method,"GET")==0 && strcmp(path,"/gaming/status")==0) {
+        threat_scan_running_games();
+        char b[4096]; int pp=0;
+        EnterCriticalSection(&g_lock);
+        DWORD dur = g_gaming.active ? (GetTickCount() - g_gaming.startTimeTick) / 1000 : 0;
+        pp=jscat(b,pp,sizeof(b),"{\"gaming\":{"
+            "\"active\":%s,\"game_name\":\"%s\",\"game_exe\":\"%s\",\"game_pid\":%lu,"
+            "\"kernel_timer_1ms\":%s,\"network_throttling_disabled\":%s,\"scans_suspended\":%s,"
+            "\"anti_cheat\":\"%s\",\"anti_cheat_detected\":%s,\"watchdog_running\":%s,\"duration_seconds\":%lu,"
+            "\"detected_games\":[",
+            g_gaming.active ? "true" : "false",
+            g_gaming.gameName, g_gaming.gameExe, (unsigned long)g_gaming.gamePID,
+            g_gaming.timer1msActive ? "true" : "false",
+            g_gaming.netThrottlingDisabled ? "true" : "false",
+            g_gaming.scansSuspended ? "true" : "false",
+            g_gaming.antiCheatName,
+            g_gaming.antiCheatDetected ? "true" : "false",
+            g_gaming.watchdogRunning ? "true" : "false",
+            (unsigned long)dur);
+        for(int i=0; i<g_runningGameCount; i++) {
+            if(i>0) pp=jscat(b,pp,sizeof(b),",");
+            pp=jscat(b,pp,sizeof(b),
+                "{\"pid\":%lu,\"title\":\"%s\",\"exe\":\"%s\",\"mem_mb\":%lu,\"boosted\":%s,\"compat_safe\":%s,\"anti_cheat\":\"%s\"}",
+                (unsigned long)g_runningGames[i].pid,
+                g_runningGames[i].title,
+                g_runningGames[i].exe,
+                (unsigned long)g_runningGames[i].memMB,
+                g_runningGames[i].boosted ? "true" : "false",
+                g_runningGames[i].compatSafe ? "true" : "false",
+                g_runningGames[i].antiCheat);
+        }
+        pp=jscat(b,pp,sizeof(b),"]}}");
+        LeaveCriticalSection(&g_lock);
+        send_json(s,b); goto done;
+    }
+
+    if (strcmp(method,"POST")==0 && strcmp(path,"/gaming/boost")==0) {
+        char *body = read_body(buf);
+        DWORD pid = 0;
+        char title[64] = "Manual Game";
+        char exe[64] = "game.exe";
+        if (body) {
+            char pidStr[32] = {0};
+            parse_json_str(body, "pid", pidStr, sizeof(pidStr));
+            if (pidStr[0]) pid = (DWORD)atol(pidStr);
+            parse_json_str(body, "title", title, sizeof(title));
+            parse_json_str(body, "exe", exe, sizeof(exe));
+        }
+        if (pid == 0) {
+            threat_scan_running_games();
+            if (g_runningGameCount > 0) {
+                pid = g_runningGames[0].pid;
+                strncpy(title, g_runningGames[0].title, sizeof(title)-1);
+                strncpy(exe, g_runningGames[0].exe, sizeof(exe)-1);
+            }
+        }
+        if (pid > 0) {
+            BOOL ok = threat_gaming_activate(pid, title, exe);
+            char b[256];
+            snprintf(b, sizeof(b), "{\"status\":\"%s\",\"game\":\"%s\",\"pid\":%lu}",
+                     ok ? "boosted" : "failed", title, (unsigned long)pid);
+            send_json(s, b);
+        } else {
+            send_json(s, "{\"status\":\"failed\",\"error\":\"No active game detected or specified\"}");
+        }
+        goto done;
+    }
+
+    if (strcmp(method,"POST")==0 && strcmp(path,"/gaming/restore")==0) {
+        threat_gaming_deactivate();
+        send_json(s, "{\"status\":\"restored\",\"message\":\"Standard defense mode and kernel timer restored\"}");
+        goto done;
+    }
+
+    if (strcmp(method,"GET")==0 && strcmp(path,"/gaming/anticheat")==0) {
+        threat_check_anticheat();
+        char b[2048]; int pp=0;
+        pp=jscat(b,pp,sizeof(b),"{\"anticheat\":{\"detected_count\":%d,\"detected\":[", g_antiCheatCnt);
+        for(int i=0; i<g_antiCheatCnt; i++) {
+            if(i>0) pp=jscat(b,pp,sizeof(b),",");
+            pp=jscat(b,pp,sizeof(b),"{\"name\":\"%s\",\"status\":\"%s\"}", g_antiCheat[i].name, g_antiCheat[i].status);
+        }
+        pp=jscat(b,pp,sizeof(b),"]}}");
+        send_json(s,b); goto done;
+    }
+
     /* 404 */
     { char e[256]; snprintf(e,sizeof(e),"{\"error\":\"Not Found: %s %s\"}",method,path);
       send_response(s,404,e,(int)strlen(e)); }
@@ -1072,6 +1161,7 @@ int main(void) {
     CreateThread(NULL,0,ticker_thread,  NULL,0,NULL);
     CreateThread(NULL,0,alert_thread,   NULL,0,NULL);
     CreateThread(NULL,0,incident_thread,NULL,0,NULL);
+    threat_start_game_watchdog();
 
     printf("????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
     printf("???  Kaevex Engine v1.0 ??? API Server              ???\n");
