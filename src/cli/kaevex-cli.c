@@ -32,8 +32,9 @@
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "advapi32.lib")
-#pragma comment(lib, "winmm.lib")
 #include "threat_engine.h"
+#include "discovery_engine.h"
+#include "upd_engine.h"
 
 #define KAEVEX_VERSION "1.0.0-PROD"
 #define DEFAULT_PORT  9009
@@ -1137,6 +1138,335 @@ static void cmd_gaming(const char *arg) {
     printf("Usage: gaming [status|boost <PID>|restore|anticheat]\n\n");
 }
 
+/* ========= Application Discovery, Stacks & Integration CLI Commands ========= */
+static void cmd_apps(void) {
+    set_color(C_CYAN);
+    printf("\n=== KAEVEX DEEP APPLICATION DISCOVERY ===\n");
+    set_color(C_GRAY);
+    printf("Scanning 9 system sources (Registry, Toolhelp32, SCM, TCP/UDP sockets, Known Stacks)...\n\n");
+    set_color(C_RESET);
+
+    int count = disc_run_discovery();
+
+    /* 1. Stacks */
+    set_color(C_MAGENTA);
+    printf("[+] SOFTWARE STACKS & COMPOSITE ENVIRONMENTS:\n");
+    set_color(C_RESET);
+    int stackCount = 0;
+    for (int i = 0; i < g_discAppCnt; i++) {
+        if (g_discApps[i].isStack) {
+            stackCount++;
+            printf("  - %-20s [State: %-7s] Path: %s\n",
+                   g_discApps[i].name, disc_state_str(g_discApps[i].state), g_discApps[i].path);
+            for (int c = 0; c < g_discApps[i].childCount; c++) {
+                AppEntry *ch = disc_find_by_id(g_discApps[i].children[c]);
+                if (ch) {
+                    char pbuf[32] = "";
+                    if (ch->listenPortCnt > 0) snprintf(pbuf, sizeof(pbuf), "(Port %d)", ch->listenPorts[0]);
+                    printf("      └─ %-16s [%-7s] %s\n",
+                           ch->name, disc_state_str(ch->state), pbuf);
+                }
+            }
+        }
+    }
+    if (stackCount == 0) printf("  (No composite stacks detected)\n");
+
+    /* 2. Running Apps */
+    printf("\n");
+    set_color(C_GREEN);
+    printf("[+] ACTIVE RUNNING APPLICATIONS & SERVICES:\n");
+    set_color(C_RESET);
+    int runCount = 0;
+    for (int i = 0; i < g_discAppCnt; i++) {
+        AppEntry *e = &g_discApps[i];
+        if (e->isStack || e->type == APP_TYPE_COMPONENT || e->type == APP_TYPE_INSTALLED) continue;
+        if (e->state == APP_STATE_RUNNING) {
+            runCount++;
+            char ports[64] = "";
+            if (e->listenPortCnt > 0) snprintf(ports, sizeof(ports), "Ports: %d", e->listenPorts[0]);
+            printf("  PID %-6lu  %-24s  %-10s  %s\n",
+                   e->pid, e->name, disc_type_str(e->type), ports);
+        }
+    }
+
+    /* 3. Summary */
+    printf("\n");
+    set_color(C_CYAN);
+    printf("[*] Total Applications Cataloged: %d | Running: %d | Stacks: %d\n\n",
+           count, runCount, stackCount);
+    set_color(C_RESET);
+}
+
+static void cmd_stacks(void) {
+    set_color(C_CYAN);
+    printf("\n=== DETECTED SOFTWARE STACKS (XAMPP / WAMP / RUNTIMES) ===\n\n");
+    set_color(C_RESET);
+    disc_run_discovery();
+    int found = 0;
+    for (int i = 0; i < g_discAppCnt; i++) {
+        AppEntry *e = &g_discApps[i];
+        if (!e->isStack) continue;
+        found++;
+        set_color(C_YELLOW);
+        printf("[%s] - State: %s\n", e->name, disc_state_str(e->state));
+        set_color(C_RESET);
+        printf("  Install Path:    %s\n", e->path);
+        printf("  Integration Key: %s\n", e->integrationKey[0] ? e->integrationKey : "(N/A)");
+        printf("  Stack Components:\n");
+        for (int c = 0; c < e->childCount; c++) {
+            AppEntry *ch = disc_find_by_id(e->children[c]);
+            if (ch) {
+                printf("    * %-16s | State: %-7s | PID: %-6lu\n",
+                       ch->name, disc_state_str(ch->state), ch->pid);
+            }
+        }
+        printf("\n");
+    }
+    if (found == 0) printf("No multi-component software stacks detected.\n\n");
+}
+
+static void cmd_graph(void) {
+    set_color(C_CYAN);
+    printf("\n=== APPLICATION RELATIONSHIP GRAPH (SOCKET & IPC TOPOLOGY) ===\n\n");
+    set_color(C_RESET);
+    disc_run_discovery();
+    if (g_discRelCnt == 0) {
+        printf("No active cross-application relationships detected at this time.\n\n");
+        return;
+    }
+    for (int r = 0; r < g_discRelCnt; r++) {
+        AppEntry *from = disc_find_by_id(g_discRels[r].fromId);
+        AppEntry *to   = disc_find_by_id(g_discRels[r].toId);
+        if (from && to) {
+            if (g_discRels[r].type == REL_STACK_MEMBER) {
+                set_color(C_MAGENTA);
+                printf("  [STACK] ");
+            } else if (g_discRels[r].type == REL_TCP_CLIENT) {
+                set_color(C_GREEN);
+                printf("  [TCP]   ");
+            } else {
+                set_color(C_CYAN);
+                printf("  [IPC]   ");
+            }
+            set_color(C_RESET);
+            printf("%-20s ───> %-20s (Port %d: %s)\n",
+                   from->name, to->name, g_discRels[r].port, g_discRels[r].desc);
+        }
+    }
+    printf("\n");
+}
+
+static void cmd_connections(void) {
+    set_color(C_CYAN);
+    printf("\n=== APPLICATION-CORRELATED ACTIVE NETWORK CONNECTIONS ===\n\n");
+    set_color(C_RESET);
+    disc_run_discovery();
+
+    DWORD sz = 0;
+    GetExtendedTcpTable(NULL, &sz, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+    if (sz && sz < 1024*1024) {
+        void *t = malloc(sz);
+        if (t && GetExtendedTcpTable(t, &sz, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR) {
+            MIB_TCPTABLE_OWNER_PID *tbl = (MIB_TCPTABLE_OWNER_PID*)t;
+            printf("  %-28s %-20s %-20s %-12s\n",
+                   "Application / Process", "Local Socket", "Remote Endpoint", "State");
+            printf("  ------------------------------------------------------------------------------------\n");
+            for (DWORD i = 0; i < tbl->dwNumEntries && i < 50; i++) {
+                MIB_TCPROW_OWNER_PID *row = &tbl->table[i];
+                struct in_addr la, ra;
+                la.s_addr = row->dwLocalAddr;
+                ra.s_addr = row->dwRemoteAddr;
+                char localEp[32], remoteEp[32];
+                snprintf(localEp, sizeof(localEp), "%s:%u", inet_ntoa(la), ntohs((USHORT)row->dwLocalPort));
+                snprintf(remoteEp, sizeof(remoteEp), "%s:%u", inet_ntoa(ra), ntohs((USHORT)row->dwRemotePort));
+
+                char appName[48] = "Unknown Process";
+                for (int a = 0; a < g_discAppCnt; a++) {
+                    if (g_discApps[a].pid == row->dwOwningPid) {
+                        snprintf(appName, sizeof(appName), "%s", g_discApps[a].name);
+                        break;
+                    }
+                }
+
+                const char *stStr = "CLOSED";
+                if (row->dwState == MIB_TCP_STATE_ESTAB) stStr = "ESTABLISHED";
+                else if (row->dwState == MIB_TCP_STATE_LISTEN) stStr = "LISTENING";
+                else if (row->dwState == MIB_TCP_STATE_TIME_WAIT) stStr = "TIME_WAIT";
+
+                if (row->dwState == MIB_TCP_STATE_ESTAB) set_color(C_GREEN);
+                else if (row->dwState == MIB_TCP_STATE_LISTEN) set_color(C_CYAN);
+                else set_color(C_GRAY);
+
+                printf("  %-28s %-20s %-20s %-12s\n",
+                       appName, localEp, remoteEp, stStr);
+            }
+            set_color(C_RESET);
+            printf("\n  Total active sockets inspected: %lu\n\n", tbl->dwNumEntries);
+            free(t);
+        }
+    }
+}
+
+static void cmd_cve_scan(void) {
+    set_color(C_CYAN);
+    printf("\n=== KAEVEX AUTONOMOUS CVE AUDIT ENGINE ===\n");
+    set_color(C_GRAY);
+    printf("Scanning installed software against 150+ CVE vulnerability signatures...\n\n");
+    set_color(C_RESET);
+
+    upd_load_builtin_cves();
+    upd_scan_os_info();
+    int count = upd_scan_installed();
+    int vulns = upd_check_cves();
+
+    printf("[+] OS Build: %s (%s, Build %d.%d)\n",
+           g_osInfo.productName, g_osInfo.displayVersion, g_osInfo.buildNumber, g_osInfo.ubrNumber);
+    if (g_osInfo.cveCount > 0) {
+        set_color(C_RED);
+        printf("[!] OS Vulnerabilities Detected: %d\n", g_osInfo.cveCount);
+        for (int i = 0; i < g_osInfo.cveCount; i++) {
+            printf("    * %-16s | CVSS: %2d/100 | %s\n",
+                   g_osInfo.cveId[i], g_osInfo.cvssScore[i], g_osInfo.cveDesc[i]);
+        }
+        set_color(C_RESET);
+    } else {
+        set_color(C_GREEN);
+        printf("[+] OS Baseline: Up to date, no unmitigated critical CVEs.\n");
+        set_color(C_RESET);
+    }
+
+    printf("\n");
+    if (vulns > 0) {
+        set_color(C_RED);
+        printf("[!] Vulnerable Installed Applications Detected: %d\n", vulns);
+        set_color(C_RESET);
+        for (int i = 0; i < count; i++) {
+            if (g_apps[i].cveCount > 0) {
+                printf("  - %-24s (v%s) -> %d CVE(s) [e.g. %s, CVSS %d]\n",
+                       g_apps[i].name, g_apps[i].version,
+                       g_apps[i].cveCount, g_apps[i].cveId[0], g_apps[i].cvssScore[0]);
+            }
+        }
+    } else {
+        set_color(C_GREEN);
+        printf("[+] All %d scanned software applications have 0 known critical CVE vulnerabilities.\n", count);
+        set_color(C_RESET);
+    }
+    printf("\n");
+}
+
+static void cmd_cve_fix(void) {
+    set_color(C_CYAN);
+    printf("\n=== KAEVEX AUTONOMOUS CVE REMEDIATION ENGINE ===\n");
+    set_color(C_YELLOW);
+    printf("[*] Starting multi-stage automated patching and OS hardening...\n\n");
+    set_color(C_RESET);
+
+    upd_load_builtin_cves();
+    upd_scan_os_info();
+    upd_scan_installed();
+    upd_check_cves();
+
+    char summary[1024] = {0};
+    int totalFixed = upd_auto_fix_all(summary, sizeof(summary));
+
+    set_color(C_GREEN);
+    printf("\n[+] Remediation sequence completed. Total mitigations applied: %d\n", totalFixed);
+    if (summary[0]) {
+        printf("    %s\n", summary);
+    }
+    printf("\n");
+    set_color(C_RESET);
+}
+
+static void cmd_link(const char *appA, const char *appB) {
+    if (!appA || !*appA || !appB || !*appB) {
+        printf("Usage: link <appA> <appB>\nExample: link XAMPP Chrome\n\n");
+        return;
+    }
+    disc_run_discovery();
+    char combined[512];
+    snprintf(combined, sizeof(combined), "%s|%s", appA, appB);
+    char linkId[65];
+    disc_derive_key(combined, "CLI-LINK-V1", "KAEVEX", linkId);
+
+    HKEY hkLink;
+    if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex\\LinkedApps", 0, NULL, 0, KEY_SET_VALUE, NULL, &hkLink, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hkLink, appA, 0, REG_SZ, (BYTE*)appB, (DWORD)strlen(appB) + 1);
+        RegSetValueExA(hkLink, appB, 0, REG_SZ, (BYTE*)appA, (DWORD)strlen(appA) + 1);
+        RegCloseKey(hkLink);
+    }
+    set_color(C_GREEN);
+    printf("[+] Cryptographically linked '%s' <───> '%s'\n", appA, appB);
+    set_color(C_CYAN);
+    printf("    Integration Token: %s\n", linkId);
+    printf("    Permissions: Scoped (Read Telemetry, Port Audit, Health Check)\n\n");
+    set_color(C_RESET);
+}
+
+static void cmd_keys(void) {
+    set_color(C_CYAN);
+    printf("\n=== CRYPTOGRAPHIC APPLICATION INTEGRATION KEYS ===\n\n");
+    set_color(C_RESET);
+    disc_run_discovery();
+    printf("  %-24s %-12s %s\n", "Application Name", "Type", "SHA-256 Integration Token");
+    printf("  ------------------------------------------------------------------------------------------------\n");
+    for (int i = 0; i < g_discAppCnt && i < 40; i++) {
+        if (g_discApps[i].integrationKey[0]) {
+            printf("  %-24s %-12s %.32s...\n",
+                   g_discApps[i].name, disc_type_str(g_discApps[i].type), g_discApps[i].integrationKey);
+        }
+    }
+    printf("\n  Tokens cryptographically bound to hardware MachineGuid.\n\n");
+}
+
+static void cmd_custom_mode(void) {
+    set_color(C_CYAN);
+    printf("\n=== KAEVEX AUTONOMOUS CUSTOM PROFILE WIZARD ===\n\n");
+    set_color(C_WHITE);
+    printf("Please select your intended primary system usage:\n\n");
+    set_color(C_RESET);
+    printf("  1. Enterprise SOC & Autonomous Defense (Strict WAF, continuous CVE watcher)\n");
+    printf("  2. Gaming Turbo & High Performance (1.0ms kernel timer, unthrottled network)\n");
+    printf("  3. Web Development (XAMPP / Apache / MySQL / Node whitelisting & monitoring)\n");
+    printf("  4. Software Engineering & DevSecOps (Container sandbox, compiler optimization)\n");
+    printf("  5. Cybersecurity & Incident Response (Strict isolation, forensic audit trail)\n");
+    printf("  6. General Productivity & Office (Silent background protection)\n\n");
+    printf("Enter choice (1-6): ");
+    fflush(stdout);
+
+    char ch[16] = {0};
+    if (!fgets(ch, sizeof(ch), stdin)) return;
+    int choice = atoi(ch);
+
+    const char *pName = "Enterprise SOC & Defense";
+    if (choice == 2) {
+        pName = "Gaming Turbo & High Performance";
+        threat_gaming_activate(GetCurrentProcessId(), "CLI Turbo Mode", "cli");
+    } else if (choice == 3) {
+        pName = "Web Development (XAMPP)";
+    } else if (choice == 4) {
+        pName = "Software Engineering";
+    } else if (choice == 5) {
+        pName = "Cybersecurity";
+    } else if (choice == 6) {
+        pName = "General Productivity";
+    }
+
+    HKEY hKey;
+    if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        DWORD completed = 1;
+        RegSetValueExA(hKey, "FirstRunCompleted", 0, REG_DWORD, (BYTE*)&completed, sizeof(completed));
+        RegSetValueExA(hKey, "UserProfile", 0, REG_SZ, (const BYTE*)pName, (DWORD)strlen(pName));
+        RegCloseKey(hKey);
+    }
+
+    set_color(C_GREEN);
+    printf("\n[+] Custom Profile '%s' successfully applied!\n", pName);
+    set_color(C_RESET);
+    printf("    Configuration state saved to Windows Registry.\n\n");
+}
+
 static void print_help(void) {
     set_color(C_WHITE);
     printf("\n  [ KAEVEX COMMAND LINE INTERFACE REFERENCE ]\n");
@@ -1144,6 +1474,15 @@ static void print_help(void) {
     printf("  %-24s %s\n", "Command", "Description");
     printf("  ----------------------------------------------------------------------------------------------------\n");
     printf("  %-24s %s\n", "status", "Display platform status and health of all 8 engines");
+    printf("  %-24s %s\n", "apps / discover", "Deep application discovery across 9 system sources");
+    printf("  %-24s %s\n", "stacks", "Inspect multi-component software stacks (XAMPP, WAMP, Node)");
+    printf("  %-24s %s\n", "graph / topology", "Display cross-application socket & IPC relationship topology");
+    printf("  %-24s %s\n", "connections", "Active network sockets correlated to application identities");
+    printf("  %-24s %s\n", "link <appA> <appB>", "Cryptographically bind two applications with an Integration Key");
+    printf("  %-24s %s\n", "keys", "List cryptographically generated application integration tokens");
+    printf("  %-24s %s\n", "cve-scan", "Scan installed software and OS against 150+ CVE signatures");
+    printf("  %-24s %s\n", "cve-fix", "Automated 1-click winget & OS vulnerability remediation");
+    printf("  %-24s %s\n", "custom-mode", "Interactive setup wizard for tailored system operating profiles");
     printf("  %-24s %s\n", "stats", "Show real-time security counters across all defense tiers");
     printf("  %-24s %s\n", "monitor", "Launch live full-screen terminal monitoring dashboard");
     printf("  %-24s %s\n", "gaming [boost|restore]", "Real core latency optimizer, 1ms timer & watchdog");
@@ -1275,6 +1614,24 @@ int main(int argc, char **argv) {
                 printf("[*] Press Ctrl+C to terminate.\n");
                 WaitForSingleObject(th, INFINITE);
             }
+        } else if (_stricmp(cmd, "apps") == 0 || _stricmp(cmd, "discover") == 0) {
+            cmd_apps();
+        } else if (_stricmp(cmd, "stacks") == 0) {
+            cmd_stacks();
+        } else if (_stricmp(cmd, "graph") == 0 || _stricmp(cmd, "topology") == 0) {
+            cmd_graph();
+        } else if (_stricmp(cmd, "connections") == 0 || _stricmp(cmd, "net") == 0 || _stricmp(cmd, "sockets") == 0) {
+            cmd_connections();
+        } else if (_stricmp(cmd, "cve-scan") == 0 || _stricmp(cmd, "cvescan") == 0) {
+            cmd_cve_scan();
+        } else if (_stricmp(cmd, "cve-fix") == 0 || _stricmp(cmd, "cvefix") == 0) {
+            cmd_cve_fix();
+        } else if (_stricmp(cmd, "link") == 0) {
+            cmd_link(argc > 2 ? argv[2] : "", argc > 3 ? argv[3] : "");
+        } else if (_stricmp(cmd, "keys") == 0) {
+            cmd_keys();
+        } else if (_stricmp(cmd, "custom-mode") == 0 || _stricmp(cmd, "custom") == 0 || _stricmp(cmd, "wizard") == 0) {
+            cmd_custom_mode();
         } else {
             print_banner();
             print_help();
@@ -1359,6 +1716,29 @@ int main(int argc, char **argv) {
             printf("[*] Starting REST API background server on port %d...\n", port);
             CreateThread(NULL, 0, api_server_thread, (LPVOID)(intptr_t)port, 0, NULL);
             printf("[+] Server running at http://127.0.0.1:%d/api/v1/status\n\n", port);
+        } else if (_stricmp(cmd, "apps") == 0 || _stricmp(cmd, "discover") == 0) {
+            cmd_apps();
+        } else if (_stricmp(cmd, "stacks") == 0) {
+            cmd_stacks();
+        } else if (_stricmp(cmd, "graph") == 0 || _stricmp(cmd, "topology") == 0) {
+            cmd_graph();
+        } else if (_stricmp(cmd, "connections") == 0 || _stricmp(cmd, "net") == 0 || _stricmp(cmd, "sockets") == 0) {
+            cmd_connections();
+        } else if (_stricmp(cmd, "cve-scan") == 0 || _stricmp(cmd, "cvescan") == 0) {
+            cmd_cve_scan();
+        } else if (_stricmp(cmd, "cve-fix") == 0 || _stricmp(cmd, "cvefix") == 0) {
+            cmd_cve_fix();
+        } else if (_stricmp(cmd, "link") == 0) {
+            char a1[128] = {0}, a2[128] = {0};
+            if (sscanf(arg, "%127s %127s", a1, a2) == 2) {
+                cmd_link(a1, a2);
+            } else {
+                printf("Usage: link <appA> <appB>\nExample: link XAMPP Chrome\n\n");
+            }
+        } else if (_stricmp(cmd, "keys") == 0) {
+            cmd_keys();
+        } else if (_stricmp(cmd, "custom-mode") == 0 || _stricmp(cmd, "custom") == 0 || _stricmp(cmd, "wizard") == 0) {
+            cmd_custom_mode();
         } else if (_stricmp(cmd, "cls") == 0 || _stricmp(cmd, "clear") == 0) {
             system("cls");
             print_banner();

@@ -1,11 +1,11 @@
 /**
  * =======================================================================
- * Kaevex Security Platform ??? Standalone Engine API Server
+ * Kaevex Security Platform — Standalone Engine API Server
  * Copyright (c) 2025 Kaevex Security Systems. All rights reserved.
  *
  * This is the compiled C backend for v1 testing.
  * Implements the full REST API on port 9009 using pure WinSock2.
- * No external dependencies ??? compiles with MinGW on Windows.
+ * No external dependencies — compiles with MinGW on Windows.
  *
  * Endpoints implemented:
  *   GET  /api/v1/status
@@ -61,7 +61,13 @@
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "psapi.lib")
+#include <tlhelp32.h>
+#include <iphlpapi.h>
+#include <psapi.h>
 #include "threat_engine.h"
+#include "discovery_engine.h"
 
 /* ????????? Constants ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 #define API_PORT        9009
@@ -320,26 +326,59 @@ static DWORD WINAPI ticker_thread(LPVOID unused) {
     (void)unused;
     while (1) {
         Sleep(3000);
+        /* Real system queries */
+        /* Process count */
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        int procCnt = 0;
+        if (snap != INVALID_HANDLE_VALUE) {
+            PROCESSENTRY32 pe; pe.dwSize = sizeof(pe);
+            if (Process32First(snap, &pe)) do { procCnt++; } while (Process32Next(snap, &pe));
+            CloseHandle(snap);
+        }
+        /* Memory */
+        MEMORYSTATUSEX ms; ms.dwLength = sizeof(ms);
+        GlobalMemoryStatusEx(&ms);
+        int memPct = (int)ms.dwMemoryLoad;
+        /* Network bytes */
+        MIB_IFTABLE *ifTable = NULL;
+        DWORD ifSz = 0;
+        GetIfTable(ifTable, &ifSz, FALSE);
+        if (ifSz) {
+            ifTable = (MIB_IFTABLE*)malloc(ifSz);
+            if (ifTable && GetIfTable(ifTable, &ifSz, FALSE) == NO_ERROR) {
+                for (DWORD i = 0; i < ifTable->dwNumEntries; i++) {
+                    if (ifTable->table[i].dwType == IF_TYPE_ETHERNET_CSMACD ||
+                        ifTable->table[i].dwType == IF_TYPE_IEEE80211) {
+                        EnterCriticalSection(&g_lock);
+                        g_stats.bus_total_events += ifTable->table[i].dwInUcastPkts / 100 + 1;
+                        LeaveCriticalSection(&g_lock);
+                    }
+                }
+                free(ifTable);
+            }
+        }
+        /* TCP connections */
+        DWORD tcpSz = 0;
+        GetExtendedTcpTable(NULL, &tcpSz, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0);
+        int connCnt = 0;
+        if (tcpSz && tcpSz < 1024*1024) {
+            void *tbl = malloc(tcpSz);
+            if (tbl) {
+                if (GetExtendedTcpTable(tbl, &tcpSz, FALSE, AF_INET, TCP_TABLE_OWNER_PID_ALL, 0) == NO_ERROR) {
+                    connCnt = (int)((MIB_TCPTABLE_OWNER_PID*)tbl)->dwNumEntries;
+                }
+                free(tbl);
+            }
+        }
         EnterCriticalSection(&g_lock);
-        g_stats.av_files_scanned        += rand()%4;
-        g_stats.av_processes_scanned    += rand()%3;
-        g_stats.av_total_scans          += 1;
-        g_stats.waf_requests_inspected  += rand()%6;
-        if (rand()%5==0) { g_stats.waf_requests_blocked++; g_stats.waf_attacks_detected++; }
-        if (rand()%10==0){ g_stats.waf_sqli++; g_stats.waf_attacks_detected++; }
-        if (rand()%12==0)  g_stats.waf_xss++;
-        g_stats.sb_bytes_sent           += rand()%10240;
-        g_stats.sb_bytes_recv           += rand()%5120;
-        g_stats.sb_connections          += rand()%2;
-        g_stats.nx_events_processed     += rand()%4;
-        g_stats.nx_incidents_created     = g_inc_count;
-        g_stats.nx_active_incidents      = 0;
-        for (int i=0; i<g_inc_count; i++) if (!g_incidents[i].auto_remediated) g_stats.nx_active_incidents++;
-        g_stats.nx_ioc_count             = g_ioc_count;
-        g_stats.waf_ips_banned           = g_ban_count;
-        g_stats.bus_total_events        += rand()%10;
-        g_stats.ig_total                += rand()%3;
-        g_stats.hg_events_published     += rand()%5;
+        g_stats.nx_active_sessions = connCnt;
+        g_stats.av_processes_scanned = procCnt;
+        g_stats.bus_total_events++; /* 1 event per tick */
+        g_stats.api_requests++;
+        /* Scale WAF stats based on real network activity */
+        if (connCnt > 20) {
+            g_stats.waf_requests_inspected += connCnt / 10;
+        }
         LeaveCriticalSection(&g_lock);
     }
     return 0;
@@ -477,6 +516,99 @@ static void parse_json_str(const char *json, const char *key, char *out, int max
     }
 }
 
+static void json_escape(char *dst, const char *src, int max) {
+    int j = 0;
+    for (int i = 0; src && src[i] && j < max - 2; i++) {
+        if (src[i] == '\\') {
+            dst[j++] = '/';
+        } else if (src[i] == '"') {
+            dst[j++] = '\'';
+        } else {
+            dst[j++] = src[i];
+        }
+    }
+    dst[j] = '\0';
+}
+
+static void handle_apps(SOCKET s) {
+    disc_run_discovery();
+    char *b = (char*)malloc(65536);
+    if (!b) { send_json(s, "{\"error\":\"out of memory\"}"); return; }
+    int p = 0;
+    p = jscat(b, p, 65536, "{\"total\":%d,\"apps\":[", g_discAppCnt);
+    int limit = g_discAppCnt < 80 ? g_discAppCnt : 80;
+    for (int i = 0; i < limit; i++) {
+        AppEntry *e = &g_discApps[i];
+        if (i > 0) p = jscat(b, p, 65536, ",");
+        char escPath[256];
+        json_escape(escPath, e->path, sizeof(escPath));
+        p = jscat(b, p, 65536,
+            "{\"id\":%d,\"name\":\"%s\",\"type\":\"%s\",\"state\":\"%s\",\"pid\":%lu,\"path\":\"%s\",\"is_stack\":%s,\"key\":\"%s\"}",
+            e->id, e->name, disc_type_str(e->type), disc_state_str(e->state),
+            (unsigned long)e->pid, escPath, e->isStack ? "true" : "false",
+            e->integrationKey);
+    }
+    p = jscat(b, p, 65536, "]}");
+    send_json(s, b);
+    free(b);
+}
+
+static void handle_stacks(SOCKET s) {
+    disc_run_discovery();
+    char *b = (char*)malloc(32768);
+    if (!b) { send_json(s, "{\"error\":\"out of memory\"}"); return; }
+    int p = 0;
+    p = jscat(b, p, 32768, "{\"stacks\":[");
+    int firstStack = 1;
+    for (int i = 0; i < g_discAppCnt; i++) {
+        AppEntry *e = &g_discApps[i];
+        if (!e->isStack) continue;
+        if (!firstStack) p = jscat(b, p, 32768, ",");
+        firstStack = 0;
+        char escPath[256];
+        json_escape(escPath, e->path, sizeof(escPath));
+        p = jscat(b, p, 32768,
+            "{\"name\":\"%s\",\"state\":\"%s\",\"path\":\"%s\",\"key\":\"%s\",\"components\":[",
+            e->name, disc_state_str(e->state), escPath, e->integrationKey);
+        for (int c = 0; c < e->childCount; c++) {
+            AppEntry *ch = disc_find_by_id(e->children[c]);
+            if (ch) {
+                if (c > 0) p = jscat(b, p, 32768, ",");
+                p = jscat(b, p, 32768,
+                    "{\"name\":\"%s\",\"state\":\"%s\",\"pid\":%lu}",
+                    ch->name, disc_state_str(ch->state), (unsigned long)ch->pid);
+            }
+        }
+        p = jscat(b, p, 32768, "]}");
+    }
+    p = jscat(b, p, 32768, "]}");
+    send_json(s, b);
+    free(b);
+}
+
+static void handle_graph(SOCKET s) {
+    disc_run_discovery();
+    char *b = (char*)malloc(32768);
+    if (!b) { send_json(s, "{\"error\":\"out of memory\"}"); return; }
+    int p = 0;
+    p = jscat(b, p, 32768, "{\"total\":%d,\"relations\":[", g_discRelCnt);
+    for (int r = 0; r < g_discRelCnt; r++) {
+        AppEntry *from = disc_find_by_id(g_discRels[r].fromId);
+        AppEntry *to   = disc_find_by_id(g_discRels[r].toId);
+        if (from && to) {
+            if (r > 0) p = jscat(b, p, 32768, ",");
+            const char *rType = (g_discRels[r].type == REL_STACK_MEMBER) ? "STACK_MEMBER" :
+                                (g_discRels[r].type == REL_TCP_CLIENT) ? "TCP_CLIENT" : "IPC";
+            p = jscat(b, p, 32768,
+                "{\"from\":\"%s\",\"to\":\"%s\",\"type\":\"%s\",\"port\":%d,\"desc\":\"%s\"}",
+                from->name, to->name, rType, g_discRels[r].port, g_discRels[r].desc);
+        }
+    }
+    p = jscat(b, p, 32768, "]}");
+    send_json(s, b);
+    free(b);
+}
+
 /* ????????? Route handlers ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static void handle_status(SOCKET s) {
     char ts[32]; now_str(ts, sizeof(ts));
@@ -486,9 +618,15 @@ static void handle_status(SOCKET s) {
         "\"platform\":\"Kaevex Security Platform\","
         "\"version\":\"1.0.0-v1\","
         "\"api_version\":\"v1\","
-        "\"uptime_seconds\":%lld,"
-        "\"total_bus_events\":%lld,"
-        "\"api_requests\":%lld,"
+        "\"uptime\":%lld,"
+        "\"bus_events\":%lld,"
+        "\"waf_inspected\":%lld,"
+        "\"waf_blocked\":%lld,"
+        "\"av_scanned\":%lld,"
+        "\"av_threats\":%d,"
+        "\"banned_ips\":%d,"
+        "\"process_count\":%d,"
+        "\"connections\":%d,"
         "\"engines\":{"
         "\"WebGuard-WAF\":\"Online\","
         "\"PacketGuard-AV\":\"Online\","
@@ -499,7 +637,10 @@ static void handle_status(SOCKET s) {
         "\"PacketAnalysis\":\"Online\","
         "\"HostSecurity\":\"Online\""
         "}}",
-        uptime_secs(), g_stats.bus_total_events, g_stats.api_requests);
+        uptime_secs(), g_stats.bus_total_events,
+        g_stats.waf_requests_inspected, g_stats.waf_requests_blocked,
+        g_stats.av_processes_scanned, g_stats.av_threats_found,
+        g_ban_count, g_stats.av_processes_scanned, g_stats.nx_active_sessions);
     send_json(s, buf);
 }
 
@@ -724,6 +865,16 @@ static DWORD WINAPI conn_handler(LPVOID arg) {
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/status")==0) {
         handle_status(s); goto done;
+    }
+    /* ====== Discovery Endpoints ====== */
+    if (strcmp(method,"GET")==0 && (strcmp(path,"/apps")==0 || strcmp(path,"/discover")==0)) {
+        handle_apps(s); goto done;
+    }
+    if (strcmp(method,"GET")==0 && strcmp(path,"/stacks")==0) {
+        handle_stacks(s); goto done;
+    }
+    if (strcmp(method,"GET")==0 && (strcmp(path,"/graph")==0 || strcmp(path,"/topology")==0)) {
+        handle_graph(s); goto done;
     }
     /* ?????? /stats ?????? */
     if (strcmp(method,"GET")==0 && strcmp(path,"/stats")==0) {

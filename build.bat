@@ -1,7 +1,7 @@
 @echo off
 title Building Kaevex Security Platform v1.0
 echo ========================================================================
-echo   Building Kaevex Security Platform v1.0 (Production Release)
+echo   Kaevex Security Platform v1.0 — Build System
 echo ========================================================================
 echo.
 
@@ -14,10 +14,11 @@ if not exist C:\GCC\bin\gcc.exe (
 
 set PATH=C:\GCC\bin;C:\GCC\x86_64-w64-mingw32\bin;C:\Windows\System32;C:\Windows
 
-if not exist dist mkdir dist
-if not exist release mkdir release
+if not exist dist     mkdir dist
+if not exist release  mkdir release
 if not exist release\v1 mkdir release\v1
 
+echo.
 echo [*] Compiling Kaevex-GUI.exe ...
 C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -I src\engines ^
@@ -35,11 +36,31 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
 if errorlevel 1 (
     echo [FAIL] Kaevex-GUI build failed.
 ) else (
-    echo [OK] dist\Kaevex-GUI.exe built successfully.
+    echo [OK]   dist\Kaevex-GUI.exe
     copy /y dist\Kaevex-GUI.exe release\Kaevex-GUI.exe >nul 2>&1
     copy /y dist\Kaevex-GUI.exe release\v1\Kaevex-GUI.exe >nul 2>&1
 )
 
+echo.
+echo [*] Compiling Kaevex-Tray.exe ...
+C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
+    -B C:\GCC\x86_64-w64-mingw32\lib ^
+    -B C:\GCC\x86_64-w64-mingw32\lib\gcc\x86_64-w64-mingw32\16.2.0 ^
+    -L C:\GCC\x86_64-w64-mingw32\lib ^
+    -L C:\GCC\x86_64-w64-mingw32\lib\gcc\x86_64-w64-mingw32\16.2.0 ^
+    -o dist\Kaevex-Tray.exe ^
+    src\tray\kaevex-tray.c ^
+    -lws2_32 -lshell32 -ladvapi32 -luser32 -lgdi32
+
+if errorlevel 1 (
+    echo [FAIL] Kaevex-Tray build failed.
+) else (
+    echo [OK]   dist\Kaevex-Tray.exe
+    copy /y dist\Kaevex-Tray.exe release\Kaevex-Tray.exe >nul 2>&1
+    copy /y dist\Kaevex-Tray.exe release\v1\Kaevex-Tray.exe >nul 2>&1
+)
+
+echo.
 echo [*] Compiling kaevex-cli.exe ...
 C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
     -I src\engines ^
@@ -54,11 +75,12 @@ C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
 if errorlevel 1 (
     echo [FAIL] kaevex-cli build failed.
 ) else (
-    echo [OK] dist\kaevex-cli.exe built successfully.
+    echo [OK]   dist\kaevex-cli.exe
     copy /y dist\kaevex-cli.exe release\kaevex-cli.exe >nul 2>&1
     copy /y dist\kaevex-cli.exe release\v1\kaevex-cli.exe >nul 2>&1
 )
 
+echo.
 echo [*] Compiling kaevex-engine.exe ...
 C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
     -I src\engines ^
@@ -73,12 +95,20 @@ C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
 if errorlevel 1 (
     echo [FAIL] kaevex-engine build failed.
 ) else (
-    echo [OK] dist\kaevex-engine.exe built successfully.
+    echo [OK]   dist\kaevex-engine.exe
     copy /y dist\kaevex-engine.exe release\kaevex-engine.exe >nul 2>&1
     copy /y dist\kaevex-engine.exe release\v1\kaevex-engine.exe >nul 2>&1
 )
 
 echo.
+echo [*] Copying assets to dist ...
+if exist assets\kaevex.ico (
+    copy /y assets\kaevex.ico dist\kaevex.ico >nul 2>&1
+    echo [OK]   dist\kaevex.ico
+)
+
+echo.
 echo ========================================================================
 echo   Kaevex v1.0 Build Complete!
+echo   Output: dist\Kaevex-GUI.exe  ^|  Kaevex-Tray.exe  ^|  kaevex-cli.exe
 echo ========================================================================

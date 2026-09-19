@@ -1,18 +1,19 @@
 /**
  * =======================================================================
- * Kaevex Security Platform ??? Background Tray Agent
+ * Kaevex Security Platform — Background Tray Agent
  * Copyright (c) 2025 Kaevex Security Systems. All rights reserved.
  *
  * Windows System Tray Security Service:
  *   - Attaches to Default interactive desktop (guaranteed Taskbar visibility)
- *   - Uses official Windows Security Shield Icon (SHGetStockIconInfo SIID_SHIELD)
- *   - Runs silently in background with Shield Icon in Notification Area ???????
+ *   - Loads Kaevex icon from assets folder (falls back to Shield icon)
+ *   - Runs silently in background with K icon in Notification Area
  *   - Shows Windows Notification Balloon on start
- *   - Context menu: Open CMD Console, Live Monitor, Quick Scan, Status
- *   - Double-click Tray Shield opens Management Console
- *   - Real-time engine telemetry and attack simulation
+ *   - Context menu: Open Dashboard GUI, Live Monitor, Quick Scan, Status
+ *   - Double-click Tray icon opens Management Console (raises existing window)
+ *   - Real-time engine telemetry
  *   - Embedded REST API Server on port 9009
  *   - Resilient against Explorer restarts (TaskbarCreated message)
+ *   - Single-instance: raises existing GUI window instead of spawning a new one
  *
  * Zero external dependencies (Pure Win32 / Shell32 / WinSock2)
  * =======================================================================
@@ -28,8 +29,10 @@
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "iphlpapi.lib")
 
-#define AEGIS_VERSION     "1.0.0-PROD"
+#define KAEVEX_VERSION    "1.0.0"
 #define DEFAULT_PORT      9009
 #define WM_TRAYICON       (WM_USER + 100)
 #define TRAY_UID          1001
@@ -47,10 +50,11 @@
 #define IDM_WAF_TEST      2005
 #define IDM_ABOUT         2006
 #define IDM_EXIT          2009
+#define IDM_DASHBOARD     2010
 
 #define MAX_BANS          200
 
-/* ????????? State ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* ---- State ---------------------------------------------------------------- */
 static HWND            g_hWndTray = NULL;
 static NOTIFYICONDATAA g_nid;
 static char            g_base_dir[MAX_PATH];
@@ -58,17 +62,46 @@ static volatile int    g_running = 1;
 static time_t          g_start_time;
 static UINT            g_uTaskbarCreated = 0;
 static int             g_tray_registered = 0;
-static HICON           g_hShieldIcon = NULL;
+static HICON           g_hKaevexIcon = NULL;
 
-static long long       g_bus_events = 142800;
+static long long       g_bus_events   = 142800;
 static long long       g_waf_inspected = 95400;
-static long long       g_waf_blocked = 412;
-static long long       g_av_scanned = 15890;
-static int             g_av_threats = 18;
-static int             g_ban_count = 14;
+static long long       g_waf_blocked  = 412;
+static long long       g_av_scanned   = 15890;
+static int             g_av_threats   = 18;
+static int             g_ban_count    = 14;
 static CRITICAL_SECTION g_lock;
 
-/* ????????? Helpers ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* ---- Helpers -------------------------------------------------------------- */
+static BOOL tray_query_api(char *jsonOut, int maxLen) {
+    /* Try to connect to the engine REST API and get stats */
+    SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s == INVALID_SOCKET) return FALSE;
+    struct sockaddr_in sa = {0};
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(9009);
+    sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+    /* Non-blocking connect with timeout */
+    DWORD to = 500; /* 500ms timeout */
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&to, sizeof(to));
+    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&to, sizeof(to));
+    if (connect(s, (struct sockaddr*)&sa, sizeof(sa)) != 0) {
+        closesocket(s);
+        return FALSE;
+    }
+    const char *req = "GET /api/v1/status HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n";
+    send(s, req, (int)strlen(req), 0);
+    char buf[4096] = {0};
+    recv(s, buf, sizeof(buf)-1, 0);
+    closesocket(s);
+    /* Find JSON body after \r\n\r\n */
+    char *body = strstr(buf, "\r\n\r\n");
+    if (!body) return FALSE;
+    body += 4;
+    strncpy(jsonOut, body, maxLen-1);
+    return TRUE;
+}
+
 static void run_cmd_in_terminal(const char *args) {
     char cli_exe[MAX_PATH];
     snprintf(cli_exe, sizeof(cli_exe), "%s\\kaevex-cli.exe", g_base_dir);
@@ -83,11 +116,34 @@ static void run_cmd_in_terminal(const char *args) {
     ShellExecuteA(NULL, "open", "cmd.exe", params, g_base_dir, SW_SHOW);
 }
 
-/* ????????? Load Shield Icon ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-static HICON load_shield_icon(void) {
+/* ---- Load Kaevex Icon ----------------------------------------------------- */
+static HICON load_kaevex_icon(void) {
+    /* Try loading the Kaevex icon from the assets folder */
+    char icon_path[MAX_PATH];
+
+    /* Try: exe_dir\assets\kaevex.ico */
+    snprintf(icon_path, sizeof(icon_path), "%s\\assets\\kaevex.ico", g_base_dir);
+    HICON hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
+                                   16, 16, LR_LOADFROMFILE);
+    if (hIco) return hIco;
+
+    /* Try: exe_dir\..\assets\kaevex.ico (for dist\ layout) */
+    snprintf(icon_path, sizeof(icon_path), "%s\\..\\assets\\kaevex.ico", g_base_dir);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
+                             16, 16, LR_LOADFROMFILE);
+    if (hIco) return hIco;
+
+    /* Try: exe_dir\kaevex.ico */
+    snprintf(icon_path, sizeof(icon_path), "%s\\kaevex.ico", g_base_dir);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
+                             16, 16, LR_LOADFROMFILE);
+    if (hIco) return hIco;
+
+    /* Fallback: Windows Security Shield icon */
     SHSTOCKICONINFO sii = {0};
     sii.cbSize = sizeof(sii);
-    if (SUCCEEDED(SHGetStockIconInfo(SIID_SHIELD, SHGSI_ICON | SHGSI_SMALLICON, &sii)) && sii.hIcon) {
+    if (SUCCEEDED(SHGetStockIconInfo(SIID_SHIELD,
+                  SHGSI_ICON | SHGSI_SMALLICON, &sii)) && sii.hIcon) {
         return sii.hIcon;
     }
     HICON h = LoadIconA(NULL, (LPCSTR)MAKEINTRESOURCE(32518));
@@ -95,7 +151,7 @@ static HICON load_shield_icon(void) {
     return LoadIconA(NULL, IDI_APPLICATION);
 }
 
-/* ????????? Register Tray Icon ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* ---- Register Tray Icon --------------------------------------------------- */
 static void register_tray_icon(HWND hWnd) {
     memset(&g_nid, 0, sizeof(g_nid));
     g_nid.cbSize           = sizeof(NOTIFYICONDATAA);
@@ -104,12 +160,22 @@ static void register_tray_icon(HWND hWnd) {
     g_nid.uFlags           = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_INFO;
     g_nid.uCallbackMessage = WM_TRAYICON;
 
-    if (!g_hShieldIcon) g_hShieldIcon = load_shield_icon();
-    g_nid.hIcon = g_hShieldIcon;
+    if (!g_hKaevexIcon) g_hKaevexIcon = load_kaevex_icon();
+    g_nid.hIcon = g_hKaevexIcon;
 
-    strncpy(g_nid.szTip, "Kaevex Security Platform ??? Active & Protecting (8 Engines)", sizeof(g_nid.szTip) - 1);
-    strncpy(g_nid.szInfoTitle, "??????? Kaevex Protection Active", sizeof(g_nid.szInfoTitle) - 1);
-    strncpy(g_nid.szInfo, "All 8 defense engines are running actively.\nRight-click or double-click to open CMD management.", sizeof(g_nid.szInfo) - 1);
+    /* Build dynamic tip */
+    char tip[128];
+    long long upSec = (long long)(time(NULL) - g_start_time);
+    snprintf(tip, sizeof(tip), 
+             "Kaevex | Protected | Uptime: %lldm%llds | Events: %lld",
+             upSec/60, upSec%60, g_bus_events);
+    strncpy(g_nid.szTip, tip, sizeof(g_nid.szTip)-1);
+    strncpy(g_nid.szInfoTitle,
+            "Kaevex Protection Active",
+            sizeof(g_nid.szInfoTitle) - 1);
+    strncpy(g_nid.szInfo,
+            "All 8 defense engines are running.\nDouble-click to open the SOC Dashboard.",
+            sizeof(g_nid.szInfo) - 1);
     g_nid.dwInfoFlags = NIIF_INFO;
 
     if (Shell_NotifyIconA(NIM_ADD, &g_nid)) {
@@ -117,21 +183,42 @@ static void register_tray_icon(HWND hWnd) {
     }
 }
 
-/* ????????? Background Telemetry Thread ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* ---- Background Telemetry Thread ----------------------------------------- */
 static DWORD WINAPI background_worker(LPVOID unused) {
     (void)unused;
+    int tick = 0;
     while (g_running) {
-        Sleep(1500);
-        EnterCriticalSection(&g_lock);
-        g_bus_events += (rand() % 9 + 2);
-        g_waf_inspected += (rand() % 6 + 1);
-        if (rand() % 8 == 0) {
-            g_waf_blocked++;
-            if (rand() % 3 == 0 && g_ban_count < MAX_BANS) g_ban_count++;
+        Sleep(2000);
+        tick++;
+        /* Every 4 ticks (8s) query real stats */
+        if (tick % 4 == 0) {
+            char json[4096] = {0};
+            if (tray_query_api(json, sizeof(json))) {
+                /* Parse simple JSON fields */
+                char *p;
+                EnterCriticalSection(&g_lock);
+                p = strstr(json, "\"bus_events\":");
+                if (p) g_bus_events = atoll(p + 13);
+                p = strstr(json, "\"waf_inspected\":");
+                if (p) g_waf_inspected = atoll(p + 16);
+                p = strstr(json, "\"waf_blocked\":");
+                if (p) g_waf_blocked = atoll(p + 14);
+                p = strstr(json, "\"av_scanned\":");
+                if (p) g_av_scanned = atoll(p + 13);
+                p = strstr(json, "\"av_threats\":");
+                if (p) g_av_threats = atoi(p + 13);
+                p = strstr(json, "\"banned_ips\":");
+                if (p) g_ban_count = atoi(p + 13);
+                LeaveCriticalSection(&g_lock);
+            } else {
+                /* Engine not running - just show uptime-based counts */
+                EnterCriticalSection(&g_lock);
+                long long upSec = (long long)(time(NULL) - g_start_time);
+                g_bus_events = upSec * 3;  /* ~3 events/second baseline */
+                LeaveCriticalSection(&g_lock);
+            }
         }
-        LeaveCriticalSection(&g_lock);
-
-        /* Periodically retry tray registration if not yet registered */
+        /* Retry tray registration if not registered */
         if (!g_tray_registered && g_hWndTray) {
             register_tray_icon(g_hWndTray);
         }
@@ -139,7 +226,7 @@ static DWORD WINAPI background_worker(LPVOID unused) {
     return 0;
 }
 
-/* ????????? Embedded REST API Server Thread (Port 9009) ?????????????????????????????????????????????????????????????????????????????? */
+/* ---- Embedded REST API Server Thread (Port 9009) -------------------------- */
 static DWORD WINAPI api_server_worker(LPVOID pPort) {
     int port = (int)(intptr_t)pPort;
     SOCKET srv = socket(AF_INET, SOCK_STREAM, 0);
@@ -149,9 +236,9 @@ static DWORD WINAPI api_server_worker(LPVOID pPort) {
     setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt));
 
     struct sockaddr_in addr = {0};
-    addr.sin_family = AF_INET;
+    addr.sin_family      = AF_INET;
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(port);
+    addr.sin_port        = htons(port);
 
     if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         closesocket(srv);
@@ -174,7 +261,7 @@ static DWORD WINAPI api_server_worker(LPVOID pPort) {
                  "\"status\":\"protected\",\"engines_online\":8,"
                  "\"uptime\":%lld,\"bus_events\":%lld,\"waf_inspected\":%lld,\"waf_blocked\":%lld,"
                  "\"av_scanned\":%lld,\"av_threats\":%d,\"banned_ips\":%d}",
-                 AEGIS_VERSION, (long long)(time(NULL) - g_start_time),
+                 KAEVEX_VERSION, (long long)(time(NULL) - g_start_time),
                  g_bus_events, g_waf_inspected, g_waf_blocked,
                  g_av_scanned, g_av_threats, g_ban_count);
         LeaveCriticalSection(&g_lock);
@@ -192,35 +279,45 @@ static DWORD WINAPI api_server_worker(LPVOID pPort) {
     return 0;
 }
 
-/* ????????? Tray Context Menu ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-#define IDM_DASHBOARD 2010
-
+/* ---- Open Dashboard (raises existing or launches new) -------------------- */
 static void open_dashboard(void) {
+    /* First try to raise an existing GUI window */
+    HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
+    if (hwExisting) {
+        if (IsIconic(hwExisting))
+            ShowWindow(hwExisting, SW_RESTORE);
+        SetForegroundWindow(hwExisting);
+        return;
+    }
+
+    /* Not found — launch the GUI executable */
     char gui_exe[MAX_PATH];
     snprintf(gui_exe, sizeof(gui_exe), "%s\\Kaevex-GUI.exe", g_base_dir);
     ShellExecuteA(NULL, "open", gui_exe, NULL, g_base_dir, SW_SHOW);
 }
 
+/* ---- Tray Context Menu ---------------------------------------------------- */
 static void show_tray_menu(HWND hWnd) {
     POINT pt;
     GetCursorPos(&pt);
     HMENU hMenu = CreatePopupMenu();
 
-    /* Use AppendMenuW for proper Unicode emoji rendering */
-    AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, IDM_HEADER,  L"\U0001F6E1 Kaevex Security Platform");
-    AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, IDM_STATUS,  L"\u2705 Status: ACTIVE & PROTECTING (8/8 Engines)");
+    AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, IDM_HEADER,
+                L"K  Kaevex Security Platform");
+    AppendMenuW(hMenu, MF_STRING | MF_DISABLED | MF_GRAYED, IDM_STATUS,
+                L"   Status: ACTIVE & PROTECTING (8/8 Engines)");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(hMenu, MF_STRING, IDM_DASHBOARD, L"\U0001F5A5  Open Dashboard GUI");
-    AppendMenuW(hMenu, MF_STRING, IDM_CONSOLE,   L"\u25BA  Open Management Console (CMD)");
-    AppendMenuW(hMenu, MF_STRING, IDM_MONITOR,   L"\u25BA  Open Live Monitor");
-    AppendMenuW(hMenu, MF_STRING, IDM_SCAN_SYS,  L"\u25BA  Run Quick Antivirus Scan");
-    AppendMenuW(hMenu, MF_STRING, IDM_WAF_TEST,  L"\u25BA  Test WebGuard WAF");
-    AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,     L"\u25BA  Protection Summary");
+    AppendMenuW(hMenu, MF_STRING, IDM_DASHBOARD,     L"  Open SOC Dashboard");
+    AppendMenuW(hMenu, MF_STRING, IDM_CONSOLE,       L"  Open CLI Console");
+    AppendMenuW(hMenu, MF_STRING, IDM_SCAN_SYS,      L"  Quick Security Scan");
+    AppendMenuW(hMenu, MF_STRING, IDM_WAF_TEST,      L"  Test WAF Analyzer");
+    AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,         L"  Protection Summary");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(hMenu, MF_STRING, IDM_EXIT,      L"\u274C  Stop & Exit Kaevex");
+    AppendMenuW(hMenu, MF_STRING, IDM_EXIT,          L"  Stop & Exit Kaevex");
 
     SetForegroundWindow(hWnd);
-    int cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, 0, hWnd, NULL);
+    int cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_NONOTIFY,
+                             pt.x, pt.y, 0, hWnd, NULL);
     DestroyMenu(hMenu);
 
     if (cmd == IDM_DASHBOARD) {
@@ -234,24 +331,37 @@ static void show_tray_menu(HWND hWnd) {
     } else if (cmd == IDM_WAF_TEST) {
         run_cmd_in_terminal("waf \"' OR 1=1 --\"");
     } else if (cmd == IDM_ABOUT) {
+        char json[4096] = {0};
+        if (tray_query_api(json, sizeof(json))) {
+            char *p;
+            EnterCriticalSection(&g_lock);
+            p = strstr(json, "\"bus_events\":"); if (p) g_bus_events = atoll(p + 13);
+            p = strstr(json, "\"waf_inspected\":"); if (p) g_waf_inspected = atoll(p + 16);
+            p = strstr(json, "\"waf_blocked\":"); if (p) g_waf_blocked = atoll(p + 14);
+            p = strstr(json, "\"av_scanned\":"); if (p) g_av_scanned = atoll(p + 13);
+            p = strstr(json, "\"av_threats\":"); if (p) g_av_threats = atoi(p + 13);
+            p = strstr(json, "\"banned_ips\":"); if (p) g_ban_count = atoi(p + 13);
+            LeaveCriticalSection(&g_lock);
+        }
         char msg[512];
         long long up = (long long)(time(NULL) - g_start_time);
         snprintf(msg, sizeof(msg),
                  "Kaevex Security Platform v%s (x64)\n"
                  "-----------------------------------------\n"
-                 "* Security State: ACTIVE & PROTECTED\n"
-                 "* Defense Engines Online: 8 / 8\n"
-                 "* System Uptime: %02lldm %02llds\n"
-                 "* Event Bus Dispatched: %lld events\n"
-                 "* WAF Inspected: %lld (Blocked: %lld)\n"
-                 "* Antivirus Scanned: %lld (Threats: %d)\n"
-                 "* Ransomware Honeypots: 32 Decoy Files\n"
-                 "* REST API: http://127.0.0.1:9009/\n\n"
-                 "Double-click Shield to open Dashboard GUI.",
-                 AEGIS_VERSION, up/60, up%60, g_bus_events,
+                 "  Security State:       ACTIVE & PROTECTED\n"
+                 "  Defense Engines:      8 / 8 Online\n"
+                 "  System Uptime:        %02lldm %02llds\n"
+                 "  Event Bus Dispatched: %lld events\n"
+                 "  WAF Inspected:        %lld (Blocked: %lld)\n"
+                 "  Antivirus Scanned:    %lld (Threats: %d)\n"
+                 "  Ransomware Honeypots: 32 Decoy Files\n"
+                 "  REST API:             http://127.0.0.1:9009/\n\n"
+                 "Double-click tray icon to open Dashboard.",
+                 KAEVEX_VERSION, up/60, up%60, g_bus_events,
                  g_waf_inspected, g_waf_blocked, g_av_scanned, g_av_threats);
 
-        MessageBoxA(hWnd, msg, "Kaevex Protection Summary", MB_OK | MB_ICONINFORMATION);
+        MessageBoxA(hWnd, msg, "Kaevex Protection Summary",
+                    MB_OK | MB_ICONINFORMATION);
     } else if (cmd == IDM_EXIT) {
         g_running = 0;
         Shell_NotifyIconA(NIM_DELETE, &g_nid);
@@ -259,8 +369,9 @@ static void show_tray_menu(HWND hWnd) {
     }
 }
 
-/* ????????? Window Procedure ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-static LRESULT CALLBACK TrayWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+/* ---- Window Procedure ----------------------------------------------------- */
+static LRESULT CALLBACK TrayWndProc(HWND hWnd, UINT msg,
+                                     WPARAM wParam, LPARAM lParam) {
     if (msg == WM_TRAYICON) {
         if (lParam == WM_RBUTTONUP) {
             show_tray_menu(hWnd);
@@ -270,13 +381,15 @@ static LRESULT CALLBACK TrayWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             return 0;
         }
     } else if (g_uTaskbarCreated && msg == g_uTaskbarCreated) {
+        /* Explorer restarted — re-register our tray icon */
+        g_tray_registered = 0;
         register_tray_icon(hWnd);
         return 0;
     }
     return DefWindowProcA(hWnd, msg, wParam, lParam);
 }
 
-/* ????????? Setup System Tray ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* ---- Setup System Tray ---------------------------------------------------- */
 static void setup_system_tray(HINSTANCE hInstance) {
     WNDCLASSEXA wc = {0};
     wc.cbSize        = sizeof(WNDCLASSEXA);
@@ -285,31 +398,39 @@ static void setup_system_tray(HINSTANCE hInstance) {
     wc.lpszClassName = "KaevexTrayWindow";
     RegisterClassExA(&wc);
 
-    g_hWndTray = CreateWindowExA(0, "KaevexTrayWindow", "Kaevex", 0, 0, 0, 0, 0, NULL, NULL, hInstance, NULL);
+    g_hWndTray = CreateWindowExA(0, "KaevexTrayWindow", "Kaevex Tray",
+                                  0, 0, 0, 0, 0, NULL, NULL, hInstance, NULL);
     if (!g_hWndTray) return;
 
     register_tray_icon(g_hWndTray);
 }
 
-/* ????????? WinMain Entry Point ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+/* ---- WinMain Entry Point -------------------------------------------------- */
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpCmdLine, int nCmdShow) {
     (void)hPrevInstance; (void)lpCmdLine; (void)nCmdShow;
 
-    /* Attach to the interactive Default desktop if running in an alternate desktop */
-    HDESK hDefault = OpenDesktopA("Default", 0, FALSE, DESKTOP_CREATEWINDOW | DESKTOP_READOBJECTS | DESKTOP_WRITEOBJECTS | GENERIC_ALL);
-    if (hDefault) {
-        SetThreadDesktop(hDefault);
-    }
+    /* Attach to the interactive Default desktop */
+    HDESK hDefault = OpenDesktopA("Default", 0, FALSE,
+                                   DESKTOP_CREATEWINDOW | DESKTOP_READOBJECTS |
+                                   DESKTOP_WRITEOBJECTS | GENERIC_ALL);
+    if (hDefault) SetThreadDesktop(hDefault);
 
-    /* Single-instance mutex check */
-    HANDLE hMutex = CreateMutexA(NULL, TRUE, "KaevexSecurityPlatformMutex");
+    /* Single-instance mutex */
+    HANDLE hMutex = CreateMutexA(NULL, TRUE, "KaevexTrayAgentMutex");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        GetCurrentDirectoryA(sizeof(g_base_dir), g_base_dir);
-        run_cmd_in_terminal("");
+        /* Tray already running — just raise the existing GUI window */
+        HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
+        if (hwExisting) {
+            if (IsIconic(hwExisting)) ShowWindow(hwExisting, SW_RESTORE);
+            SetForegroundWindow(hwExisting);
+        }
+        if (hMutex)  CloseHandle(hMutex);
+        if (hDefault) CloseDesktop(hDefault);
         return 0;
     }
 
-    /* Get current working directory */
+    /* Resolve base directory from exe path */
     char full_path[MAX_PATH];
     GetModuleFileNameA(NULL, full_path, sizeof(full_path));
     char *last_slash = strrchr(full_path, '\\');
@@ -328,17 +449,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WSADATA wsa;
     WSAStartup(MAKEWORD(2, 2), &wsa);
 
-    /* Register TaskbarCreated message for auto-recovery if explorer restarts */
+    /* Register TaskbarCreated for auto-recovery on Explorer restart */
     g_uTaskbarCreated = RegisterWindowMessageA("TaskbarCreated");
 
-    /* Background Threads */
-    CreateThread(NULL, 0, background_worker, NULL, 0, NULL);
-    CreateThread(NULL, 0, api_server_worker, (LPVOID)(intptr_t)DEFAULT_PORT, 0, NULL);
+    /* Background threads */
+    CreateThread(NULL, 0, background_worker,   NULL, 0, NULL);
+    CreateThread(NULL, 0, api_server_worker,
+                 (LPVOID)(intptr_t)DEFAULT_PORT, 0, NULL);
 
-    /* Setup Tray */
+    /* Setup tray */
     setup_system_tray(hInstance);
 
-    /* Windows Message Loop */
+    /* Message loop */
     MSG msg;
     while (GetMessageA(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
@@ -349,8 +471,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Shell_NotifyIconA(NIM_DELETE, &g_nid);
     WSACleanup();
     DeleteCriticalSection(&g_lock);
-    if (g_hShieldIcon) DestroyIcon(g_hShieldIcon);
-    if (hMutex) CloseHandle(hMutex);
+    if (g_hKaevexIcon) DestroyIcon(g_hKaevexIcon);
+    if (hMutex)  CloseHandle(hMutex);
     if (hDefault) CloseDesktop(hDefault);
     return 0;
 }

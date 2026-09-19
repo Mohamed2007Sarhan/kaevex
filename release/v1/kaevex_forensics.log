@@ -76,3 +76,65 @@
 [2026-09-14 18:39:42] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
 [2026-09-14 18:39:43] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
 [2026-09-14 18:39:44] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-16 09:56:27 ===
+[2026-09-16 09:56:27] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-16 09:56:27] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-16 09:56:27] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-16 09:56:27] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-16 09:56:27] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-16 09:56:27] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-16 09:56:27] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-16 09:56:27] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-16 09:56:28] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-09-16 09:56:28] [WARNING ] CVE Agent        Scanned 48 apps & OS build 26200: Found 22 software CVEs + 3 OS CVEs
+[2026-09-16 09:56:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-16 09:56:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-16 09:56:30] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-16 09:56:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-16 09:56:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-16 09:56:34] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-16 09:57:31] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-16 09:57:39] [INFO    ] NetGuard         Analyzed 45 conns: 31 Web/Cloud, 0 Download, 0 Unverified
+[2026-09-16 10:03:56] [INFO    ] Full Team        Autonomous Team monitoring PAUSED
+[2026-09-16 10:03:57] [INFO    ] Full Team        Autonomous Team monitoring ACTIVATED
+[2026-09-16 10:04:08] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-16 10:04:10] [WARNING ] RansomShield     Filesystem monitoring stopped
+[2026-09-16 10:04:11] [INFO    ] RansomShield     Honeypot Integrity Verified: All 6 decoy canaries are intact.
+[2026-09-16 10:11:50] [INFO    ] PacketGuard AV   File Clean
+=== Kaevex Forensics Log - Session started 2026-09-19 03:22:28 ===
+[2026-09-19 03:22:28] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-19 03:22:28] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-19 03:22:28] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-19 03:22:28] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-19 03:22:28] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-19 03:22:28] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-19 03:22:28] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-19 03:22:28] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-19 03:22:28] [WARNING ] NetGuard         Baseline: 73 active conns (39 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-19 03:22:28] [WARNING ] CVE Agent        Scanned 48 apps & OS build 26200: Found 22 software CVEs + 3 OS CVEs
+[2026-09-19 03:22:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 03:22:30] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 03:22:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 03:22:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 03:22:33] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 03:22:34] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 04:22:28] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-19 04:22:34] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+=== Kaevex Forensics Log - Session started 2026-09-19 10:21:54 ===
+[2026-09-19 10:21:54] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-19 10:21:54] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-19 10:21:54] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-19 10:21:54] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-19 10:21:54] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-19 10:21:54] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-19 10:21:54] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-19 10:21:54] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-19 10:21:54] [WARNING ] NetGuard         Baseline: 93 active conns (53 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-19 10:21:54] [WARNING ] CVE Agent        Scanned 48 apps & OS build 26200: Found 22 software CVEs + 3 OS CVEs
+[2026-09-19 10:21:55] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 10:21:56] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 10:21:57] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 10:21:58] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 10:21:59] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-19 10:22:00] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-19 10:22:37] [INFO    ] Full Team        Autonomous Team monitoring ACTIVATED
