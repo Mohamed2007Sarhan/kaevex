@@ -43,5 +43,617 @@
     "score": 100,
     "is_safe": 0,
     "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\AppVClient.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "e42ce63eb96b207d3134b7015b6ccd7cccccf69012a776c7ff016bef78d3e6fd",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\AtBroker.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "359aa266f48327ec9a8d087f7b77b10bd6ffde9465081b450972199cafde0619",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\audiodg.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "3dd24fe6faf0b56f99d5b00f24687b5f3b3e76e15b219e23f0963114a0dce9a5",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\bdechangepin.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "98555fac2e5fb61bd5b36002a57ee3b1c3775282baa48de8cfe960c94bbc4b4e",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\bitsadmin.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "90c8bdc59efe9224e15c53329988aa3d292a73a8a16536102747e4096084dd71",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\browserexport.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "579bf9cfc3beb229bfd4dfd1e9e0a203c0aee74dae637fd7811b9c803df1cbf8",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\certreq.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "685ad158f508a0b4bcc4db4de77a7be0a70ddca705ebebcab051f66831b957ba",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\charmap.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "af7866199687521bf0179212a9fd788669c158516c00012ea98e04697b38ed35",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\cmdkey.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "4125cd7966810cdfafb18157c276a88e6ac443c7c98d42593c70247045815028",
+    "score": 80,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\CompatTelRunner.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "bb45ef04e6ae77faeaf4e93da82d4235e56624b238f0f02fe4d75ce20d9101e4",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\consent.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "11ba7d9fb6276ac5d770683367b5773a9c25a0a17e1f93b5787521d16a8b5af0",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\credwiz.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "5a2099efad24c038dc1248582d6c3d53c23979471bf0de2d7edf4fa0c9bec2f7",
+    "score": 95,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\curl.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "73d24149ff289afc49ec41f08918ef9faa727d39ad993e929757dc2ddafab805",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\CustomShellHost.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "2c21c4db435a6bfa26d5f4ef4bfe16711c2395b9163a261b6ea9dfbfc1b652d7",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\DataExchangeHost.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "9235b19ef932c5317b81b00ea72ca1fb77084a34150fe2dc82695e5f2ff838ce",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\DeviceCensus.exe",
+    "name": "Heuristic.ProcHollow",
+    "cls": "AntivirusCore",
+    "sha256": "899f432793097a6db2f2f660d2221bd9185d8c009d8a1d5a203345211d191027",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\dispdiag.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "005d8b80ed17c1b374ad8d4dd121cd240506da55cae4977a8b9eae42436034a3",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\dmcertinst.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "ba1dfa783a122bb33a4eb7547fad1a26da3094a6a92a7df04e4cd06e078d5f73",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\drvinst.exe",
+    "name": "Heuristic.ProcHollow",
+    "cls": "AntivirusCore",
+    "sha256": "b0591bc3c60a0c071780c73c44d2bd7325e398cc12e88c1c5890fe5cf199f60d",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\DWWIN.EXE",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "db687bcd113efcae0019b62c5a89140027f8068c9e522c9e588b6d0220c6103a",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\Eap3Host.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "314e0a7e8a075128a2e1f586788ddaa199bcdbc4d0be7749c20b826fcc906650",
+    "score": 95,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\EhStorAuthn.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "15e47a9ccd644903cf9cf4c38017949107e0c1c20ae15a29db84ee53a87aced8",
+    "score": 75,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\ETDService.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "a34f5161819a34494e94af8f4410a6cb516fa840144a87fd408aabb7bfb98e69",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\fixmapi.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "b31b17bfd1a868949b4424c88bf471711708f4fca6f891512fd0ab6afc62419b",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\GenValObj.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "15635392c32a58b845c374e426f4b87b0944a69f15e4a7bf0209e2e2d175c945",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\IESettingSync.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "4c0b12c8194647f802cd4c580e85ef50a283f12cc1b99c4ae44eaebb65fc34af",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\IsoSessionCli.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "8eae18d93cadaa2e7031a669031e09372c78b906d19ef3590a478008b7ee1908",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\Magnify.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "feca4e286b4e9571ed6dc5256a9b1424378022db279ea5b672498da45d09cda3",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\mavinject.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "e81b68ebdc95f35d767c31781da06c1b5836fd7498a1c59b20ca76b2e3eb7c73",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MDMAppInstaller.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "3c239dd553b24d8a1b94ddd303edcd3d11164e39fa427111e5a587c2b7e56218",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MicrosoftEdgeBCHost.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "4bb852d856f93e6895639220ffe698c5fe88f95703b4a6af1b66d83692143791",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MicrosoftEdgeCP.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "4bb852d856f93e6895639220ffe698c5fe88f95703b4a6af1b66d83692143791",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MicrosoftEdgeDevTools.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "4bb852d856f93e6895639220ffe698c5fe88f95703b4a6af1b66d83692143791",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MicrosoftEdgeSH.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "AntivirusCore",
+    "sha256": "d3537c3456525582a77b23100d3769fd26ffd180d0e19ad8c5d88fe74e8fdd41",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MidiSrv.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "d8de059c6265d4e8803de694dff436c25f6763ddcdc9dfd2c49947fd3b831ca9",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MpSigStub.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "071b0d3a08503a8b88aeeda1d20f371a563377028f6e252dc66cce60ab8f823e",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\MRT.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "2269dfe0ec1a8e6798ba0ce5a767a354ce3a83a19c061d4c1e888e1e8ef46602",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\msconfig.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "0abd30c5a4a6f17c9f1f718da42435ed05927a3c0ee5430a8ff337027f875dfd",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\msra.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "03d739b71359808d06c7580b584c9a5cd20454853acdf72e97c9c398a1cb6615",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\mstsc.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "c2aba485525699e38d8e6eae2f586dffa6efd01e68907a06c5c92a0a8def527f",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\Narrator.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "94b8653ccafe8b6d18d678c10a9fc1e7734400806831e260e96027faed0b9245",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\NDKPerfCmd.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "2c4aee4b87097f888222ef81e3493bca3618a4ef3fe5f74d52b263f388063a2b",
+    "score": 95,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\NDKPing.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "5045e1efbc5c195fe53ca96c9c8eb43135d3c03e8baa822572cfc74c4282c47b",
+    "score": 95,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\netiougc.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "fda1c3af2d7f56ecdb781219922be2614ded110486fdcfc1d69044d5efc82227",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\ntoskrnl.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "439e815f66f940933c83b7465d9c08d5d49bbe352746ef4f5e9c0137cfb499c5",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\nvdebugdump.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "7e9cbd8cf08060b7e602b351f7fc27afc78b60656be35cf491ed1468471f6a1f",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\nvidia-smi.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "952f1b6b5a43c054a43e3e280ace8a8ef22303766639a250fa1403c9c89a2114",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\pcaui.exe",
+    "name": "Heuristic.ProcHollow",
+    "cls": "AntivirusCore",
+    "sha256": "9a4c9bb082bc94eda33419f5b210bd9bc48cdea3f1e81598c66af27803efb16a",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\PktMon.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "15746e237bec2ceb95f225ab9ab5b6a3bab042b72fc6c5000e0a18d3cb28553f",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\rdpinput.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "2cfd14221e10ccc2a958968d144912092fa8ab41e7dd62cec555557ea340218c",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\rdpshell.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "717e4cf68f2d98d23a6b296f861d5c887ccb42afd971d9c661084ddc02c73549",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\rdrleakdiag.exe",
+    "name": "Heuristic.NtInject",
+    "cls": "AntivirusCore",
+    "sha256": "892b09263e622b1f4f3133e76959fc50ffafe2ab8c9c1f972484f6bd4f697efe",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\ReFsDedupSvc.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "6aca62a9327f974a06785ddd1b60a2a393d5faff997e41e999a237fb0c740583",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\rstrui.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "a78cad16f2bddb08995079139ec50e155297d571e3408802c0d15f42eb75dc33",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\sc.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "a452bfcb6000d03942ddfaddcda5a7eb121447ed99b1ba090446b4a989f1f7ae",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\sdbinst.exe",
+    "name": "Heuristic.ProcHollow",
+    "cls": "AntivirusCore",
+    "sha256": "8f67cbbdb8250ceda1e5db21df87ad870576229b8fd729e80f9092eb578b6915",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\sdchange.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "3a23c3679583725c047302ed850af5efe6bd5483fdab6cbc05f30ffa2bec3a92",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\SearchIndexer.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "4bcb53929a984ae8bc3e3be7a755059fcdbf92c882b980ba6b92db2d488d4f14",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\SearchProtocolHost.exe",
+    "name": "Heuristic.ProcInject",
+    "cls": "AntivirusCore",
+    "sha256": "42a58ba87739897b1ad2fc0ca56bab558b07a446372dbab437ff1e838d12d847",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\SecurityHealthSystray.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "129cc582d72581f1459c7a9ac8b020dcd3642fae6a69acc26c680190494970db",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\SensorDataService.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "75475837d811085ea059e096e60cb2b4c0160481fc9cf6878afd68cf07672bcb",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\services.exe",
+    "name": "Heuristic.ProcHollow",
+    "cls": "AntivirusCore",
+    "sha256": "ea75ad4d7c72a25d7284311e33b8f31a89aa35a779e1ad9b2c81af4fde45af5b",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\ShellAppRuntime.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "AntivirusCore",
+    "sha256": "98499ffcf773580da820f8ad7a5b756da804f6f91c1447c3b47af900f828cce9",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\smartscreen.exe",
+    "name": "Heuristic.DPAPI",
+    "cls": "AntivirusCore",
+    "sha256": "11f0bbe2201d0340a8bf5aeb7531b2d59fbf8cf091bdc3ed3fa5b985a0c58d0f",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\smss.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "f87219d8e2b4a890dc81c52a089ebd9eac660d7ea7c3e0c13082e0c6a3137e3c",
+    "score": 80,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\SndVol.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "0f88c0d80dc3a2465830de1733d9b12c570a99eca3035074cc65db938eb66bd5",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\srdelayed.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "ac7acd21c7500e2bf5af86d4850e6384bf1ad46de565dd748d5f1b052c79a4c5",
+    "score": 80,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\sudo.exe",
+    "name": "Suspicious.Generic",
+    "cls": "AntivirusCore",
+    "sha256": "91739478be752086cd1a0c3c88ca3d84397e4decad1338f1b72e200f0e44614d",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
   }
 ]
