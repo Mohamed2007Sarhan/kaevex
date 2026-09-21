@@ -51,6 +51,7 @@
 #endif
 
 /* --- Sub-engines ---------------------------------------------------------- */
+#include "supabase_engine.h"
 #include "sbx_engine.h"
 #include "fw_engine.h"
 #include "upd_engine.h"
@@ -1139,6 +1140,8 @@ static void add_alert(const char *eng,const char *sev,const char *msg){
         int c=(int)SendMessageA(hAlList,LB_GETCOUNT,0,0);
         if(c>AL_MAX) SendMessageA(hAlList,LB_DELETESTRING,c-1,0);
     }
+    sb_queue_security_alert(eng, sev, msg, "LocalHost", "", "ATT&CK:T1059",
+                            (strcmp(sev,"CRITICAL")==0 || strcmp(sev,"HIGH")==0));
 }
 
 /* --- GDI Drawing Helpers -------------------------------------------------- */
@@ -1496,18 +1499,44 @@ static void PaintHdr(HDC dc,int W){
         DrawPillBadge(dc,rx+56,(HDR_H-28)/2,22,14,C_ACCENT_PINK,C_TEXT,alNum,fSm);
     }
 
-    /* User avatar chip */
-    int avX=rx+80;
-    char winUser[64]="Admin";
-    DWORD wuSz=sizeof(winUser);
-    if(!GetUserNameA(winUser,&wuSz)||!winUser[0]) strcpy(winUser,"SecOps");
-    char initStr[2]={(char)toupper((unsigned char)winUser[0]),'\0'};
-    char nameDisp[80];
-    snprintf(nameDisp,sizeof(nameDisp),"%s",winUser);
+    /* User Profile / Supabase Login Button Chip */
+    int avX = rx + 75;
+    int btnW = 190;
+    int btnH = 34;
+    int btnY = (HDR_H - btnH) / 2;
 
-    DrawCircleBadge(dc,avX+14,HDR_H/2,14,RGB(45,55,75),C_TEXT,initStr,fSm);
-    Txt(dc,nameDisp,    avX+34,(HDR_H-34)/2,   140,18,C_TEXT,fSm,DT_LEFT|DT_SINGLELINE);
-    Txt(dc,"SOC Enterprise",avX+34,(HDR_H-34)/2+16,140,16,C_DIM, fSm,DT_LEFT|DT_SINGLELINE);
+    if (g_sbSession.isLoggedIn && g_sbSession.email[0]) {
+        /* LOGGED IN: Authenticated SOC Operator Chip */
+        char initStr[2] = {'S', '\0'};
+        char nameDisp[80] = {0};
+        if (g_sbSession.fullName[0]) {
+            snprintf(nameDisp, sizeof(nameDisp), "%s", g_sbSession.fullName);
+            initStr[0] = (char)toupper((unsigned char)g_sbSession.fullName[0]);
+        } else {
+            snprintf(nameDisp, sizeof(nameDisp), "%s", g_sbSession.email);
+            initStr[0] = (char)toupper((unsigned char)g_sbSession.email[0]);
+        }
+
+        /* Card background with emerald border */
+        DrawRoundRectPanel(dc, avX, btnY, btnW, btnH, 8, RGB(16, 24, 34), RGB(16, 185, 129));
+
+        /* Circle Badge */
+        DrawCircleBadge(dc, avX + 17, HDR_H/2, 12, RGB(16, 110, 60), C_TEXT, initStr, fSm);
+
+        /* Texts */
+        Txt(dc, nameDisp, avX + 36, (HDR_H-34)/2, 145, 18, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
+        Txt(dc, "● Supabase Online", avX + 36, (HDR_H-34)/2+16, 145, 16, RGB(16, 185, 129), fSm, DT_LEFT|DT_SINGLELINE);
+    } else {
+        /* NOT LOGGED IN: Prominent Glowing [ 🛡️ Login / Sign Up ] Button */
+        DrawRoundRectPanel(dc, avX, btnY, btnW, btnH, 8, RGB(24, 30, 44), C_ACCENT_PINK);
+
+        /* Icon Badge */
+        DrawCircleBadge(dc, avX + 17, HDR_H/2, 12, C_ACCENT_PINK, C_TEXT, "K", fSm);
+
+        /* Text: Login / Sign Up */
+        Txt(dc, "Login / Sign Up", avX + 36, (HDR_H-34)/2, 145, 18, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
+        Txt(dc, "Supabase Cloud", avX + 36, (HDR_H-34)/2+16, 145, 16, C_ACCENT_PINK, fSm, DT_LEFT|DT_SINGLELINE);
+    }
 }
 
 
@@ -3279,6 +3308,9 @@ static DWORD WINAPI AiWorkerThread(LPVOID lpParam) {
             SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"");
             /* Speak first sentence */
             ai_speak_text(firstLine);
+            sb_sync_ai_conversation(task->query, responseContent,
+                                    g_aiProvider == 0 ? "deepseek-ai/DeepSeek-V4-Pro-0813" : "llama-3.3-70b-versatile",
+                                    0);
         } else {
             /* Live local SOC engine fallback with real system telemetry */
             char lo[512] = {0};
@@ -4280,6 +4312,398 @@ static void PromptFirstRunWizard(HWND hwnd) {
     ShowFirstRunCyberWizard(hwnd);
 }
 
+/* ===========================================================================
+ * SUPABASE CLOUD AUTHENTICATION & PROFILE DIALOG
+ * Realtime Login, Sign-Up, Hardware/Network Telemetry Sync & Remote Management
+ * =========================================================================== */
+#define ID_SB_TAB_IN     7001
+#define ID_SB_TAB_UP     7002
+#define ID_SB_NAME_LBL   7003
+#define ID_SB_NAME_EDIT  7004
+#define ID_SB_EMAIL_LBL  7005
+#define ID_SB_EMAIL_EDIT 7006
+#define ID_SB_PASS_LBL   7007
+#define ID_SB_PASS_EDIT  7008
+#define ID_SB_PASS2_LBL  7009
+#define ID_SB_PASS2_EDIT 7010
+#define ID_SB_SUBMIT     7011
+#define ID_SB_STATUS     7012
+#define ID_SB_SYNC_NOW   7013
+#define ID_SB_LOGOUT     7014
+#define ID_SB_CLOSE      7015
+#define ID_SB_INFO_TEXT  7016
+
+static int  s_sbMode = 0; /* 0 = Sign In, 1 = Sign Up */
+static HWND s_hSbDlg = NULL;
+static HWND s_hSbNameLbl = NULL, s_hSbNameEdit = NULL;
+static HWND s_hSbEmailLbl = NULL, s_hSbEmailEdit = NULL;
+static HWND s_hSbPassLbl = NULL, s_hSbPassEdit = NULL;
+static HWND s_hSbPass2Lbl = NULL, s_hSbPass2Edit = NULL;
+static HWND s_hSbSubmit = NULL, s_hSbStatus = NULL;
+static HWND s_hSbSyncNow = NULL, s_hSbLogout = NULL, s_hSbClose = NULL;
+static HWND s_hSbInfoText = NULL;
+static HWND s_hSbTabIn = NULL, s_hSbTabUp = NULL;
+
+static void HandleRemoteSupabaseAction(const char *action, const char *target) {
+    if (!action) return;
+    char msg[256];
+    if (_stricmp(action, "EMERGENCY_LOCKDOWN") == 0) {
+        fw_emergency_lockdown(TRUE);
+        g_lockdown = 1;
+        add_alert("SupabaseCloud", "CRITICAL", "Remote Emergency Lockdown ENFORCED from Mobile App");
+        if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
+    } else if (_stricmp(action, "DISENGAGE_LOCKDOWN") == 0) {
+        fw_emergency_lockdown(FALSE);
+        g_lockdown = 0;
+        add_alert("SupabaseCloud", "INFO", "Remote Lockdown DISENGAGED from Mobile App");
+        if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
+    } else if (_stricmp(action, "KILL_SANDBOX") == 0) {
+        sbx_kill();
+        add_alert("SupabaseCloud", "WARNING", "Remote SmartSandbox Terminated from Mobile App");
+    } else if (_stricmp(action, "DEEP_SCAN") == 0) {
+        add_alert("SupabaseCloud", "INFO", "Remote Deep Security Scan Triggered from Mobile App");
+        if (g_hwnd) PostMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDA_SCANALL, 0), 0);
+    } else if (_stricmp(action, "TERMINATE_PROCESS") == 0) {
+        snprintf(msg, sizeof(msg), "Remote Process Kill: %s", target);
+        add_alert("SupabaseCloud", "WARNING", msg);
+        if (target && target[0]) {
+            char cmd[256];
+            snprintf(cmd, sizeof(cmd), "taskkill /F /IM \"%s\" >nul 2>&1", target);
+            system(cmd);
+        }
+    }
+}
+
+static void SupabaseAuthUpdateVisibility(HWND hw) {
+    BOOL logged = g_sbSession.isLoggedIn;
+    if (logged) {
+        if (s_hSbTabIn) ShowWindow(s_hSbTabIn, SW_HIDE);
+        if (s_hSbTabUp) ShowWindow(s_hSbTabUp, SW_HIDE);
+        if (s_hSbNameLbl) ShowWindow(s_hSbNameLbl, SW_HIDE);
+        if (s_hSbNameEdit) ShowWindow(s_hSbNameEdit, SW_HIDE);
+        if (s_hSbEmailLbl) ShowWindow(s_hSbEmailLbl, SW_HIDE);
+        if (s_hSbEmailEdit) ShowWindow(s_hSbEmailEdit, SW_HIDE);
+        if (s_hSbPassLbl) ShowWindow(s_hSbPassLbl, SW_HIDE);
+        if (s_hSbPassEdit) ShowWindow(s_hSbPassEdit, SW_HIDE);
+        if (s_hSbPass2Lbl) ShowWindow(s_hSbPass2Lbl, SW_HIDE);
+        if (s_hSbPass2Edit) ShowWindow(s_hSbPass2Edit, SW_HIDE);
+        if (s_hSbSubmit) ShowWindow(s_hSbSubmit, SW_HIDE);
+
+        if (s_hSbInfoText) {
+            char info[1024];
+            char hostName[64] = {0}; DWORD hSz = sizeof(hostName);
+            GetComputerNameA(hostName, &hSz);
+            char osVer[128] = {0}; sb_get_real_os_version(osVer, sizeof(osVer));
+            char realIp[64] = {0}; sb_get_real_ip(realIp, sizeof(realIp));
+
+            snprintf(info, sizeof(info),
+                "CURRENT SESSION STATUS: AUTHENTICATED (ONLINE)\r\n\r\n"
+                "* User Email: %s\r\n"
+                "* Full Name: %s\r\n"
+                "* User UUID: %s\r\n"
+                "* Clearance: Tier-3 Enterprise SOC Officer\r\n"
+                "* Cloud Endpoint: https://lqvijkatveozunxzlaid.supabase.co\r\n"
+                "* Local Host: %s\r\n"
+                "* OS Build: %s\r\n"
+                "* Real IPv4: %s\r\n"
+                "* Synced Alerts: %d  |  Synced CVEs: %d  |  Actions: %d\r\n"
+                "* Session State: Realtime Cloud Bi-directional Sync Active",
+                g_sbSession.email,
+                g_sbSession.fullName[0] ? g_sbSession.fullName : "Enterprise Operator",
+                g_sbSession.userId[0] ? g_sbSession.userId : "auth-jwt-active",
+                hostName, osVer, realIp,
+                g_sbSession.totalSyncedAlerts,
+                g_sbSession.totalSyncedCves,
+                g_sbSession.totalSyncedActions);
+
+            SetWindowTextA(s_hSbInfoText, info);
+            ShowWindow(s_hSbInfoText, SW_SHOW);
+        }
+        if (s_hSbSyncNow) ShowWindow(s_hSbSyncNow, SW_SHOW);
+        if (s_hSbLogout) ShowWindow(s_hSbLogout, SW_SHOW);
+        if (s_hSbClose) ShowWindow(s_hSbClose, SW_SHOW);
+    } else {
+        if (s_hSbInfoText) ShowWindow(s_hSbInfoText, SW_HIDE);
+        if (s_hSbSyncNow) ShowWindow(s_hSbSyncNow, SW_HIDE);
+        if (s_hSbLogout) ShowWindow(s_hSbLogout, SW_HIDE);
+
+        if (s_hSbTabIn) ShowWindow(s_hSbTabIn, SW_SHOW);
+        if (s_hSbTabUp) ShowWindow(s_hSbTabUp, SW_SHOW);
+
+        if (s_sbMode == 0) {
+            /* Sign In mode */
+            if (s_hSbNameLbl) ShowWindow(s_hSbNameLbl, SW_HIDE);
+            if (s_hSbNameEdit) ShowWindow(s_hSbNameEdit, SW_HIDE);
+            if (s_hSbPass2Lbl) ShowWindow(s_hSbPass2Lbl, SW_HIDE);
+            if (s_hSbPass2Edit) ShowWindow(s_hSbPass2Edit, SW_HIDE);
+
+            if (s_hSbEmailLbl) SetWindowPos(s_hSbEmailLbl, NULL, 40, 110, 440, 20, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbEmailEdit) SetWindowPos(s_hSbEmailEdit, NULL, 40, 132, 440, 26, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPassLbl) SetWindowPos(s_hSbPassLbl, NULL, 40, 172, 440, 20, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPassEdit) SetWindowPos(s_hSbPassEdit, NULL, 40, 194, 440, 26, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbSubmit) {
+                SetWindowPos(s_hSbSubmit, NULL, 40, 240, 440, 36, SWP_NOZORDER|SWP_SHOWWINDOW);
+                SetWindowTextA(s_hSbSubmit, "تسجيل الدخول إلى سحابة Supabase (Sign In)");
+            }
+            if (s_hSbStatus) SetWindowPos(s_hSbStatus, NULL, 40, 290, 440, 45, SWP_NOZORDER|SWP_SHOWWINDOW);
+        } else {
+            /* Sign Up mode */
+            if (s_hSbNameLbl) SetWindowPos(s_hSbNameLbl, NULL, 40, 105, 440, 18, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbNameEdit) SetWindowPos(s_hSbNameEdit, NULL, 40, 125, 440, 24, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbEmailLbl) SetWindowPos(s_hSbEmailLbl, NULL, 40, 155, 440, 18, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbEmailEdit) SetWindowPos(s_hSbEmailEdit, NULL, 40, 175, 440, 24, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPassLbl) SetWindowPos(s_hSbPassLbl, NULL, 40, 205, 440, 18, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPassEdit) SetWindowPos(s_hSbPassEdit, NULL, 40, 225, 440, 24, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPass2Lbl) SetWindowPos(s_hSbPass2Lbl, NULL, 40, 255, 440, 18, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbPass2Edit) SetWindowPos(s_hSbPass2Edit, NULL, 40, 275, 440, 24, SWP_NOZORDER|SWP_SHOWWINDOW);
+            if (s_hSbSubmit) {
+                SetWindowPos(s_hSbSubmit, NULL, 40, 310, 440, 34, SWP_NOZORDER|SWP_SHOWWINDOW);
+                SetWindowTextA(s_hSbSubmit, "إنشاء حساب جديد في سحابة Supabase (Register)");
+            }
+            if (s_hSbStatus) SetWindowPos(s_hSbStatus, NULL, 40, 350, 440, 45, SWP_NOZORDER|SWP_SHOWWINDOW);
+        }
+        if (s_hSbClose) SetWindowPos(s_hSbClose, NULL, 180, 410, 160, 32, SWP_NOZORDER|SWP_SHOWWINDOW);
+    }
+    InvalidateRect(hw, NULL, TRUE);
+}
+
+static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+    case WM_CREATE: {
+        s_hSbDlg = hw;
+        HINSTANCE hi = GetModuleHandleA(NULL);
+
+        s_hSbTabIn = CreateWindowExA(0, "BUTTON", "1. تسجيل الدخول (Sign In)",
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 40, 75, 215, 28, hw, (HMENU)(UINT_PTR)ID_SB_TAB_IN, hi, NULL);
+        s_hSbTabUp = CreateWindowExA(0, "BUTTON", "2. إنشاء حساب جديد (Register)",
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 265, 75, 215, 28, hw, (HMENU)(UINT_PTR)ID_SB_TAB_UP, hi, NULL);
+
+        s_hSbNameLbl = CreateWindowExA(0, "STATIC", "الاسم بالكامل (Full Name):",
+            WS_CHILD, 40, 105, 440, 18, hw, (HMENU)(UINT_PTR)ID_SB_NAME_LBL, hi, NULL);
+        s_hSbNameEdit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | ES_AUTOHSCROLL, 40, 125, 440, 24, hw, (HMENU)(UINT_PTR)ID_SB_NAME_EDIT, hi, NULL);
+
+        s_hSbEmailLbl = CreateWindowExA(0, "STATIC", "البريد الإلكتروني (Email Address):",
+            WS_CHILD | WS_VISIBLE, 40, 110, 440, 18, hw, (HMENU)(UINT_PTR)ID_SB_EMAIL_LBL, hi, NULL);
+        s_hSbEmailEdit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", g_sbSession.email[0] ? g_sbSession.email : "",
+            WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 40, 132, 440, 26, hw, (HMENU)(UINT_PTR)ID_SB_EMAIL_EDIT, hi, NULL);
+
+        s_hSbPassLbl = CreateWindowExA(0, "STATIC", "كلمة المرور (Password):",
+            WS_CHILD | WS_VISIBLE, 40, 172, 440, 18, hw, (HMENU)(UINT_PTR)ID_SB_PASS_LBL, hi, NULL);
+        s_hSbPassEdit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | WS_VISIBLE | ES_PASSWORD | ES_AUTOHSCROLL, 40, 194, 440, 26, hw, (HMENU)(UINT_PTR)ID_SB_PASS_EDIT, hi, NULL);
+
+        s_hSbPass2Lbl = CreateWindowExA(0, "STATIC", "تأكيد كلمة المرور (Confirm Password):",
+            WS_CHILD, 40, 255, 440, 18, hw, (HMENU)(UINT_PTR)ID_SB_PASS2_LBL, hi, NULL);
+        s_hSbPass2Edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | ES_PASSWORD | ES_AUTOHSCROLL, 40, 275, 440, 24, hw, (HMENU)(UINT_PTR)ID_SB_PASS2_EDIT, hi, NULL);
+
+        s_hSbSubmit = CreateWindowExA(0, "BUTTON", "تسجيل الدخول إلى سحابة Supabase (Sign In)",
+            WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 40, 240, 440, 36, hw, (HMENU)(UINT_PTR)ID_SB_SUBMIT, hi, NULL);
+
+        s_hSbStatus = CreateWindowExA(0, "STATIC", "",
+            WS_CHILD | WS_VISIBLE | SS_LEFT, 40, 290, 440, 45, hw, (HMENU)(UINT_PTR)ID_SB_STATUS, hi, NULL);
+
+        s_hSbInfoText = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | ES_MULTILINE | ES_READONLY | WS_VSCROLL, 30, 80, 460, 230, hw, (HMENU)(UINT_PTR)ID_SB_INFO_TEXT, hi, NULL);
+
+        s_hSbSyncNow = CreateWindowExA(0, "BUTTON", "🔄 مزامنة بيانات النظام الحقيقية الآن (Sync Full Telemetry)",
+            WS_CHILD | BS_PUSHBUTTON, 40, 325, 440, 34, hw, (HMENU)(UINT_PTR)ID_SB_SYNC_NOW, hi, NULL);
+
+        s_hSbLogout = CreateWindowExA(0, "BUTTON", "🚪 تسجيل الخروج من السحابة (Sign Out)",
+            WS_CHILD | BS_PUSHBUTTON, 40, 368, 215, 32, hw, (HMENU)(UINT_PTR)ID_SB_LOGOUT, hi, NULL);
+
+        s_hSbClose = CreateWindowExA(0, "BUTTON", "إغلاق (Close)",
+            WS_CHILD | BS_PUSHBUTTON, 265, 368, 215, 32, hw, (HMENU)(UINT_PTR)ID_SB_CLOSE, hi, NULL);
+
+        SupabaseAuthUpdateVisibility(hw);
+        return 0;
+    }
+
+    case WM_COMMAND: {
+        int id = LOWORD(wp);
+        if (id == ID_SB_TAB_IN) {
+            s_sbMode = 0;
+            SetWindowTextA(s_hSbStatus, "");
+            SupabaseAuthUpdateVisibility(hw);
+        } else if (id == ID_SB_TAB_UP) {
+            s_sbMode = 1;
+            SetWindowTextA(s_hSbStatus, "");
+            SupabaseAuthUpdateVisibility(hw);
+        } else if (id == ID_SB_SUBMIT) {
+            if (s_sbMode == 0) {
+                char email[128] = {0}, pass[128] = {0};
+                GetWindowTextA(s_hSbEmailEdit, email, sizeof(email));
+                GetWindowTextA(s_hSbPassEdit, pass, sizeof(pass));
+                if (!email[0] || !pass[0]) {
+                    SetWindowTextA(s_hSbStatus, "Error: Please enter both email and password.");
+                    return 0;
+                }
+                SetWindowTextA(s_hSbStatus, "Authenticating with Supabase Cloud...");
+                UpdateWindow(s_hSbStatus);
+
+                char outMsg[256] = {0};
+                BOOL ok = sb_auth_login(email, pass, outMsg, sizeof(outMsg));
+                SetWindowTextA(s_hSbStatus, outMsg);
+                if (ok) {
+                    sb_trigger_full_sync();
+                    SupabaseAuthUpdateVisibility(hw);
+                    if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
+                }
+            } else {
+                char name[128] = {0}, email[128] = {0}, pass[128] = {0}, pass2[128] = {0};
+                GetWindowTextA(s_hSbNameEdit, name, sizeof(name));
+                GetWindowTextA(s_hSbEmailEdit, email, sizeof(email));
+                GetWindowTextA(s_hSbPassEdit, pass, sizeof(pass));
+                GetWindowTextA(s_hSbPass2Edit, pass2, sizeof(pass2));
+                if (!email[0] || !pass[0]) {
+                    SetWindowTextA(s_hSbStatus, "Error: Please provide email and password.");
+                    return 0;
+                }
+                if (strcmp(pass, pass2) != 0) {
+                    SetWindowTextA(s_hSbStatus, "Error: Passwords do not match. Please verify.");
+                    return 0;
+                }
+                SetWindowTextA(s_hSbStatus, "Registering new account in Supabase...");
+                UpdateWindow(s_hSbStatus);
+
+                char outMsg[256] = {0};
+                BOOL ok = sb_auth_signup(email, pass, name, outMsg, sizeof(outMsg));
+                SetWindowTextA(s_hSbStatus, outMsg);
+                if (ok) {
+                    s_sbMode = 0;
+                    SupabaseAuthUpdateVisibility(hw);
+                }
+            }
+        } else if (id == ID_SB_SYNC_NOW) {
+            SetWindowTextA(s_hSbStatus, "Reading real OS kernel, network sockets & memory telemetry...");
+            UpdateWindow(s_hSbStatus);
+            sb_trigger_full_sync();
+            SetWindowTextA(s_hSbStatus, "Real hardware & network telemetry pushed to Supabase Cloud!");
+            SupabaseAuthUpdateVisibility(hw);
+            if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
+        } else if (id == ID_SB_LOGOUT) {
+            sb_clear_session();
+            SetWindowTextA(s_hSbStatus, "Signed out successfully.");
+            SupabaseAuthUpdateVisibility(hw);
+            if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
+        } else if (id == ID_SB_CLOSE || id == IDCANCEL) {
+            DestroyWindow(hw);
+        }
+        return 0;
+    }
+
+    case WM_CTLCOLORSTATIC: {
+        HDC hdc = (HDC)wp;
+        HWND hCtrl = (HWND)lp;
+        if (hCtrl == s_hSbStatus) {
+            SetTextColor(hdc, RGB(52, 211, 153));
+        } else {
+            SetTextColor(hdc, RGB(220, 230, 245));
+        }
+        SetBkColor(hdc, RGB(16, 20, 29));
+        static HBRUSH s_hStaticBr = NULL;
+        if (!s_hStaticBr) s_hStaticBr = CreateSolidBrush(RGB(16, 20, 29));
+        return (LRESULT)s_hStaticBr;
+    }
+
+    case WM_CTLCOLOREDIT: {
+        HDC hdc = (HDC)wp;
+        SetTextColor(hdc, RGB(245, 248, 255));
+        SetBkColor(hdc, RGB(24, 30, 42));
+        static HBRUSH s_hEdBr = NULL;
+        if (!s_hEdBr) s_hEdBr = CreateSolidBrush(RGB(24, 30, 42));
+        return (LRESULT)s_hEdBr;
+    }
+
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC dc = BeginPaint(hw, &ps);
+        RECT cr; GetClientRect(hw, &cr);
+        HBRUSH bg = CreateSolidBrush(RGB(16, 20, 29));
+        FillRect(dc, &cr, bg);
+        DeleteObject(bg);
+
+        HPEN p = CreatePen(PS_SOLID, 2, RGB(255, 51, 102));
+        HPEN op = (HPEN)SelectObject(dc, p);
+        MoveToEx(dc, 0, 0, NULL); LineTo(dc, cr.right, 0);
+        SelectObject(dc, op); DeleteObject(p);
+
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, RGB(245, 248, 255));
+        SelectObject(dc, fHdr ? fHdr : GetStockObject(DEFAULT_GUI_FONT));
+        RECT hr = {40, 16, cr.right - 40, 42};
+        DrawTextA(dc, "KAEVEX CLOUD SOC IDENTITY", -1, &hr, DT_LEFT|DT_SINGLELINE);
+
+        SetTextColor(dc, RGB(130, 140, 160));
+        SelectObject(dc, fSm ? fSm : GetStockObject(DEFAULT_GUI_FONT));
+        RECT subR = {40, 44, cr.right - 40, 62};
+        DrawTextA(dc, "Realtime Supabase Security Synchronization & Fleet Management", -1, &subR, DT_LEFT|DT_SINGLELINE);
+
+        HPEN pDiv = CreatePen(PS_SOLID, 1, RGB(35, 45, 62));
+        HPEN op2 = (HPEN)SelectObject(dc, pDiv);
+        MoveToEx(dc, 40, 68, NULL); LineTo(dc, cr.right - 40, 68);
+        SelectObject(dc, op2); DeleteObject(pDiv);
+
+        EndPaint(hw, &ps);
+        return 0;
+    }
+
+    case WM_CLOSE:
+        DestroyWindow(hw);
+        return 0;
+
+    case WM_DESTROY:
+        s_hSbDlg = NULL;
+        return 0;
+    }
+    return DefWindowProcA(hw, msg, wp, lp);
+}
+
+static void ShowSupabaseAccountDialog(HWND hwndParent) {
+    WNDCLASSEXA wc = {0};
+    wc.cbSize = sizeof(wc);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = SupabaseAuthWndProc;
+    wc.hInstance = GetModuleHandleA(NULL);
+    wc.hCursor = LoadCursorA(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.lpszClassName = "KaevexSupabaseAuthClass";
+    RegisterClassExA(&wc);
+
+    int scrW = GetSystemMetrics(SM_CXSCREEN);
+    int scrH = GetSystemMetrics(SM_CYSCREEN);
+    int dlgW = 520, dlgH = 490;
+    int dlgX = (scrW - dlgW) / 2;
+    int dlgY = (scrH - dlgH) / 2;
+
+    HWND hwDlg = CreateWindowExA(WS_EX_TOPMOST, "KaevexSupabaseAuthClass",
+        "Kaevex Cloud — Supabase SOC Account & Sync",
+        WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+        dlgX, dlgY, dlgW, dlgH,
+        hwndParent, NULL, GetModuleHandleA(NULL), NULL);
+
+    if (!hwDlg) return;
+
+    BOOL dark = 1;
+    DwmSetWindowAttribute(hwDlg, 20, &dark, sizeof(dark));
+    DwmSetWindowAttribute(hwDlg, 19, &dark, sizeof(dark));
+
+    if (hwndParent) EnableWindow(hwndParent, FALSE);
+
+    MSG msg;
+    while (IsWindow(hwDlg) && GetMessageA(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
+    }
+
+    if (hwndParent) {
+        EnableWindow(hwndParent, TRUE);
+        SetForegroundWindow(hwndParent);
+        InvalidateRect(hwndParent, NULL, FALSE);
+    }
+}
+
 /* App Hub Population Helpers */
 static void PopulateAppHubList(void) {
     if(!hAppList) return;
@@ -4872,17 +5296,9 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             }
         }
         RECT wr; GetClientRect(hw,&wr);
-        if(my < HDR_H && mx > wr.right - 120){
-            char profMsg[512];
-            snprintf(profMsg, sizeof(profMsg),
-                "User Account & Security Profile:\n\n"
-                "* User: Moham (SOC Director)\n"
-                "* Clearance: Tier-3 Enterprise Administrator\n"
-                "* 2FA Hardware Key: Active (FIDO2 / TOTP)\n"
-                "* Mesh Pairing Key: %s\n"
-                "* Session: Mutual Cryptographic Handshake Active",
-                soc_get_local_pairing_code());
-            MessageBoxA(hw, profMsg, "Kaevex Account Profile", MB_OK | MB_ICONINFORMATION);
+        if(my < HDR_H && mx > wr.right - 200){
+            ShowSupabaseAccountDialog(hw);
+            return 0;
         }
         return 0;}
 
@@ -6380,6 +6796,7 @@ int WINAPI WinMain(HINSTANCE hi,HINSTANCE hp,LPSTR lp,int ns){
     );
     mobile_api_bind_alert_callback(add_alert);
     mobile_api_start(API_PORT);
+    supabase_engine_init(HandleRemoteSupabaseAction);
     g_teamAutoMode = FALSE;   /* Manual by default  -  user toggles with the button */
     g_teamAutoThread = CreateThread(NULL,0,TeamAutoAgentWorker,NULL,0,NULL);
     threat_start_game_watchdog();
@@ -6422,6 +6839,7 @@ int WINAPI WinMain(HINSTANCE hi,HINSTANCE hp,LPSTR lp,int ns){
     if(g_sbx.active) sbx_kill();
     rw_stop();
     mobile_api_stop();
+    supabase_engine_shutdown();
     DeleteCriticalSection(&g_statsCS); DeleteCriticalSection(&g_alCS);
     DeleteObject(fHdr); DeleteObject(fBig); DeleteObject(fMed);
     DeleteObject(fSm); DeleteObject(fMono); DeleteObject(fStat);
