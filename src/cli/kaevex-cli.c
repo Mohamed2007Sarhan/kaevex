@@ -1683,7 +1683,7 @@ static DWORD WINAPI api_server_thread(LPVOID pPort) {
 }
 
 /* ????????? Main Execution & Command Loop ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-int main(int argc, char **argv) {
+int kaevex_cli_main(int argc, char **argv) {
     init_console();
     srand((unsigned)time(NULL));
     g_start_time = time(NULL);
@@ -1695,20 +1695,22 @@ int main(int argc, char **argv) {
 
     seed_initial_state();
 
-    /* Start background simulation thread */
-    CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
-    threat_start_game_watchdog();
-
     /* Direct CLI argument execution mode */
     if (argc > 1) {
         const char *cmd = argv[1];
-        if (_stricmp(cmd, "status") == 0) {
+        if (_stricmp(cmd, "help") == 0 || _stricmp(cmd, "--help") == 0 || _stricmp(cmd, "-h") == 0 || _stricmp(cmd, "/?") == 0) {
+            print_banner();
+            print_help();
+        } else if (_stricmp(cmd, "version") == 0 || _stricmp(cmd, "--version") == 0 || _stricmp(cmd, "-v") == 0) {
+            printf("Kaevex Security Platform v%s (x86_64 Windows Native SOC Engine)\n", KAEVEX_VERSION);
+        } else if (_stricmp(cmd, "status") == 0) {
             cmd_status();
         } else if (_stricmp(cmd, "gaming") == 0) {
             cmd_gaming(argc > 2 ? argv[2] : "");
         } else if (_stricmp(cmd, "stats") == 0) {
             cmd_stats();
         } else if (_stricmp(cmd, "monitor") == 0) {
+            CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
             cmd_monitor();
         } else if (_stricmp(cmd, "scan") == 0) {
             if (argc > 2) scan_file(argv[2]);
@@ -1769,11 +1771,17 @@ int main(int argc, char **argv) {
             print_help();
         }
 
+        g_running = 0;
         threat_stop_game_watchdog();
         WSACleanup();
         DeleteCriticalSection(&g_lock);
+        ExitProcess(0);
         return 0;
     }
+
+    /* Start background simulation thread for interactive shell */
+    CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
+    threat_start_game_watchdog();
 
     /* Interactive Shell Mode */
     print_banner();

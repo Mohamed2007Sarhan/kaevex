@@ -12,7 +12,7 @@
     "path": "C:\Users\Moham\Desktop\keavex\github\dist\Kaevex-GUI.exe",
     "name": "Heuristic.CmdExec",
     "cls": "StartupRegistry",
-    "sha256": "e804e6f69a5d34f852eeb025215b2686b2fb8a26d233b5f0ea7b85530e272e9b",
+    "sha256": "d65c3c05baa238aa4fcdc8c2ab63e0a23e4f842448b2b1df78d81845a78dc14d",
     "score": 100,
     "is_safe": 0,
     "quarantined": 0

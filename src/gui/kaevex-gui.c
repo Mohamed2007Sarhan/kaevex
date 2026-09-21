@@ -3528,8 +3528,8 @@ static void ShowTrayMenu(HWND hwnd) {
     DestroyMenu(hMenu);
 
     if (cmd == ID_TRAY_RESTORE) {
-        if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
-        else ShowWindow(hwnd, SW_SHOW);
+        ShowWindow(hwnd, SW_SHOW);
+        ShowWindow(hwnd, SW_RESTORE);
         SetForegroundWindow(hwnd);
     } else if (cmd == ID_TRAY_GAMING) {
         SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDT_BOOST, 0), 0);
@@ -4950,8 +4950,8 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
     switch(msg){
     case WM_TRAYICON:{
         if(lp == WM_LBUTTONDBLCLK || lp == WM_LBUTTONDOWN){
-            if (IsIconic(hw)) ShowWindow(hw, SW_RESTORE);
-            else ShowWindow(hw, SW_SHOW);
+            ShowWindow(hw, SW_SHOW);
+            ShowWindow(hw, SW_RESTORE);
             SetForegroundWindow(hw);
         } else if(lp == WM_RBUTTONUP){
             ShowTrayMenu(hw);
@@ -6241,8 +6241,10 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                 if(chk == BST_CHECKED){
                     char myExe[MAX_PATH]={0};
                     GetModuleFileNameA(NULL, myExe, sizeof(myExe)-1);
-                    RegSetValueExA(hKey, "KaevexSOC", 0, REG_SZ, (const BYTE*)myExe, (DWORD)strlen(myExe)+1);
-                    add_alert("Settings","INFO","Kaevex enabled for Windows auto-start");
+                    char runVal[MAX_PATH+32]={0};
+                    snprintf(runVal, sizeof(runVal), "\"%s\" --startup", myExe);
+                    RegSetValueExA(hKey, "KaevexSOC", 0, REG_SZ, (const BYTE*)runVal, (DWORD)strlen(runVal)+1);
+                    add_alert("Settings","INFO","Kaevex armed for 24/7 background auto-start on Windows boot");
                 } else {
                     RegDeleteValueA(hKey, "KaevexSOC");
                     add_alert("Settings","INFO","Kaevex auto-start disabled");
@@ -6427,6 +6429,21 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             return 0;}
 
         return 0;}
+
+    case WM_CLOSE:
+        ShowWindow(hw, SW_HIDE);
+        {
+            NOTIFYICONDATAA nidMsg = {0};
+            nidMsg.cbSize = sizeof(nidMsg);
+            nidMsg.hWnd = hw;
+            nidMsg.uID = 1;
+            nidMsg.uFlags = NIF_INFO;
+            nidMsg.dwInfoFlags = NIIF_INFO;
+            strncpy(nidMsg.szInfoTitle, "Kaevex Continuous Defense Active", sizeof(nidMsg.szInfoTitle)-1);
+            strncpy(nidMsg.szInfo, "Kaevex is running in the background. Engines, Tray, and Mobile API remain active.", sizeof(nidMsg.szInfo)-1);
+            Shell_NotifyIconA(NIM_MODIFY, &nidMsg);
+        }
+        return 0;
 
     case WM_DESTROY:
         RemoveTrayIcon();
@@ -6671,17 +6688,20 @@ static void CreateControls(HWND hw){
     upd_start_cve_watcher(onCveWatcherAlert);
 }
 
-/* --- WinMain Entry Point --------------------------------------------------- */
-int WINAPI WinMain(HINSTANCE hi,HINSTANCE hp,LPSTR lp,int ns){
+/* --- Kaevex GUI & Background Engine Host Entry Point ----------------------- */
+int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMinimized){
     (void)hp;(void)lp;
 
     /* Single-instance check: raise the existing window if already running */
-    HANDLE hMutex = CreateMutexA(NULL, TRUE, "KaevexGUIMutex");
+    HANDLE hMutex = CreateMutexA(NULL, TRUE, "KaevexMasterMutex");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
         if (hwExisting) {
-            if (IsIconic(hwExisting)) ShowWindow(hwExisting, SW_RESTORE);
-            SetForegroundWindow(hwExisting);
+            if (!startMinimized) {
+                ShowWindow(hwExisting, SW_SHOW);
+                ShowWindow(hwExisting, SW_RESTORE);
+                SetForegroundWindow(hwExisting);
+            }
         }
         if (hMutex) CloseHandle(hMutex);
         return 0;
@@ -6800,12 +6820,28 @@ int WINAPI WinMain(HINSTANCE hi,HINSTANCE hp,LPSTR lp,int ns){
     g_teamAutoMode = FALSE;   /* Manual by default  -  user toggles with the button */
     g_teamAutoThread = CreateThread(NULL,0,TeamAutoAgentWorker,NULL,0,NULL);
     threat_start_game_watchdog();
-    ShowWindow(g_hwnd, (ns == SW_HIDE || ns == 0) ? SW_SHOWNORMAL : ns);
-    UpdateWindow(g_hwnd);
-    SetForegroundWindow(g_hwnd);
+    if (startMinimized || ns == SW_HIDE) {
+        ShowWindow(g_hwnd, SW_HIDE);
+    } else {
+        ShowWindow(g_hwnd, (ns == 0) ? SW_SHOWNORMAL : ns);
+        UpdateWindow(g_hwnd);
+        SetForegroundWindow(g_hwnd);
+    }
 
     InitTrayIcon(g_hwnd);
-    PromptFirstRunWizard(g_hwnd);
+    if (!startMinimized) {
+        PromptFirstRunWizard(g_hwnd);
+    } else {
+        NOTIFYICONDATAA nidBoot = {0};
+        nidBoot.cbSize = sizeof(nidBoot);
+        nidBoot.hWnd = g_hwnd;
+        nidBoot.uID = 1;
+        nidBoot.uFlags = NIF_INFO;
+        nidBoot.dwInfoFlags = NIIF_INFO;
+        strncpy(nidBoot.szInfoTitle, "Kaevex Security Shield Active", sizeof(nidBoot.szInfoTitle)-1);
+        strncpy(nidBoot.szInfo, "Real-time kernel defense, network baseline, and cloud sync are armed.", sizeof(nidBoot.szInfo)-1);
+        Shell_NotifyIconA(NIM_MODIFY, &nidBoot);
+    }
 
     char mobAlert[160];
     snprintf(mobAlert, sizeof(mobAlert), "Android Mobile REST API listening on 0.0.0.0:%d (Pairing PIN: %s)", API_PORT, mobile_api_get_pin());
