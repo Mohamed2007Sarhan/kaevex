@@ -31,7 +31,7 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -lcomctl32 -lws2_32 -liphlpapi -lshell32 ^
     -lole32 -loleaut32 -lcomdlg32 -lcrypt32 ^
     -lpsapi -ldwmapi -luxtheme -lwinhttp ^
-    -lshlwapi -lntdll -ladvapi32 -luser32 -lgdi32 -lwinmm
+    -lshlwapi -lntdll -ladvapi32 -luser32 -lgdi32 -lwinmm -lwintrust
 
 if errorlevel 1 (
     echo [FAIL] Kaevex-GUI build failed.
@@ -70,7 +70,7 @@ C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
     -L C:\GCC\x86_64-w64-mingw32\lib\gcc\x86_64-w64-mingw32\16.2.0 ^
     -o dist\kaevex-cli.exe ^
     src\cli\kaevex-cli.c ^
-    -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -lole32 -lcrypt32 -lwinhttp -lwinmm
+    -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -lole32 -lcrypt32 -lwinhttp -lwinmm -lwintrust
 
 if errorlevel 1 (
     echo [FAIL] kaevex-cli build failed.
@@ -90,7 +90,7 @@ C:\GCC\bin\gcc.exe -O2 -w -fno-lto ^
     -L C:\GCC\x86_64-w64-mingw32\lib\gcc\x86_64-w64-mingw32\16.2.0 ^
     -o dist\kaevex-engine.exe ^
     src\kaevex-engine.c ^
-    -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -lole32 -lcrypt32 -lwinhttp -lwinmm
+    -lws2_32 -liphlpapi -lpsapi -ladvapi32 -lshell32 -lole32 -lcrypt32 -lwinhttp -lwinmm -lwintrust
 
 if errorlevel 1 (
     echo [FAIL] kaevex-engine build failed.

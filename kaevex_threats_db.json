@@ -1,0 +1,47 @@
+[
+  {
+    "path": "C:\Program Files\Microsoft OneDrive\OneDrive.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "StartupRegistry",
+    "sha256": "2e9cbc0f64ad1cc2d7ad49521702d3ffbbefc2d41b59d7746c3053e92e8214f4",
+    "score": 100,
+    "is_safe": 1,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Users\Moham\Desktop\keavex\github\dist\Kaevex-GUI.exe",
+    "name": "Heuristic.CmdExec",
+    "cls": "StartupRegistry",
+    "sha256": "1fa5438b37e98f71c1a1fbe3a0fa20ded29f502ef192497c33d5f09b33b793bf",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Program Files\Microsoft GameInput\x64\GameInputRedistService.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "ActiveProcess",
+    "sha256": "68806b598b7e2ef40d73dae1b6a54bd797ccdd681d3778c3503f65948d85e9f1",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\System32\sihost.exe",
+    "name": "Suspicious.Generic",
+    "cls": "ActiveProcess",
+    "sha256": "a0fe43136d779426a182fded9eace7e30c248675c536a3c580c4b7a6f2f3df12",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Windows\explorer.exe",
+    "name": "Heuristic.AntiDebug",
+    "cls": "ActiveProcess",
+    "sha256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  }
+]

@@ -35,6 +35,7 @@
 #include "threat_engine.h"
 #include "discovery_engine.h"
 #include "upd_engine.h"
+#include "boot_rootkit_engine.h"
 
 #define KAEVEX_VERSION "1.0.0-PROD"
 #define DEFAULT_PORT  9009
@@ -819,6 +820,134 @@ static void cmd_hostguard(void) {
     printf("  Python Runtime   3.11.2     MEDIUM         Audit recommended\n\n");
 }
 
+static void cli_boot_progress(int pct, const char *msg) {
+    printf("  [%3d%%] %s\n", pct, msg);
+}
+
+static void cmd_boot_audit(void) {
+    set_color(C_CYAN);
+    printf("\n================================================================================\n");
+    printf("  KAEVEX ADVANCED PERSISTENT THREAT (APT) & BOOTKIT INTEGRITY ENGINE\n");
+    printf("  UEFI, MBR, WinVerifyTrust Digital Signatures & Rogue SCM Daemon Audit\n");
+    printf("================================================================================\n\n");
+    set_color(C_RESET);
+
+    BootkitAuditReport rep;
+    memset(&rep, 0, sizeof(rep));
+    printf("[*] Initiating deep low-level kernel & boot audit...\n");
+
+    boot_audit_run_full_scan(&rep, cli_boot_progress);
+
+    printf("\n");
+    set_color(C_WHITE);
+    printf("--------------------------------------------------------------------------------\n");
+    printf("  AUDIT METRIC                                STATUS / FINDING\n");
+    printf("--------------------------------------------------------------------------------\n");
+    set_color(C_RESET);
+
+    /* Secure Boot */
+    printf("  UEFI Secure Boot State:                     ");
+    if (rep.secureBootEnabled) {
+        set_color(C_GREEN); printf("[ACTIVE / ENFORCED]\n");
+    } else {
+        set_color(C_YELLOW); printf("[DISABLED / EXPOSED]\n");
+    }
+    set_color(C_RESET);
+
+    /* Test Signing */
+    printf("  BCD Driver TestSigning:                     ");
+    if (rep.testSigningActive) {
+        set_color(C_RED); printf("[CRITICAL: TESTSIGNING ON (Rootkit Vector)]\n");
+    } else {
+        set_color(C_GREEN); printf("[SECURE: ENFORCING SIGNATURES]\n");
+    }
+    set_color(C_RESET);
+
+    /* ESP Bootloader */
+    printf("  ESP Bootloader (bootmgfw.efi):              ");
+    if (rep.espBootloaderSigned) {
+        set_color(C_GREEN); printf("[AUTHENTIC MICROSOFT SIGNATURE]\n");
+    } else {
+        set_color(C_RED); printf("[ALERT: UNVERIFIED / TAMPERED]\n");
+    }
+    set_color(C_RESET);
+
+    /* MBR Sector 0 */
+    printf("  MBR Sector 0 Signature (0x55AA):            ");
+    if (rep.mbrSignatureValid) {
+        set_color(C_GREEN); printf("[VALID BOOT SECTOR]\n");
+    } else {
+        set_color(C_RED); printf("[DAMAGED / CUSTOM BOOTLOADER]\n");
+    }
+    set_color(C_RESET);
+
+    /* Core System Files */
+    printf("  Core Windows Binaries (WinVerifyTrust):     ");
+    if (rep.compromisedSysFiles == 0) {
+        set_color(C_GREEN); printf("[%d/%d VERIFIED 100%% AUTHENTIC]\n", rep.totalSysFilesAudited, rep.totalSysFilesAudited);
+    } else {
+        set_color(C_RED); printf("[CRITICAL: %d COMPROMISED SYSTEM FILES!]\n", rep.compromisedSysFiles);
+    }
+    set_color(C_RESET);
+
+    /* SCM Services */
+    printf("  Service Control Manager (SCM) Audit:        ");
+    if (rep.rogueServicesFound == 0) {
+        set_color(C_GREEN); printf("[%d Services Audited - 0 Masqueraders]\n", rep.totalServicesAudited);
+    } else {
+        set_color(C_RED); printf("[CRITICAL: %d ROGUE SERVICES MASQUERADING!]\n", rep.rogueServicesFound);
+    }
+    set_color(C_RESET);
+
+    /* Kernel Drivers */
+    printf("  Kernel Drivers Active in RAM:               ");
+    if (rep.suspiciousDriversFound == 0) {
+        set_color(C_GREEN); printf("[%d Drivers Audited - 0 Suspicious BYOVD]\n", rep.totalDriversAudited);
+    } else {
+        set_color(C_RED); printf("[ALERT: %d Drivers in Suspicious Paths!]\n", rep.suspiciousDriversFound);
+    }
+    set_color(C_RESET);
+
+    /* Hosts File */
+    printf("  System Hosts File (Anti-DNS Poisoning):     ");
+    if (!rep.hostsFileTampered) {
+        set_color(C_GREEN); printf("[CLEAN - No Blackhole Overrides]\n");
+    } else {
+        set_color(C_YELLOW); printf("[WARNING: Security Domains Redirected]\n");
+    }
+    set_color(C_RESET);
+
+    printf("--------------------------------------------------------------------------------\n");
+    printf("  OVERALL HOST INTEGRITY SCORE:               ");
+    if (rep.overallScore >= 85) {
+        set_color(C_GREEN); printf("%d / 100 [EXCELLENT - SYSTEM TRUST VERIFIED]\n", rep.overallScore);
+    } else if (rep.overallScore >= 60) {
+        set_color(C_YELLOW); printf("%d / 100 [MODERATE RISK - INVESTIGATION REQUIRED]\n", rep.overallScore);
+    } else {
+        set_color(C_RED); printf("%d / 100 [CRITICAL COMPROMISE DETECTED]\n", rep.overallScore);
+    }
+    set_color(C_RESET);
+    printf("--------------------------------------------------------------------------------\n\n");
+
+    /* Detail any findings */
+    if (rep.findingCount > 0) {
+        set_color(C_CYAN);
+        printf("[*] Forensic Inspection Breakdown (%d items):\n", rep.findingCount);
+        set_color(C_RESET);
+        for (int i = 0; i < rep.findingCount; i++) {
+            BootkitFinding *f = &rep.findings[i];
+            if (strcmp(f->severity, "CRITICAL") == 0) set_color(C_RED);
+            else if (strcmp(f->severity, "HIGH") == 0) set_color(C_RED);
+            else if (strcmp(f->severity, "WARNING") == 0) set_color(C_YELLOW);
+            else set_color(C_GREEN);
+
+            printf("  [%-8s] %-12s : %s\n", f->severity, f->category, f->detail);
+        }
+        set_color(C_RESET);
+        printf("\n");
+    }
+}
+
 static void cmd_threat_intel(void) {
     EnterCriticalSection(&g_lock);
     set_color(C_WHITE);
@@ -1483,6 +1612,7 @@ static void print_help(void) {
     printf("  %-24s %s\n", "cve-scan", "Scan installed software and OS against 150+ CVE signatures");
     printf("  %-24s %s\n", "cve-fix", "Automated 1-click winget & OS vulnerability remediation");
     printf("  %-24s %s\n", "custom-mode", "Interactive setup wizard for tailored system operating profiles");
+    printf("  %-24s %s\n", "boot-audit / rootkit", "Deep UEFI SecureBoot, MBR, WinVerifyTrust & Rogue SCM service audit");
     printf("  %-24s %s\n", "stats", "Show real-time security counters across all defense tiers");
     printf("  %-24s %s\n", "monitor", "Launch live full-screen terminal monitoring dashboard");
     printf("  %-24s %s\n", "gaming [boost|restore]", "Real core latency optimizer, 1ms timer & watchdog");
@@ -1632,6 +1762,8 @@ int main(int argc, char **argv) {
             cmd_keys();
         } else if (_stricmp(cmd, "custom-mode") == 0 || _stricmp(cmd, "custom") == 0 || _stricmp(cmd, "wizard") == 0) {
             cmd_custom_mode();
+        } else if (_stricmp(cmd, "boot-audit") == 0 || _stricmp(cmd, "bootaudit") == 0 || _stricmp(cmd, "rootkit-scan") == 0 || _stricmp(cmd, "rootkit") == 0) {
+            cmd_boot_audit();
         } else {
             print_banner();
             print_help();
@@ -1739,6 +1871,8 @@ int main(int argc, char **argv) {
             cmd_keys();
         } else if (_stricmp(cmd, "custom-mode") == 0 || _stricmp(cmd, "custom") == 0 || _stricmp(cmd, "wizard") == 0) {
             cmd_custom_mode();
+        } else if (_stricmp(cmd, "boot-audit") == 0 || _stricmp(cmd, "bootaudit") == 0 || _stricmp(cmd, "rootkit-scan") == 0 || _stricmp(cmd, "rootkit") == 0) {
+            cmd_boot_audit();
         } else if (_stricmp(cmd, "cls") == 0 || _stricmp(cmd, "clear") == 0) {
             system("cls");
             print_banner();
