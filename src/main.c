@@ -134,7 +134,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 SetForegroundWindow(hwExisting);
                 return 0;
             }
-            return kaevex_gui_main(hInstance, NULL, lpCmdLine, nCmdShow, FALSE);
+            return kaevex_gui_main(hInstance, NULL, lpCmdLine, (nCmdShow <= 0) ? SW_SHOWNORMAL : nCmdShow, FALSE);
         }
 
         /* --- Mode C: CLI Execution in Console --- */
@@ -156,5 +156,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
     }
 
-    return kaevex_gui_main(hInstance, NULL, lpCmdLine, nCmdShow, FALSE);
+    return kaevex_gui_main(hInstance, NULL, lpCmdLine, (nCmdShow <= 0) ? SW_SHOWNORMAL : nCmdShow, FALSE);
 }

@@ -311,7 +311,7 @@ static void show_tray_menu(HWND hWnd) {
     AppendMenuW(hMenu, MF_STRING, IDM_CONSOLE,       L"  Open CLI Console");
     AppendMenuW(hMenu, MF_STRING, IDM_SCAN_SYS,      L"  Quick Security Scan");
     AppendMenuW(hMenu, MF_STRING, IDM_WAF_TEST,      L"  Test WAF Analyzer");
-    AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,         L"  Protection Summary");
+    AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,         L"  About & Official Portal (kaevex.com/info)");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, IDM_EXIT,          L"  Stop & Exit Kaevex");
 
@@ -331,6 +331,7 @@ static void show_tray_menu(HWND hWnd) {
     } else if (cmd == IDM_WAF_TEST) {
         run_cmd_in_terminal("waf \"' OR 1=1 --\"");
     } else if (cmd == IDM_ABOUT) {
+        ShellExecuteA(NULL, "open", "https://kaevex.com/info/", NULL, NULL, SW_SHOWNORMAL);
         char json[4096] = {0};
         if (tray_query_api(json, sizeof(json))) {
             char *p;
