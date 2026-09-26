@@ -118,36 +118,32 @@ static void run_cmd_in_terminal(const char *args) {
 
 /* ---- Load Kaevex Icon ----------------------------------------------------- */
 static HICON load_kaevex_icon(void) {
-    /* Try loading the Kaevex icon from the assets folder */
+    /* 1. Try embedded resource ID 1 */
+    HICON hIco = (HICON)LoadImageA(GetModuleHandleA(NULL), MAKEINTRESOURCE(1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+    if (hIco) return hIco;
+
     char icon_path[MAX_PATH];
 
-    /* Try: exe_dir\assets\kaevex.ico */
-    snprintf(icon_path, sizeof(icon_path), "%s\\assets\\kaevex.ico", g_base_dir);
-    HICON hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
-                                   16, 16, LR_LOADFROMFILE);
+    /* 2. Try exe_dir\icon.ico */
+    snprintf(icon_path, sizeof(icon_path), "%s\\icon.ico", g_base_dir);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
     if (hIco) return hIco;
 
-    /* Try: exe_dir\..\assets\kaevex.ico (for dist\ layout) */
-    snprintf(icon_path, sizeof(icon_path), "%s\\..\\assets\\kaevex.ico", g_base_dir);
-    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
-                             16, 16, LR_LOADFROMFILE);
+    /* 3. Try exe_dir\assets\icon.ico */
+    snprintf(icon_path, sizeof(icon_path), "%s\\assets\\icon.ico", g_base_dir);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
     if (hIco) return hIco;
 
-    /* Try: exe_dir\kaevex.ico */
+    /* 4. Try exe_dir\..\assets\icon.ico (for dist\ layout) */
+    snprintf(icon_path, sizeof(icon_path), "%s\\..\\assets\\icon.ico", g_base_dir);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    if (hIco) return hIco;
+
+    /* 5. Try kaevex.ico */
     snprintf(icon_path, sizeof(icon_path), "%s\\kaevex.ico", g_base_dir);
-    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON,
-                             16, 16, LR_LOADFROMFILE);
+    hIco = (HICON)LoadImageA(NULL, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
     if (hIco) return hIco;
 
-    /* Fallback: Windows Security Shield icon */
-    SHSTOCKICONINFO sii = {0};
-    sii.cbSize = sizeof(sii);
-    if (SUCCEEDED(SHGetStockIconInfo(SIID_SHIELD,
-                  SHGSI_ICON | SHGSI_SMALLICON, &sii)) && sii.hIcon) {
-        return sii.hIcon;
-    }
-    HICON h = LoadIconA(NULL, (LPCSTR)MAKEINTRESOURCE(32518));
-    if (h) return h;
     return LoadIconA(NULL, IDI_APPLICATION);
 }
 

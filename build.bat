@@ -19,6 +19,10 @@ if not exist release  mkdir release
 if not exist release\v1 mkdir release\v1
 
 echo.
+echo [*] Compiling Application Resources (icon.ico, manifest) ...
+C:\GCC\bin\windres.exe -I . -i src\kaevex.rc -o dist\kaevex_res.o
+
+echo.
 echo [*] Compiling Unified Master Binary (kaevex.exe) ...
 C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -I src\engines ^
@@ -27,7 +31,7 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -L C:\GCC\x86_64-w64-mingw32\lib ^
     -L C:\GCC\x86_64-w64-mingw32\lib\gcc\x86_64-w64-mingw32\16.2.0 ^
     -o dist\kaevex.exe ^
-    src\main.c src\gui\kaevex-gui.c src\cli\kaevex-cli.c ^
+    src\main.c src\gui\kaevex-gui.c src\cli\kaevex-cli.c dist\kaevex_res.o ^
     -lcomctl32 -lws2_32 -liphlpapi -lshell32 ^
     -lole32 -loleaut32 -lcomdlg32 -lcrypt32 ^
     -lpsapi -ldwmapi -luxtheme -lwinhttp ^
@@ -36,7 +40,7 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
 if errorlevel 1 (
     echo [FAIL] kaevex.exe build failed.
 ) else (
-    echo [OK]   dist\kaevex.exe (Unified Master Binary)
+    echo [OK]   dist\kaevex.exe (Unified Master Binary with embedded icon)
     copy /y dist\kaevex.exe dist\Kaevex-GUI.exe >nul 2>&1
     copy /y dist\kaevex.exe release\kaevex.exe >nul 2>&1
     copy /y dist\kaevex.exe release\Kaevex-GUI.exe >nul 2>&1
@@ -65,10 +69,16 @@ if errorlevel 1 (
 )
 
 echo.
-echo [*] Copying assets to dist ...
-if exist assets\kaevex.ico (
-    copy /y assets\kaevex.ico dist\kaevex.ico >nul 2>&1
-    echo [OK]   dist\kaevex.ico
+echo [*] Copying assets to dist and release ...
+if exist assets\icon.ico (
+    copy /y assets\icon.ico assets\kaevex.ico >nul 2>&1
+    copy /y assets\icon.ico dist\icon.ico >nul 2>&1
+    copy /y assets\icon.ico dist\kaevex.ico >nul 2>&1
+    copy /y assets\icon.ico release\icon.ico >nul 2>&1
+    copy /y assets\icon.ico release\kaevex.ico >nul 2>&1
+    copy /y assets\icon.ico release\v1\icon.ico >nul 2>&1
+    copy /y assets\icon.ico release\v1\kaevex.ico >nul 2>&1
+    echo [OK]   icon.ico copied to dist and release directories
 )
 
 echo.
