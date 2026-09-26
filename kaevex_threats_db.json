@@ -12,7 +12,7 @@
     "path": "C:\Users\Moham\Desktop\keavex\github\dist\Kaevex-GUI.exe",
     "name": "Heuristic.CmdExec",
     "cls": "StartupRegistry",
-    "sha256": "d65c3c05baa238aa4fcdc8c2ab63e0a23e4f842448b2b1df78d81845a78dc14d",
+    "sha256": "be55b2f44225caee8b0daa166ed8444d5aa82054c1e9ee3f3e9eb8f5266e8945",
     "score": 100,
     "is_safe": 0,
     "quarantined": 0
@@ -41,6 +41,24 @@
     "cls": "ActiveProcess",
     "sha256": "87811a107eed62900b230c49a252170d6a7307e94a08307ce972f9b9b8155d54",
     "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Program Files\Mozilla Firefox\firefox.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "StartupRegistry",
+    "sha256": "3a4aa626657fca70e33be058c69756159a3cda4acdaf3802e2ba582c897f3295",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Program Files\WindowsApps\MicrosoftWindows.CrossDevice_1.26072.116.0_x64__cw5n1h2txyewy\CrossDeviceService.exe",
+    "name": "Suspicious.Generic",
+    "cls": "ActiveProcess",
+    "sha256": "911982c80198e7f4a250b1631ddca378670f8e421eefe90b79c9096d9f7dd7c6",
+    "score": 90,
     "is_safe": 0,
     "quarantined": 0
   }

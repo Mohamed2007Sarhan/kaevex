@@ -3,7 +3,7 @@
     "path": "C:\Program Files\Microsoft OneDrive\OneDrive.exe",
     "name": "Heuristic.AntiDebug",
     "cls": "StartupRegistry",
-    "sha256": "2e9cbc0f64ad1cc2d7ad49521702d3ffbbefc2d41b59d7746c3053e92e8214f4",
+    "sha256": "540bb8d25863b2f4185bd0b0c495927e33e77754bbd8f572c72b31088dfb400c",
     "score": 100,
     "is_safe": 0,
     "quarantined": 0
@@ -12,7 +12,7 @@
     "path": "C:\Users\Moham\Desktop\keavex\github\dist\Kaevex-GUI.exe",
     "name": "Heuristic.CmdExec",
     "cls": "StartupRegistry",
-    "sha256": "d65c3c05baa238aa4fcdc8c2ab63e0a23e4f842448b2b1df78d81845a78dc14d",
+    "sha256": "be55b2f44225caee8b0daa166ed8444d5aa82054c1e9ee3f3e9eb8f5266e8945",
     "score": 100,
     "is_safe": 0,
     "quarantined": 0
@@ -652,6 +652,24 @@
     "name": "Suspicious.Generic",
     "cls": "AntivirusCore",
     "sha256": "91739478be752086cd1a0c3c88ca3d84397e4decad1338f1b72e200f0e44614d",
+    "score": 90,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Program Files\Mozilla Firefox\firefox.exe",
+    "name": "Heuristic.MemAlloc",
+    "cls": "StartupRegistry",
+    "sha256": "3a4aa626657fca70e33be058c69756159a3cda4acdaf3802e2ba582c897f3295",
+    "score": 100,
+    "is_safe": 0,
+    "quarantined": 0
+  },
+  {
+    "path": "C:\Program Files\WindowsApps\MicrosoftWindows.CrossDevice_1.26072.116.0_x64__cw5n1h2txyewy\CrossDeviceService.exe",
+    "name": "Suspicious.Generic",
+    "cls": "ActiveProcess",
+    "sha256": "911982c80198e7f4a250b1631ddca378670f8e421eefe90b79c9096d9f7dd7c6",
     "score": 90,
     "is_safe": 0,
     "quarantined": 0

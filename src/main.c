@@ -71,6 +71,20 @@ static void SetupConsoleIO(void) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     (void)hPrevInstance;
 
+    /* Modern Per-Monitor V2 DPI awareness initialization */
+    HMODULE hUserDpi = GetModuleHandleA("user32.dll");
+    if (hUserDpi) {
+        typedef BOOL (WINAPI *SetCtxProc)(HANDLE);
+        typedef BOOL (WINAPI *SetDpiProc)(void);
+        SetCtxProc setCtx = (SetCtxProc)GetProcAddress(hUserDpi, "SetProcessDpiAwarenessContext");
+        if (setCtx) {
+            setCtx((HANDLE)-4); /* DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 */
+        } else {
+            SetDpiProc setDpi = (SetDpiProc)GetProcAddress(hUserDpi, "SetProcessDPIAware");
+            if (setDpi) setDpi();
+        }
+    }
+
     /* Parse Unicode command-line arguments into UTF-8 argv */
     int argc = 0;
     LPWSTR *argvW = CommandLineToArgvW(GetCommandLineW(), &argc);

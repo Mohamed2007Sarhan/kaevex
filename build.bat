@@ -37,8 +37,11 @@ if errorlevel 1 (
     echo [FAIL] kaevex.exe build failed.
 ) else (
     echo [OK]   dist\kaevex.exe (Unified Master Binary)
+    copy /y dist\kaevex.exe dist\Kaevex-GUI.exe >nul 2>&1
     copy /y dist\kaevex.exe release\kaevex.exe >nul 2>&1
+    copy /y dist\kaevex.exe release\Kaevex-GUI.exe >nul 2>&1
     copy /y dist\kaevex.exe release\v1\kaevex.exe >nul 2>&1
+    copy /y dist\kaevex.exe release\v1\Kaevex-GUI.exe >nul 2>&1
 )
 
 echo.

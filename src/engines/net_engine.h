@@ -141,15 +141,31 @@ static void net_classify_endpoint(NetConn *c, DWORD remoteAddr, USHORT remotePor
     USHORT rPort = ntohs(remotePort);
 
     /* Local / loopback / LAN */
-    if (strncmp(ipStr, "127.", 4) == 0 || strcmp(ipStr, "0.0.0.0") == 0) {
+    if (strncmp(ipStr, "127.", 4) == 0 || strcmp(ipStr, "0.0.0.0") == 0 || strcmp(ipStr, "::1") == 0) {
         strcpy(c->category, "Loopback");
         strcpy(c->remoteHost, "localhost");
+        c->suspicious = FALSE;
+        c->blocked = FALSE;
+        c->beaconScore = 0;
         return;
     }
     if (strncmp(ipStr, "192.168.", 8) == 0 || strncmp(ipStr, "10.", 3) == 0 ||
         (strncmp(ipStr, "172.", 4) == 0 && atoi(ipStr + 4) >= 16 && atoi(ipStr + 4) <= 31)) {
         strcpy(c->category, "LAN / Local");
         strcpy(c->remoteHost, "local.network");
+        c->suspicious = FALSE;
+        c->blocked = FALSE;
+        c->beaconScore = 0;
+        return;
+    }
+
+    /* Known Malicious / C2 IP Range check */
+    if (net_is_suspicious_ip(ipStr)) {
+        strcpy(c->category, "C2 / Threat");
+        snprintf(c->remoteHost, sizeof(c->remoteHost), "MALICIOUS C2 [%s]", ipStr);
+        c->blocked = TRUE;
+        c->suspicious = TRUE;
+        c->beaconScore = 95;
         return;
     }
 
@@ -160,24 +176,33 @@ static void net_classify_endpoint(NetConn *c, DWORD remoteAddr, USHORT remotePor
     if (strstr(loProc, "steam") || strstr(loProc, "epic") || strstr(loProc, "download") || strstr(loProc, "update")) {
         strcpy(c->category, "Download / Web");
         strcpy(c->remoteHost, "Content Delivery Network (CDN)");
+        c->suspicious = FALSE;
+        c->blocked = FALSE;
+        c->beaconScore = 0;
         return;
     }
 
     if (strstr(loProc, "msedge") || strstr(loProc, "chrome") || strstr(loProc, "firefox") || strstr(loProc, "brave") || strstr(loProc, "opera")) {
         strcpy(c->category, "Web / Cloud");
         strcpy(c->remoteHost, (rPort == 443) ? "Encrypted TLS Web Host" : "HTTP Web Host");
+        c->suspicious = FALSE;
+        c->blocked = FALSE;
+        c->beaconScore = 0;
         return;
     }
 
-    /* Standard Web / Cloud ports */
-    if (rPort == 80 || rPort == 443 || rPort == 8080 || rPort == 8443) {
+    /* Standard Web / Cloud / DNS ports */
+    if (rPort == 80 || rPort == 443 || rPort == 8080 || rPort == 8443 || rPort == 53 || rPort == 853) {
         strcpy(c->category, "Web / Cloud");
         strcpy(c->remoteHost, (rPort == 443 || rPort == 8443) ? "Cloud Edge / HTTPS" : "Web Service / HTTP");
+        c->suspicious = FALSE;
+        c->blocked = FALSE;
+        c->beaconScore = 0;
         return;
     }
 
-    /* Unverified bare IP on non-standard port */
-    strcpy(c->category, "Unverified IP");
+    /* Unverified bare IP or remote device connection */
+    strcpy(c->category, "Unverified Device / IP");
     snprintf(c->remoteHost, sizeof(c->remoteHost), "Raw Socket [%s]", ipStr);
     c->suspicious = TRUE;
     c->beaconScore = 65;
@@ -204,8 +229,8 @@ static int net_scan_connections(void) {
         NetConn *c = &g_netConns[g_netConnCnt++];
         ZeroMemory(c, sizeof(*c));
         c->pid       = r->dwOwningPid;
-        c->localPort = (USHORT)r->dwLocalPort;
-        c->remotePort= (USHORT)r->dwRemotePort;
+        c->localPort = ntohs((USHORT)r->dwLocalPort);
+        c->remotePort= ntohs((USHORT)r->dwRemotePort);
         c->firstSeen = time(NULL);
 
         net_get_procname(r->dwOwningPid, c->procName, sizeof(c->procName));
