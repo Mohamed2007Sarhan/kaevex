@@ -2285,149 +2285,52 @@ static void DrawBarChart(HDC dc, int x, int y, int w, int h,
     }
 }
 
-/* --- High-Fidelity Global World Attack Heatmap (Pixel-Matched) ------------- */
+/* --- High-Fidelity Global World Attack Heatmap (Pixel-Matched & Geographically Accurate) --- */
 static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
-    /* Dark Continent Silhouettes */
-    HBRUSH bCont = CreateSolidBrush(RGB(22, 34, 52));
-    HPEN pContBdr = CreatePen(PS_SOLID, 1, RGB(35, 52, 78));
-    HBRUSH ob = (HBRUSH)SelectObject(dc, bCont);
-    HPEN op = (HPEN)SelectObject(dc, pContBdr);
-
-    /* 1. North America */
-    POINT na[] = {
-        {x+w*4/100,  y+h*18/100}, {x+w*8/100,  y+h*14/100},
-        {x+w*14/100, y+h*10/100}, {x+w*22/100, y+h*8/100},
-        {x+w*28/100, y+h*12/100}, {x+w*34/100, y+h*18/100},
-        {x+w*32/100, y+h*28/100}, {x+w*28/100, y+h*34/100},
-        {x+w*24/100, y+h*46/100}, {x+w*19/100, y+h*42/100},
-        {x+w*15/100, y+h*38/100}, {x+w*12/100, y+h*40/100},
-        {x+w*6/100,  y+h*28/100}
-    };
-    Polygon(dc, na, 13);
-
-    /* Greenland */
-    POINT gr[] = {
-        {x+w*28/100, y+h*4/100}, {x+w*35/100, y+h*3/100},
-        {x+w*36/100, y+h*11/100}, {x+w*30/100, y+h*12/100}
-    };
-    Polygon(dc, gr, 4);
-
-    /* 2. South America */
-    POINT sa[] = {
-        {x+w*22/100, y+h*48/100}, {x+w*27/100, y+h*46/100},
-        {x+w*33/100, y+h*52/100}, {x+w*35/100, y+h*62/100},
-        {x+w*32/100, y+h*72/100}, {x+w*28/100, y+h*86/100},
-        {x+w*25/100, y+h*84/100}, {x+w*21/100, y+h*62/100},
-        {x+w*20/100, y+h*52/100}
-    };
-    Polygon(dc, sa, 9);
-
-    /* 3. Europe */
-    POINT eu[] = {
-        {x+w*42/100, y+h*16/100}, {x+w*46/100, y+h*10/100},
-        {x+w*52/100, y+h*12/100}, {x+w*56/100, y+h*18/100},
-        {x+w*54/100, y+h*26/100}, {x+w*48/100, y+h*30/100},
-        {x+w*43/100, y+h*28/100}, {x+w*39/100, y+h*22/100}
-    };
-    Polygon(dc, eu, 8);
-
-    /* UK / Ireland */
-    POINT uk[] = {
-        {x+w*39/100, y+h*14/100}, {x+w*42/100, y+h*13/100},
-        {x+w*41/100, y+h*19/100}, {x+w*38/100, y+h*18/100}
-    };
-    Polygon(dc, uk, 4);
-
-    /* 4. Africa */
-    POINT af[] = {
-        {x+w*42/100, y+h*32/100}, {x+w*55/100, y+h*33/100},
-        {x+w*60/100, y+h*44/100}, {x+w*57/100, y+h*58/100},
-        {x+w*52/100, y+h*76/100}, {x+w*46/100, y+h*72/100},
-        {x+w*44/100, y+h*56/100}, {x+w*39/100, y+h*44/100},
-        {x+w*40/100, y+h*36/100}
-    };
-    Polygon(dc, af, 9);
-
-    /* Madagascar */
-    POINT md[] = {
-        {x+w*58/100, y+h*60/100}, {x+w*60/100, y+h*58/100},
-        {x+w*59/100, y+h*70/100}, {x+w*57/100, y+h*69/100}
-    };
-    Polygon(dc, md, 4);
-
-    /* 5. Asia */
-    POINT as[] = {
-        {x+w*56/100, y+h*12/100}, {x+w*68/100, y+h*10/100},
-        {x+w*84/100, y+h*12/100}, {x+w*90/100, y+h*22/100},
-        {x+w*88/100, y+h*34/100}, {x+w*80/100, y+h*42/100},
-        {x+w*74/100, y+h*52/100}, {x+w*68/100, y+h*50/100},
-        {x+w*64/100, y+h*42/100}, {x+w*62/100, y+h*32/100},
-        {x+w*56/100, y+h*28/100}
-    };
-    Polygon(dc, as, 11);
-
-    /* India */
-    POINT in_pen[] = {
-        {x+w*64/100, y+h*34/100}, {x+w*70/100, y+h*36/100},
-        {x+w*68/100, y+h*48/100}, {x+w*64/100, y+h*44/100}
-    };
-    Polygon(dc, in_pen, 4);
-
-    /* Japan Islands */
-    POINT jp[] = {
-        {x+w*87/100, y+h*24/100}, {x+w*89/100, y+h*22/100},
-        {x+w*88/100, y+h*32/100}, {x+w*86/100, y+h*30/100}
-    };
-    Polygon(dc, jp, 4);
-
-    /* 6. Australia & NZ */
-    POINT au[] = {
-        {x+w*76/100, y+h*60/100}, {x+w*82/100, y+h*58/100},
-        {x+w*88/100, y+h*62/100}, {x+w*89/100, y+h*76/100},
-        {x+w*82/100, y+h*80/100}, {x+w*75/100, y+h*76/100},
-        {x+w*74/100, y+h*68/100}
-    };
-    Polygon(dc, au, 7);
-
-    SelectObject(dc, ob); SelectObject(dc, op);
-    DeleteObject(bCont); DeleteObject(pContBdr);
-
-    /* --- Curved Trajectory Arcs (PolyBezier) --- */
-    /* Arc 1: US East (25%, 30%) -> Western Europe (46%, 24%) */
-    {
-        POINT bz[4] = {
-            {x+w*25/100, y+h*30/100},
-            {x+w*30/100, y+h*14/100},
-            {x+w*40/100, y+h*12/100},
-            {x+w*46/100, y+h*24/100}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(56, 140, 240));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
+    static HBITMAP s_hMapBmp = NULL;
+    if (!s_hMapBmp) {
+        /* 1. Try embedded bitmap resource 101 */
+        s_hMapBmp = LoadBitmapA(GetModuleHandleA(NULL), MAKEINTRESOURCE(101));
+        /* 2. Try disk file */
+        if (!s_hMapBmp) {
+            char exeDir[MAX_PATH] = {0};
+            GetModuleFileNameA(NULL, exeDir, sizeof(exeDir));
+            char *sl = strrchr(exeDir, '\\'); if (sl) *sl = '\0';
+            char p[MAX_PATH];
+            snprintf(p, sizeof(p), "%s\\assets\\world_map_cyber.bmp", exeDir);
+            s_hMapBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+            if (!s_hMapBmp) {
+                snprintf(p, sizeof(p), "%s\\world_map_cyber.bmp", exeDir);
+                s_hMapBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+            }
+            if (!s_hMapBmp) {
+                snprintf(p, sizeof(p), "%s\\..\\assets\\world_map_cyber.bmp", exeDir);
+                s_hMapBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+            }
+            if (!s_hMapBmp) {
+                s_hMapBmp = (HBITMAP)LoadImageA(NULL, "assets\\world_map_cyber.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+            }
+        }
     }
 
-    /* Arc 2: Western Europe (46%, 24%) -> East Asia (78%, 30%) */
-    {
-        POINT bz[4] = {
-            {x+w*46/100, y+h*24/100},
-            {x+w*56/100, y+h*6/100},
-            {x+w*68/100, y+h*8/100},
-            {x+w*78/100, y+h*30/100}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(244, 63, 140));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
+    if (s_hMapBmp) {
+        HDC hdcMap = CreateCompatibleDC(dc);
+        HBITMAP oBmp = (HBITMAP)SelectObject(hdcMap, s_hMapBmp);
+        SetStretchBltMode(dc, HALFTONE);
+        SetBrushOrgEx(dc, 0, 0, NULL);
+        StretchBlt(dc, x, y, w, h, hdcMap, 0, 0, 1280, 620, SRCCOPY);
+        SelectObject(hdcMap, oBmp);
+        DeleteDC(hdcMap);
     }
 
-    /* Arc 3: East Asia (78%, 30%) -> Australia Sydney (84%, 72%) */
+    /* --- Curved Trajectory Arcs (PolyBezier) between authentic landmass centroids --- */
+    /* Arc 1: US East (26.3%, 32.4%) -> Western Europe (48.8%, 27.4%) */
     {
         POINT bz[4] = {
-            {x+w*78/100, y+h*30/100},
-            {x+w*88/100, y+h*42/100},
-            {x+w*89/100, y+h*58/100},
-            {x+w*84/100, y+h*72/100}
+            {x + w * 263 / 1000, y + h * 324 / 1000},
+            {x + w * 320 / 1000, y + h * 140 / 1000},
+            {x + w * 430 / 1000, y + h * 130 / 1000},
+            {x + w * 488 / 1000, y + h * 274 / 1000}
         };
         HPEN pArc = CreatePen(PS_SOLID, 2, RGB(56, 189, 248));
         HPEN opOld = (HPEN)SelectObject(dc, pArc);
@@ -2435,15 +2338,43 @@ static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
         SelectObject(dc, opOld); DeleteObject(pArc);
     }
 
-    /* Arc 4: US East (25%, 30%) -> South America Brazil (31%, 66%) */
+    /* Arc 2: Western Europe (48.8%, 27.4%) -> East Asia (80.4%, 37.4%) */
     {
         POINT bz[4] = {
-            {x+w*25/100, y+h*30/100},
-            {x+w*35/100, y+h*40/100},
-            {x+w*36/100, y+h*54/100},
-            {x+w*31/100, y+h*66/100}
+            {x + w * 488 / 1000, y + h * 274 / 1000},
+            {x + w * 590 / 1000, y + h * 80 / 1000},
+            {x + w * 710 / 1000, y + h * 90 / 1000},
+            {x + w * 804 / 1000, y + h * 374 / 1000}
         };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(45, 110, 210));
+        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(244, 63, 120));
+        HPEN opOld = (HPEN)SelectObject(dc, pArc);
+        PolyBezier(dc, bz, 4);
+        SelectObject(dc, opOld); DeleteObject(pArc);
+    }
+
+    /* Arc 3: East Asia (80.4%, 37.4%) -> Australia Sydney (88.0%, 76.9%) */
+    {
+        POINT bz[4] = {
+            {x + w * 804 / 1000, y + h * 374 / 1000},
+            {x + w * 890 / 1000, y + h * 490 / 1000},
+            {x + w * 900 / 1000, y + h * 640 / 1000},
+            {x + w * 880 / 1000, y + h * 769 / 1000}
+        };
+        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(0, 229, 255));
+        HPEN opOld = (HPEN)SelectObject(dc, pArc);
+        PolyBezier(dc, bz, 4);
+        SelectObject(dc, opOld); DeleteObject(pArc);
+    }
+
+    /* Arc 4: US East (26.3%, 32.4%) -> South America Brazil (36.0%, 68.1%) */
+    {
+        POINT bz[4] = {
+            {x + w * 263 / 1000, y + h * 324 / 1000},
+            {x + w * 350 / 1000, y + h * 420 / 1000},
+            {x + w * 380 / 1000, y + h * 540 / 1000},
+            {x + w * 360 / 1000, y + h * 681 / 1000}
+        };
+        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(59, 130, 246));
         HPEN opOld = (HPEN)SelectObject(dc, pArc);
         PolyBezier(dc, bz, 4);
         SelectObject(dc, opOld); DeleteObject(pArc);
@@ -2452,7 +2383,6 @@ static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
     /* --- Radiant Glowing Heatmap Beacons (Layered Filled Halos) --- */
     HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
 
-    /* Helper lambda-like macro for drawing radiant glowing beacon */
     #define DRAW_BEACON(bx, by, rOuter, rMid, rInner, cOuter, cMid, cInner, cCore) do { \
         HBRUSH bO = CreateSolidBrush(cOuter); \
         HBRUSH obO = (HBRUSH)SelectObject(dc, bO); \
@@ -2471,29 +2401,25 @@ static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
         DeleteObject(bC); \
     } while(0)
 
-    /* Node 3: East Asia (Massive Crimson/Red Heatmap Epicenter) */
-    DRAW_BEACON(x+w*78/100, y+h*30/100, 24, 15, 8,
+    /* Node 1: East Asia (Massive Crimson/Red Threat Epicenter) */
+    DRAW_BEACON(x + w * 804 / 1000, y + h * 374 / 1000, 26, 17, 9, \
                 RGB(65, 12, 24), RGB(160, 24, 48), RGB(244, 63, 94), RGB(255, 245, 250));
 
-    /* Node 2: Western Europe (London/Paris Attack Node) */
-    DRAW_BEACON(x+w*46/100, y+h*24/100, 16, 10, 5,
+    /* Node 2: Western Europe (London/Frankfurt Attack Node) */
+    DRAW_BEACON(x + w * 488 / 1000, y + h * 274 / 1000, 18, 11, 6, \
                 RGB(55, 12, 22), RGB(150, 24, 44), RGB(239, 68, 68), RGB(255, 235, 240));
 
-    /* Node 1: US East Coast (New York/DC Attack Node) */
-    DRAW_BEACON(x+w*25/100, y+h*30/100, 15, 9, 5,
-                RGB(55, 12, 22), RGB(150, 24, 44), RGB(239, 68, 68), RGB(255, 235, 240));
+    /* Node 3: US East (Secured Headquarters SOC Node) */
+    DRAW_BEACON(x + w * 263 / 1000, y + h * 324 / 1000, 16, 10, 5, \
+                RGB(12, 45, 75), RGB(20, 95, 160), RGB(56, 189, 248), RGB(240, 250, 255));
 
-    /* Node 4: South America (Brazil Coast - Blue/Cyan Target Beacon) */
-    DRAW_BEACON(x+w*31/100, y+h*66/100, 12, 8, 4,
-                RGB(12, 28, 64), RGB(28, 70, 155), RGB(56, 189, 248), RGB(235, 250, 255));
+    /* Node 4: South America Brazil (Active Endpoint Sensor) */
+    DRAW_BEACON(x + w * 360 / 1000, y + h * 681 / 1000, 12, 7, 3, \
+                RGB(10, 35, 60), RGB(18, 75, 130), RGB(56, 189, 248), RGB(240, 250, 255));
 
-    /* Node 5: Central/East Africa (Blue/Cyan Target Beacon) */
-    DRAW_BEACON(x+w*55/100, y+h*58/100, 11, 7, 4,
-                RGB(12, 28, 64), RGB(28, 70, 155), RGB(56, 189, 248), RGB(235, 250, 255));
-
-    /* Node 6: Australia (Sydney - Blue/Cyan Target Beacon) */
-    DRAW_BEACON(x+w*84/100, y+h*72/100, 13, 8, 4,
-                RGB(12, 28, 64), RGB(28, 70, 155), RGB(56, 189, 248), RGB(235, 250, 255));
+    /* Node 5: Australia Sydney (Active Endpoint Sensor) */
+    DRAW_BEACON(x + w * 880 / 1000, y + h * 769 / 1000, 14, 8, 4, \
+                RGB(10, 40, 68), RGB(18, 85, 145), RGB(56, 189, 248), RGB(240, 250, 255));
 
     #undef DRAW_BEACON
 }
@@ -3065,7 +2991,7 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     /* ===== ROW 3: World Map Panel + Latest Active Threat & System Status ===== */
     int row3Y = row2Y + chartH + gap;
     int row3H = ch - (row3Y - cy) - gap;
-    if(row3H < 150) row3H = 150;
+    if(row3H < 180) row3H = 180;
 
     int mapPanelW = (cw - MRG*2 - gap) * 67 / 100;
     int rightPanelW = cw - MRG*2 - gap - mapPanelW;
@@ -3074,21 +3000,23 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     /* Global Attack Vectors & Threat Heatmap Panel */
     DrawRoundRectPanel(dc, cx+MRG, row3Y, mapPanelW, row3H, 10, C_PANEL, C_BORDER);
     /* Globe icon */
-    DrawRoundRectPanel(dc, cx+MRG+12, row3Y+10, 22, 22, 6, RGB(20, 48, 110), C_CYAN);
+    DrawRoundRectPanel(dc, cx+MRG+14, row3Y+10, 24, 24, 6, RGB(20, 48, 110), C_CYAN);
     SetTextColor(dc, C_CYAN);
     SelectObject(dc, fIcon ? fIcon : fSm);
-    RECT gicR = {cx+MRG+12, row3Y+10, cx+MRG+34, row3Y+32};
+    RECT gicR = {cx+MRG+14, row3Y+10, cx+MRG+38, row3Y+34};
     DrawTextW(dc, L"\uE774", -1, &gicR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-    Txt(dc, "Global Attack Vectors & Threat Heatmap", cx+MRG+40, row3Y+12, 340, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Global Attack Vectors & Threat Heatmap", cx+MRG+44, row3Y+12, 360, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
-    /* World Map takes 68% of panel width for natural 2:1 continent aspect ratio */
-    int mapW = mapPanelW * 68 / 100;
-    DrawWorldHeatmap(dc, cx+MRG+8, row3Y+32, mapW, row3H-42);
+    /* World Map takes 62% of panel width for optimal balance with stat cards */
+    int mapW = mapPanelW * 62 / 100;
+    DrawWorldHeatmap(dc, cx+MRG+10, row3Y+36, mapW, row3H-46);
 
-    /* Stats Column - 4 rows, vertically centered */
-    int statX = cx + MRG + mapW + 12;
-    int statW = mapPanelW - mapW - 18;
-    int statRowH = (row3H - 36) / 4;
+    /* Stats Column - 4 dedicated rounded cards */
+    int statX = cx + MRG + mapW + 16;
+    int statW = mapPanelW - mapW - 28;
+    int cardGap = 6;
+    int mCardH = (row3H - 46 - cardGap * 3) / 4;
+    if (mCardH < 44) mCardH = 44;
 
     /* Live dynamic stats */
     char sockBuf[32], procBuf[32], atkBuf[32], hitBuf[32];
@@ -3107,85 +3035,104 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
         COLORREF trendCol;
         const char *label;
     } mStats[4] = {
-        {L"\uE72E", C_GREEN,  RGB(12,40,28), atkBuf,  "",        (g_wafBlk + g_realDrops > 0) ? L"\u2191 Active" : L"\u2713 Defended", C_GREEN, "Global Attacks Deflected"},
-        {L"\uE74C", C_GREEN,  RGB(12,40,28), hitBuf,  "",        (g_rwHits > 0) ? L"\u2191 Tripped" : L"\u2713 Armed", (g_rwHits > 0) ? C_RED : C_GREEN, "Hits / Honeypot Triggers"},
-        {L"\uE839", C_CYAN,   RGB(8,38,52),  sockBuf, " Sockets", (g_netConnCnt > 0) ? L"\u2191 Live" : L"-- Idle",  C_CYAN,  "Active Monitored Sessions"},
+        {L"\uE72E", C_GREEN,  RGB(14,38,28), atkBuf,  "",        (g_wafBlk + g_realDrops > 0) ? L"\u2191 Active" : L"\u2713 Defended", C_GREEN, "Global Attacks Deflected"},
+        {L"\uE74C", C_GREEN,  RGB(14,38,28), hitBuf,  "",        (g_rwHits > 0) ? L"\u2191 Tripped" : L"\u2713 Armed", (g_rwHits > 0) ? C_RED : C_GREEN, "Hits / Honeypot Triggers"},
+        {L"\uE839", C_CYAN,   RGB(10,36,54), sockBuf, " Sockets", (g_netConnCnt > 0) ? L"\u2191 Live" : L"-- Idle",  C_CYAN,  "Active Monitored Sessions"},
         {L"\uE713", C_PURPLE, RGB(28,16,52), procBuf, " Procs",   (g_realRunningProcs > 0) ? L"\u2191 Live" : L"-- Idle",  C_CYAN,  "Protected Host Processes"}
     };
 
     for(int s=0; s<4; s++){
-        int sy = row3Y + 32 + s*statRowH;
-        int rowMidH = statRowH - 4;
+        int sy = row3Y + 38 + s*(mCardH + cardGap);
 
-        /* Separator line between stat rows */
-        if(s > 0) DrawLine(dc, statX, sy-2, statX+statW, sy-2, C_BORDER2);
+        /* Individual Card Container */
+        DrawRoundRectPanel(dc, statX, sy, statW, mCardH, 8, RGB(12, 18, 30), RGB(28, 40, 60));
 
-        /* Icon pill background */
-        DrawRoundRectPanel(dc, statX, sy + (rowMidH-20)/2, 22, 22, 5, RGB(14,22,38), C_BORDER);
+        /* Icon badge on left */
+        int bSz = mCardH - 16;
+        if(bSz > 32) bSz = 32;
+        if(bSz < 22) bSz = 22;
+        int bX = statX + 10;
+        int bY = sy + (mCardH - bSz) / 2;
+        DrawRoundRectPanel(dc, bX, bY, bSz, bSz, 6, mStats[s].iconBg, mStats[s].iconCol);
         SetTextColor(dc, mStats[s].iconCol);
         SelectObject(dc, fIcon ? fIcon : fSm);
-        RECT sir = {statX, sy + (rowMidH-20)/2, statX+22, sy + (rowMidH-20)/2+22};
+        RECT sir = {bX, bY, bX + bSz, bY + bSz};
         DrawTextW(dc, mStats[s].iconW, -1, &sir, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
-        /* Value (big) + optional suffix */
+        /* Center: Big Value + unit suffix */
+        int vx = bX + bSz + 10;
+        int vw = statW - (bSz + 20) - 76;
+        int vY = sy + (mCardH - 34) / 2;
         char fullVal[64];
         snprintf(fullVal, sizeof(fullVal), "%s%s", mStats[s].val, mStats[s].valSuffix);
         SetTextColor(dc, C_TEXT);
         SelectObject(dc, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-        RECT vr = {statX+28, sy+2, statX+statW-46, sy+2+18};
+        RECT vr = {vx, vY, vx + vw, vY + 18};
         DrawTextA(dc, fullVal, -1, &vr, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
-        /* Trend (top-right) */
+        /* Subtitle label */
+        Txt(dc, mStats[s].label, vx, vY + 18, vw + 60, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+
+        /* Right side trend indicator */
         SetTextColor(dc, mStats[s].trendCol);
         SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-        RECT tr = {statX+statW-52, sy+2, statX+statW, sy+2+16};
-        DrawTextW(dc, mStats[s].trendW, -1, &tr, DT_RIGHT|DT_SINGLELINE);
-
-        /* Label */
-        Txt(dc, mStats[s].label, statX+28, sy+20, statW-32, 12, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+        RECT tr = {statX + statW - 74, vY, statX + statW - 10, vY + 18};
+        DrawTextW(dc, mStats[s].trendW, -1, &tr, DT_RIGHT|DT_SINGLELINE|DT_VCENTER);
     }
 
     /* Right Side: Latest Active Threat Card + System Status */
-    int threatCardH = row3H * 66 / 100;
+    int statCardH = 78;
+    if (row3H >= 270) statCardH = 84;
+    int threatCardH = row3H - statCardH - gap;
     DrawRoundRectPanel(dc, rightX, row3Y, rightPanelW, threatCardH, 10, C_PANEL, C_BORDER);
 
     /* Red alarm icon & Header matching target screenshot */
     SetTextColor(dc, RGB(239, 68, 68));
     SelectObject(dc, fIcon ? fIcon : fSm);
-    RECT alrR = {rightX+12, row3Y+10, rightX+32, row3Y+30};
+    RECT alrR = {rightX+14, row3Y+8, rightX+34, row3Y+30};
     DrawTextW(dc, L"\uEA8F", -1, &alrR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-    Txt(dc, "Latest Active Threat", rightX+36, row3Y+11, 160, 18, RGB(239, 68, 68), fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Latest Active Threat", rightX+38, row3Y+10, 160, 18, RGB(239, 68, 68), fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
     /* Red LIVE Badge */
-    DrawPillBadge(dc, rightX+rightPanelW-50, row3Y+10, 44, 18, RGB(185, 28, 28), C_TEXT, "LIVE", fSm);
+    DrawPillBadge(dc, rightX+rightPanelW-54, row3Y+9, 44, 20, RGB(185, 28, 28), C_TEXT, "LIVE", fSm);
 
     /* Inner Red Threat Box with Neon Border */
     int inX = rightX + 12, inY = row3Y + 34, inW = rightPanelW - 24, inH = threatCardH - 44;
-    DrawRoundRectPanel(dc, inX, inY, inW, inH, 8, C_CARD2, RGB(239, 68, 68));
+    DrawRoundRectPanel(dc, inX, inY, inW, inH, 8, C_CARD2, RGB(225, 29, 72));
 
-    /* Concentric Red Target Radar Circles */
+    /* Concentric Red Target Radar Circles - Vertically Centered */
     {
-        int tcx = inX + 32, tcy = inY + inH/2;
+        int tcx = inX + 44, tcy = inY + inH/2;
         HPEN pR1 = CreatePen(PS_SOLID, 2, RGB(239, 68, 68));
         HPEN pR2 = CreatePen(PS_SOLID, 1, RGB(180, 40, 50));
         HPEN pR3 = CreatePen(PS_SOLID, 1, RGB(255, 120, 140));
-        SelectObject(dc, GetStockObject(NULL_BRUSH));
-        SelectObject(dc, pR1); Ellipse(dc, tcx-22, tcy-22, tcx+22, tcy+22);
-        SelectObject(dc, pR2); Ellipse(dc, tcx-14, tcy-14, tcx+14, tcy+14);
-        SelectObject(dc, pR3); Ellipse(dc, tcx-6, tcy-6, tcx+6, tcy+6);
-        DeleteObject(pR1); DeleteObject(pR2); DeleteObject(pR3);
+        HBRUSH oBr = (HBRUSH)SelectObject(dc, GetStockObject(NULL_BRUSH));
+        HPEN op = (HPEN)SelectObject(dc, pR1);
+        Ellipse(dc, tcx-26, tcy-26, tcx+26, tcy+26);
+        SelectObject(dc, pR2);
+        Ellipse(dc, tcx-17, tcy-17, tcx+17, tcy+17);
+        SelectObject(dc, pR3);
+        Ellipse(dc, tcx-8, tcy-8, tcx+8, tcy+8);
 
         /* Crosshairs */
         HPEN pCh = CreatePen(PS_SOLID, 1, RGB(239, 68, 68));
         SelectObject(dc, pCh);
-        MoveToEx(dc, tcx-26, tcy, NULL); LineTo(dc, tcx+26, tcy);
-        MoveToEx(dc, tcx, tcy-26, NULL); LineTo(dc, tcx, tcy+26);
-        DeleteObject(pCh);
+        MoveToEx(dc, tcx-30, tcy, NULL); LineTo(dc, tcx+30, tcy);
+        MoveToEx(dc, tcx, tcy-30, NULL); LineTo(dc, tcx, tcy+30);
+
+        SelectObject(dc, op);
+        SelectObject(dc, oBr);
+        DeleteObject(pR1); DeleteObject(pR2); DeleteObject(pR3); DeleteObject(pCh);
     }
 
-    int ttx = inX + 70;
-    Txt(dc, "CLUSTER MESH", ttx, inY+8, inW-74, 12, RGB(239, 68, 68), fSm, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "Local Server Pairing Key", ttx, inY+22, inW-74, 12, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    /* Text on Right Side of Inner Threat Card - Clean Vertical Rhythm without clipping */
+    int ttx = inX + 86;
+    int ttw = inW - 92;
+    int txtStartY = inY + (inH - 84) / 2;
+    if (txtStartY < inY + 6) txtStartY = inY + 6;
+
+    Txt(dc, "CLUSTER MESH", ttx, txtStartY, ttw, 16, RGB(239, 68, 68), fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+    Txt(dc, "Local Server Pairing Key", ttx, txtStartY+18, ttw, 18, C_DIM, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
     /* Dynamic Cluster Pairing Key */
     static char s_dashPairKey[64] = {0};
@@ -3195,29 +3142,49 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
         for(char *p=hName; *p; p++) if(*p>='a'&&*p<='z') *p = (char)(*p - 'a' + 'A');
         snprintf(s_dashPairKey, sizeof(s_dashPairKey), "KVX-%s-%04X-MESH", hName, (unsigned)(GetCurrentProcessId() ^ 0xC391));
     }
-    Txt(dc, s_dashPairKey, ttx, inY+38, inW-74, 16, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "(Zero-Trust Mutual Auth)", ttx, inY+56, inW-74, 12, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, s_dashPairKey, ttx, txtStartY+40, ttw, 22, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+    Txt(dc, "(Zero-Trust Mutual Auth)", ttx, txtStartY+64, ttw, 16, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
     /* Bottom: System Status Card */
     int statCardY = row3Y + threatCardH + gap;
-    int statCardH = row3H - threatCardH - gap;
-    DrawRoundRectPanel(dc, rightX, statCardY, rightPanelW, statCardH, 8, C_PANEL, C_BORDER);
+    DrawRoundRectPanel(dc, rightX, statCardY, rightPanelW, statCardH, 10, C_PANEL, C_BORDER);
 
-    /* Green Shield Icon */
-    DrawRoundRectPanel(dc, rightX+12, statCardY+(statCardH-30)/2, 30, 30, 6, RGB(16, 42, 34), C_GREEN);
+    /* Green Shield Icon Badge (Centered Vertically) */
+    int sBadgeSz = 40;
+    int sBadgeX = rightX + 16;
+    int sBadgeY = statCardY + (statCardH - sBadgeSz) / 2;
+    DrawRoundRectPanel(dc, sBadgeX, sBadgeY, sBadgeSz, sBadgeSz, 8, RGB(14, 38, 28), C_GREEN);
     SetTextColor(dc, C_GREEN);
-    SelectObject(dc, fIcon ? fIcon : fSm);
-    RECT ssir = {rightX+12, statCardY+(statCardH-30)/2, rightX+42, statCardY+(statCardH-30)/2+30};
+    SelectObject(dc, fIcon ? fIcon : fMed);
+    RECT ssir = {sBadgeX, sBadgeY, sBadgeX + sBadgeSz, sBadgeY + sBadgeSz};
     DrawTextW(dc, L"\uE72E", -1, &ssir, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
     /* Status Text */
-    Txt(dc, "System Status", rightX+50, statCardY+6, rightPanelW-80, 14, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, ">", rightX+rightPanelW-24, statCardY+6, 14, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    int stX = sBadgeX + sBadgeSz + 14;
+    int stW = rightPanelW - (stX - rightX) - 34;
+    int stY1 = statCardY + (statCardH - 42) / 2;
+    int stY2 = stY1 + 22;
 
-    HBRUSH bOk = CreateSolidBrush(C_GREEN);
-    RECT okR = {rightX+50, statCardY+26, rightX+56, statCardY+32};
-    Ellipse(dc, okR.left, okR.top, okR.right, okR.bottom); DeleteObject(bOk);
-    Txt(dc, "All Systems Operational", rightX+60, statCardY+22, rightPanelW-90, 14, C_GREEN, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "System Status", stX, stY1, stW, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+
+    /* Green Glowing Indicator Dot */
+    {
+        HBRUSH bOk = CreateSolidBrush(C_GREEN);
+        HPEN pOk = CreatePen(PS_SOLID, 1, C_GREEN);
+        HBRUSH oBr = (HBRUSH)SelectObject(dc, bOk);
+        HPEN oPen = (HPEN)SelectObject(dc, pOk);
+        Ellipse(dc, stX, stY2 + 5, stX + 8, stY2 + 13);
+        SelectObject(dc, oBr);
+        SelectObject(dc, oPen);
+        DeleteObject(bOk);
+        DeleteObject(pOk);
+    }
+    Txt(dc, "All Systems Operational", stX + 14, stY2, stW - 14, 18, C_GREEN, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+
+    /* Subtle Chevron `>` on the right */
+    int chvX = rightX + rightPanelW - 28;
+    int chvY = statCardY + (statCardH - 20) / 2;
+    Txt(dc, ">", chvX, chvY, 16, 20, C_DIM, fMed, DT_CENTER|DT_SINGLELINE|DT_VCENTER);
 }
 
 /* --- Module Views --------------------------------------------------------- */
@@ -8529,6 +8496,8 @@ static DWORD WINAPI FirstRunDiagnosticWorkerThread(LPVOID param) {
     return 0;
 }
 
+static void LoadKaevexIconPair(HINSTANCE hi, HICON *phBig, HICON *phSmall);
+
 static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp) {
     switch(msg) {
     case WM_CREATE: {
@@ -8584,6 +8553,14 @@ static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp
         SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         SetTextColor(memDC, RGB(140, 165, 195));
         TextOutA(memDC, 40, 42, "Deep Host Topography, Local Database Discovery & Proactive Defense Shield Arming", 80);
+
+        /* Kaevex Official Icon in Header */
+        HICON hWizIco = NULL;
+        LoadKaevexIconPair(GetModuleHandleA(NULL), NULL, &hWizIco);
+        if (hWizIco) {
+            DrawIconEx(memDC, W - 60, 16, hWizIco, 32, 32, 0, NULL, DI_NORMAL);
+            DestroyIcon(hWizIco);
+        }
 
         /* 3. Radar Visualizer (Left side: cx=72, cy=95, r=25) */
         int rcx = 72, rcy = 95, rr = 25;
@@ -8808,43 +8785,42 @@ static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp
 
 /* Centralized Kaevex Official Icon Loader */
 static void LoadKaevexIconPair(HINSTANCE hi, HICON *phBig, HICON *phSmall) {
-    if (!phBig || !phSmall) return;
-    *phBig = NULL;
-    *phSmall = NULL;
-
+    HICON big = NULL, small = NULL;
     HINSTANCE hInst = hi ? hi : GetModuleHandleA(NULL);
 
     /* 1. Try embedded PE resource ID 1 */
-    *phBig   = (HICON)LoadImageA(hInst, MAKEINTRESOURCE(1), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
-    *phSmall = (HICON)LoadImageA(hInst, MAKEINTRESOURCE(1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+    big   = (HICON)LoadImageA(hInst, MAKEINTRESOURCE(1), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
+    small = (HICON)LoadImageA(hInst, MAKEINTRESOURCE(1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
 
     /* 2. Try icon.ico from executable folder and assets */
-    if (!*phBig) {
+    if (!big) {
         char exeDir[MAX_PATH] = {0};
         GetModuleFileNameA(NULL, exeDir, sizeof(exeDir));
         char *sl = strrchr(exeDir, '\\'); if (sl) *sl = '\0';
         char icoPath[MAX_PATH];
 
         snprintf(icoPath, sizeof(icoPath), "%s\\icon.ico", exeDir);
-        *phBig   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-        *phSmall = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+        big   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+        small = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
 
-        if (!*phBig) {
+        if (!big) {
             snprintf(icoPath, sizeof(icoPath), "%s\\assets\\icon.ico", exeDir);
-            *phBig   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-            *phSmall = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+            big   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            small = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
         }
-        if (!*phBig) {
+        if (!big) {
             snprintf(icoPath, sizeof(icoPath), "%s\\..\\assets\\icon.ico", exeDir);
-            *phBig   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-            *phSmall = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+            big   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            small = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
         }
-        if (!*phBig) {
+        if (!big) {
             snprintf(icoPath, sizeof(icoPath), "%s\\kaevex.ico", exeDir);
-            *phBig   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-            *phSmall = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+            big   = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+            small = (HICON)LoadImageA(NULL, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
         }
     }
+    if (phBig) *phBig = big; else if (big) DestroyIcon(big);
+    if (phSmall) *phSmall = small; else if (small) DestroyIcon(small);
 }
 
 static void ShowFirstRunCyberWizard(HWND hwndParent) {

@@ -6,6 +6,9 @@
 1 ICON "assets\\icon.ico"
 2 ICON "assets\\icon.ico"
 
+// World Map Bitmap
+101 BITMAP "assets\\world_map_cyber.bmp"
+
 // Version Information
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0

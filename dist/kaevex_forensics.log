@@ -11413,3 +11413,1014 @@ Status: Cryptographically Bound & Scoped
 [2026-09-26 18:53:51] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
 [2026-09-26 18:53:51] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
 [2026-09-26 18:53:52] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-26 19:59:08 ===
+[2026-09-26 19:59:08] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-26 19:59:08] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-26 19:59:08] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-26 19:59:08] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-26 19:59:08] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-26 19:59:08] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-26 19:59:08] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-26 19:59:08] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-26 19:59:08] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 103057)
+[2026-09-26 19:59:08] [WARNING ] NetGuard         Baseline: 68 active conns (41 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-26 19:59:08] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-26 19:59:08] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-26 19:59:09] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-26 19:59:10] [INFO    ] AppHub           Discovery complete: 359 apps cataloged | 162 relationship edges
+[2026-09-26 19:59:10] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-26 19:59:11] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-26 19:59:11] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-26 19:59:12] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-26 19:59:13] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-26 19:59:14] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-26 19:59:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 19:59:46] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 19:59:47] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 19:59:48] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 20:00:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:00:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 20:00:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:01:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:01:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:02:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:02:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:03:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:03:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:04:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:04:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:05:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:05:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:06:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:06:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:07:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:07:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:08:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:08:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:09:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:09:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:10:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:10:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:11:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:11:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:12:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:12:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:13:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:13:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:14:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:14:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:15:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:15:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:16:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:16:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:17:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:17:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:18:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:18:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:19:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:19:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:20:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:20:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:21:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:21:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:22:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:22:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:23:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:23:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:24:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:24:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:25:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:25:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:26:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:26:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:27:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:27:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:28:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:28:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:29:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:29:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:30:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:30:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:31:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:31:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:32:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:32:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:33:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:33:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:34:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:34:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:35:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:35:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:36:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:36:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:37:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:37:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:38:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:38:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:39:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:39:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:40:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:40:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:41:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:41:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:42:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:42:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:43:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:43:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:44:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:44:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:45:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:45:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:46:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:46:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:47:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:47:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:48:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:48:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:49:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:49:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:50:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:50:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:51:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:51:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:52:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:52:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:53:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:53:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:54:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:54:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:55:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:55:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:56:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:56:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:57:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:57:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:58:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:58:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:59:08] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-26 20:59:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:59:10] [HIGH    ] AutoAV           [THREAT] AppVClient.exe: Suspicious.Generic
+[2026-09-26 20:59:11] [HIGH    ] AutoAV           [THREAT] AtBroker.exe: Suspicious.Generic
+[2026-09-26 20:59:11] [HIGH    ] AutoAV           [THREAT] audiodg.exe: Suspicious.Generic
+[2026-09-26 20:59:12] [HIGH    ] AutoAV           [THREAT] bdechangepin.exe: Heuristic.DPAPI
+[2026-09-26 20:59:13] [HIGH    ] AutoAV           [THREAT] bitsadmin.exe: Suspicious.Generic
+[2026-09-26 20:59:13] [HIGH    ] AutoAV           [THREAT] browserexport.exe: Heuristic.DPAPI
+[2026-09-26 20:59:13] [HIGH    ] AutoAV           [THREAT] certreq.exe: Suspicious.Generic
+[2026-09-26 20:59:14] [HIGH    ] AutoAV           [THREAT] charmap.exe: Suspicious.Generic
+[2026-09-26 20:59:14] [HIGH    ] AutoAV           [THREAT] cmdkey.exe: Suspicious.Generic
+[2026-09-26 20:59:15] [HIGH    ] AutoAV           [THREAT] CompatTelRunner.exe: Suspicious.Generic
+[2026-09-26 20:59:15] [HIGH    ] AutoAV           [THREAT] consent.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:16] [HIGH    ] AutoAV           [THREAT] credwiz.exe: Suspicious.Generic
+[2026-09-26 20:59:16] [HIGH    ] AutoAV           [THREAT] curl.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:16] [HIGH    ] AutoAV           [THREAT] CustomShellHost.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:17] [HIGH    ] AutoAV           [THREAT] DataExchangeHost.exe: Suspicious.Generic
+[2026-09-26 20:59:17] [HIGH    ] AutoAV           [THREAT] DeviceCensus.exe: Heuristic.ProcHollow
+[2026-09-26 20:59:18] [HIGH    ] AutoAV           [THREAT] dispdiag.exe: Suspicious.Generic
+[2026-09-26 20:59:18] [HIGH    ] AutoAV           [THREAT] dmcertinst.exe: Heuristic.DPAPI
+[2026-09-26 20:59:18] [HIGH    ] AutoAV           [THREAT] drvinst.exe: Heuristic.ProcHollow
+[2026-09-26 20:59:19] [HIGH    ] AutoAV           [THREAT] DWWIN.EXE: Heuristic.MemAlloc
+[2026-09-26 20:59:19] [HIGH    ] AutoAV           [THREAT] Eap3Host.exe: Suspicious.Generic
+[2026-09-26 20:59:19] [HIGH    ] AutoAV           [THREAT] EhStorAuthn.exe: Suspicious.Generic
+[2026-09-26 20:59:20] [HIGH    ] AutoAV           [THREAT] ETDService.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:21] [HIGH    ] AutoAV           [THREAT] fixmapi.exe: Suspicious.Generic
+[2026-09-26 20:59:22] [HIGH    ] AutoAV           [THREAT] GenValObj.exe: Suspicious.Generic
+[2026-09-26 20:59:23] [HIGH    ] AutoAV           [THREAT] IESettingSync.exe: Heuristic.DPAPI
+[2026-09-26 20:59:24] [HIGH    ] AutoAV           [THREAT] IsoSessionCli.exe: Suspicious.Generic
+[2026-09-26 20:59:25] [HIGH    ] AutoAV           [THREAT] Magnify.exe: Suspicious.Generic
+[2026-09-26 20:59:25] [HIGH    ] AutoAV           [THREAT] mavinject.exe: Heuristic.MemAlloc
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MDMAppInstaller.exe: Suspicious.Generic
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeBCHost.exe: Heuristic.MemAlloc
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeCP.exe: Heuristic.MemAlloc
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeDevTools.exe: Heuristic.MemAlloc
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeSH.exe: Heuristic.MemAlloc
+[2026-09-26 20:59:26] [HIGH    ] AutoAV           [THREAT] MidiSrv.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:28] [HIGH    ] AutoAV           [THREAT] MpSigStub.exe: Suspicious.Generic
+[2026-09-26 20:59:29] [HIGH    ] AutoAV           [THREAT] MRT.exe: Suspicious.Generic
+[2026-09-26 20:59:29] [HIGH    ] AutoAV           [THREAT] msconfig.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:29] [HIGH    ] AutoAV           [THREAT] msra.exe: Suspicious.Generic
+[2026-09-26 20:59:30] [HIGH    ] AutoAV           [THREAT] mstsc.exe: Heuristic.DPAPI
+[2026-09-26 20:59:30] [HIGH    ] AutoAV           [THREAT] Narrator.exe: Suspicious.Generic
+[2026-09-26 20:59:30] [HIGH    ] AutoAV           [THREAT] NDKPerfCmd.exe: Suspicious.Generic
+[2026-09-26 20:59:30] [HIGH    ] AutoAV           [THREAT] NDKPing.exe: Suspicious.Generic
+[2026-09-26 20:59:30] [HIGH    ] AutoAV           [THREAT] netiougc.exe: Suspicious.Generic
+[2026-09-26 20:59:32] [HIGH    ] AutoAV           [THREAT] ntoskrnl.exe: Suspicious.Generic
+[2026-09-26 20:59:32] [HIGH    ] AutoAV           [THREAT] nvdebugdump.exe: Suspicious.Generic
+[2026-09-26 20:59:33] [HIGH    ] AutoAV           [THREAT] nvidia-smi.exe: Suspicious.Generic
+[2026-09-26 20:59:35] [HIGH    ] AutoAV           [THREAT] pcaui.exe: Heuristic.ProcHollow
+[2026-09-26 20:59:36] [HIGH    ] AutoAV           [THREAT] PktMon.exe: Suspicious.Generic
+[2026-09-26 20:59:37] [HIGH    ] AutoAV           [THREAT] rdpinput.exe: Suspicious.Generic
+[2026-09-26 20:59:38] [HIGH    ] AutoAV           [THREAT] rdpshell.exe: Suspicious.Generic
+[2026-09-26 20:59:38] [HIGH    ] AutoAV           [THREAT] rdrleakdiag.exe: Heuristic.NtInject
+[2026-09-26 20:59:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 20:59:38] [HIGH    ] AutoAV           [THREAT] ReFsDedupSvc.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:40] [HIGH    ] AutoAV           [THREAT] rstrui.exe: Suspicious.Generic
+[2026-09-26 20:59:40] [HIGH    ] AutoAV           [THREAT] sc.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:41] [HIGH    ] AutoAV           [THREAT] sdbinst.exe: Heuristic.ProcHollow
+[2026-09-26 20:59:41] [HIGH    ] AutoAV           [THREAT] sdchange.exe: Suspicious.Generic
+[2026-09-26 20:59:41] [HIGH    ] AutoAV           [THREAT] SearchIndexer.exe: Suspicious.Generic
+[2026-09-26 20:59:41] [HIGH    ] AutoAV           [THREAT] SearchProtocolHost.exe: Heuristic.ProcInject
+[2026-09-26 20:59:42] [HIGH    ] AutoAV           [THREAT] SecurityHealthSystray.exe: Suspicious.Generic
+[2026-09-26 20:59:42] [HIGH    ] AutoAV           [THREAT] SensorDataService.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:43] [HIGH    ] AutoAV           [THREAT] services.exe: Heuristic.ProcHollow
+[2026-09-26 20:59:43] [HIGH    ] AutoAV           [THREAT] ShellAppRuntime.exe: Heuristic.AntiDebug
+[2026-09-26 20:59:44] [HIGH    ] AutoAV           [THREAT] sihost.exe: Suspicious.Generic
+[2026-09-26 20:59:44] [HIGH    ] AutoAV           [THREAT] smartscreen.exe: Heuristic.DPAPI
+[2026-09-26 20:59:44] [HIGH    ] AutoAV           [THREAT] smss.exe: Suspicious.Generic
+[2026-09-26 20:59:44] [HIGH    ] AutoAV           [THREAT] SndVol.exe: Suspicious.Generic
+[2026-09-26 20:59:46] [HIGH    ] AutoAV           [THREAT] srdelayed.exe: Suspicious.Generic
+[2026-09-26 20:59:46] [HIGH    ] AutoAV           [THREAT] sudo.exe: Suspicious.Generic
+[2026-09-26 20:59:47] [WARN    ] AutoAV           Hourly scan complete: 500 files scanned, 69 threats found
+[2026-09-26 21:00:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:00:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:01:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:01:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:02:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:02:38] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:03:08] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:03:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:04:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:04:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:05:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:05:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:06:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:06:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:07:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:07:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:08:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:08:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:09:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:09:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:10:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:10:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:11:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:11:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:12:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:12:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:13:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:13:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:14:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:14:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:15:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:15:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:16:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:16:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:17:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:17:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:18:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:18:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:19:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:19:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:20:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:20:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:21:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:21:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:22:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:22:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:23:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:23:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:24:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:24:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:25:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:25:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:26:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:26:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:27:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:27:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:28:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:28:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:29:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:29:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:30:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:30:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:31:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:31:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:32:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:32:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:33:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:33:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:34:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:34:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:35:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:35:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:36:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:36:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:37:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:37:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:38:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:38:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:39:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:39:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:40:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:40:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:41:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:41:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:42:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:42:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:43:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:43:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:44:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:44:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:45:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:45:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:46:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:46:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:47:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:47:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:48:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:48:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:49:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:49:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:50:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:50:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:51:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:51:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:52:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:52:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:53:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:53:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:54:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:54:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:55:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:55:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:56:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:56:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:57:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:57:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:58:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:58:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:59:09] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-26 21:59:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:59:12] [HIGH    ] AutoAV           [THREAT] AppVClient.exe: Suspicious.Generic
+[2026-09-26 21:59:12] [HIGH    ] AutoAV           [THREAT] AtBroker.exe: Suspicious.Generic
+[2026-09-26 21:59:12] [HIGH    ] AutoAV           [THREAT] audiodg.exe: Suspicious.Generic
+[2026-09-26 21:59:13] [HIGH    ] AutoAV           [THREAT] bdechangepin.exe: Heuristic.DPAPI
+[2026-09-26 21:59:14] [HIGH    ] AutoAV           [THREAT] bitsadmin.exe: Suspicious.Generic
+[2026-09-26 21:59:14] [HIGH    ] AutoAV           [THREAT] browserexport.exe: Heuristic.DPAPI
+[2026-09-26 21:59:14] [HIGH    ] AutoAV           [THREAT] certreq.exe: Suspicious.Generic
+[2026-09-26 21:59:15] [HIGH    ] AutoAV           [THREAT] charmap.exe: Suspicious.Generic
+[2026-09-26 21:59:16] [HIGH    ] AutoAV           [THREAT] cmdkey.exe: Suspicious.Generic
+[2026-09-26 21:59:16] [HIGH    ] AutoAV           [THREAT] CompatTelRunner.exe: Suspicious.Generic
+[2026-09-26 21:59:16] [HIGH    ] AutoAV           [THREAT] consent.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:17] [HIGH    ] AutoAV           [THREAT] credwiz.exe: Suspicious.Generic
+[2026-09-26 21:59:17] [HIGH    ] AutoAV           [THREAT] curl.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:18] [HIGH    ] AutoAV           [THREAT] CustomShellHost.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:18] [HIGH    ] AutoAV           [THREAT] DataExchangeHost.exe: Suspicious.Generic
+[2026-09-26 21:59:18] [HIGH    ] AutoAV           [THREAT] DeviceCensus.exe: Heuristic.ProcHollow
+[2026-09-26 21:59:19] [HIGH    ] AutoAV           [THREAT] dispdiag.exe: Suspicious.Generic
+[2026-09-26 21:59:19] [HIGH    ] AutoAV           [THREAT] dmcertinst.exe: Heuristic.DPAPI
+[2026-09-26 21:59:20] [HIGH    ] AutoAV           [THREAT] drvinst.exe: Heuristic.ProcHollow
+[2026-09-26 21:59:20] [HIGH    ] AutoAV           [THREAT] DWWIN.EXE: Heuristic.MemAlloc
+[2026-09-26 21:59:20] [HIGH    ] AutoAV           [THREAT] Eap3Host.exe: Suspicious.Generic
+[2026-09-26 21:59:21] [HIGH    ] AutoAV           [THREAT] EhStorAuthn.exe: Suspicious.Generic
+[2026-09-26 21:59:22] [HIGH    ] AutoAV           [THREAT] ETDService.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:22] [HIGH    ] AutoAV           [THREAT] fixmapi.exe: Suspicious.Generic
+[2026-09-26 21:59:23] [HIGH    ] AutoAV           [THREAT] GenValObj.exe: Suspicious.Generic
+[2026-09-26 21:59:25] [HIGH    ] AutoAV           [THREAT] IESettingSync.exe: Heuristic.DPAPI
+[2026-09-26 21:59:26] [HIGH    ] AutoAV           [THREAT] IsoSessionCli.exe: Suspicious.Generic
+[2026-09-26 21:59:27] [HIGH    ] AutoAV           [THREAT] Magnify.exe: Suspicious.Generic
+[2026-09-26 21:59:27] [HIGH    ] AutoAV           [THREAT] mavinject.exe: Heuristic.MemAlloc
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MDMAppInstaller.exe: Suspicious.Generic
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeBCHost.exe: Heuristic.MemAlloc
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeCP.exe: Heuristic.MemAlloc
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeDevTools.exe: Heuristic.MemAlloc
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeSH.exe: Heuristic.MemAlloc
+[2026-09-26 21:59:28] [HIGH    ] AutoAV           [THREAT] MidiSrv.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:30] [HIGH    ] AutoAV           [THREAT] MpSigStub.exe: Suspicious.Generic
+[2026-09-26 21:59:31] [HIGH    ] AutoAV           [THREAT] MRT.exe: Suspicious.Generic
+[2026-09-26 21:59:31] [HIGH    ] AutoAV           [THREAT] msconfig.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:32] [HIGH    ] AutoAV           [THREAT] msra.exe: Suspicious.Generic
+[2026-09-26 21:59:32] [HIGH    ] AutoAV           [THREAT] mstsc.exe: Heuristic.DPAPI
+[2026-09-26 21:59:32] [HIGH    ] AutoAV           [THREAT] Narrator.exe: Suspicious.Generic
+[2026-09-26 21:59:33] [HIGH    ] AutoAV           [THREAT] NDKPerfCmd.exe: Suspicious.Generic
+[2026-09-26 21:59:33] [HIGH    ] AutoAV           [THREAT] NDKPing.exe: Suspicious.Generic
+[2026-09-26 21:59:33] [HIGH    ] AutoAV           [THREAT] netiougc.exe: Suspicious.Generic
+[2026-09-26 21:59:34] [HIGH    ] AutoAV           [THREAT] ntoskrnl.exe: Suspicious.Generic
+[2026-09-26 21:59:35] [HIGH    ] AutoAV           [THREAT] nvdebugdump.exe: Suspicious.Generic
+[2026-09-26 21:59:36] [HIGH    ] AutoAV           [THREAT] nvidia-smi.exe: Suspicious.Generic
+[2026-09-26 21:59:39] [HIGH    ] AutoAV           [THREAT] pcaui.exe: Heuristic.ProcHollow
+[2026-09-26 21:59:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 21:59:40] [HIGH    ] AutoAV           [THREAT] PktMon.exe: Suspicious.Generic
+[2026-09-26 21:59:41] [HIGH    ] AutoAV           [THREAT] rdpinput.exe: Suspicious.Generic
+[2026-09-26 21:59:42] [HIGH    ] AutoAV           [THREAT] rdpshell.exe: Suspicious.Generic
+[2026-09-26 21:59:42] [HIGH    ] AutoAV           [THREAT] rdrleakdiag.exe: Heuristic.NtInject
+[2026-09-26 21:59:43] [HIGH    ] AutoAV           [THREAT] ReFsDedupSvc.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:45] [HIGH    ] AutoAV           [THREAT] rstrui.exe: Suspicious.Generic
+[2026-09-26 21:59:45] [HIGH    ] AutoAV           [THREAT] sc.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:45] [HIGH    ] AutoAV           [THREAT] sdbinst.exe: Heuristic.ProcHollow
+[2026-09-26 21:59:45] [HIGH    ] AutoAV           [THREAT] sdchange.exe: Suspicious.Generic
+[2026-09-26 21:59:46] [HIGH    ] AutoAV           [THREAT] SearchIndexer.exe: Suspicious.Generic
+[2026-09-26 21:59:46] [HIGH    ] AutoAV           [THREAT] SearchProtocolHost.exe: Heuristic.ProcInject
+[2026-09-26 21:59:47] [HIGH    ] AutoAV           [THREAT] SecurityHealthSystray.exe: Suspicious.Generic
+[2026-09-26 21:59:47] [HIGH    ] AutoAV           [THREAT] SensorDataService.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:48] [HIGH    ] AutoAV           [THREAT] services.exe: Heuristic.ProcHollow
+[2026-09-26 21:59:48] [HIGH    ] AutoAV           [THREAT] ShellAppRuntime.exe: Heuristic.AntiDebug
+[2026-09-26 21:59:49] [HIGH    ] AutoAV           [THREAT] sihost.exe: Suspicious.Generic
+[2026-09-26 21:59:49] [HIGH    ] AutoAV           [THREAT] smartscreen.exe: Heuristic.DPAPI
+[2026-09-26 21:59:49] [HIGH    ] AutoAV           [THREAT] smss.exe: Suspicious.Generic
+[2026-09-26 21:59:49] [HIGH    ] AutoAV           [THREAT] SndVol.exe: Suspicious.Generic
+[2026-09-26 21:59:52] [HIGH    ] AutoAV           [THREAT] srdelayed.exe: Suspicious.Generic
+[2026-09-26 21:59:52] [HIGH    ] AutoAV           [THREAT] sudo.exe: Suspicious.Generic
+[2026-09-26 21:59:52] [WARN    ] AutoAV           Hourly scan complete: 500 files scanned, 69 threats found
+[2026-09-26 22:00:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:00:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:01:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:01:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:02:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:02:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:03:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:03:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:04:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:04:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:05:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:05:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:06:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:06:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:07:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:07:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:08:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:08:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:09:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:09:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:10:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:10:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:11:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:11:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:12:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:12:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:13:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:13:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:14:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:14:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:15:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:15:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:16:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:16:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:17:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:17:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:18:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:18:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:19:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:19:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:20:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:20:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:21:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:21:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:22:09] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:22:39] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:23:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:23:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:24:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:24:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:25:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:25:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:26:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:26:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:27:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:27:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:28:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:28:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:29:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:29:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:30:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:30:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:31:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:31:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:32:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:32:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:33:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:33:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:34:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:34:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:35:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:35:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:36:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:36:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:37:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:37:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:38:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:38:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:39:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:39:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:40:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:40:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:41:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:41:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:42:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:42:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:43:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:43:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:44:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:44:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:45:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:45:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:46:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:46:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:47:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:47:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:48:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:48:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:49:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:49:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:50:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:50:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:51:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:51:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:52:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:52:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:53:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:53:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:54:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:54:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:55:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:55:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:56:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:56:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:57:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:57:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:58:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:58:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:59:10] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-26 22:59:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:59:13] [HIGH    ] AutoAV           [THREAT] AppVClient.exe: Suspicious.Generic
+[2026-09-26 22:59:13] [HIGH    ] AutoAV           [THREAT] AtBroker.exe: Suspicious.Generic
+[2026-09-26 22:59:14] [HIGH    ] AutoAV           [THREAT] audiodg.exe: Suspicious.Generic
+[2026-09-26 22:59:16] [HIGH    ] AutoAV           [THREAT] bdechangepin.exe: Heuristic.DPAPI
+[2026-09-26 22:59:16] [HIGH    ] AutoAV           [THREAT] bitsadmin.exe: Suspicious.Generic
+[2026-09-26 22:59:17] [HIGH    ] AutoAV           [THREAT] browserexport.exe: Heuristic.DPAPI
+[2026-09-26 22:59:17] [HIGH    ] AutoAV           [THREAT] certreq.exe: Suspicious.Generic
+[2026-09-26 22:59:18] [HIGH    ] AutoAV           [THREAT] charmap.exe: Suspicious.Generic
+[2026-09-26 22:59:19] [HIGH    ] AutoAV           [THREAT] cmdkey.exe: Suspicious.Generic
+[2026-09-26 22:59:20] [HIGH    ] AutoAV           [THREAT] CompatTelRunner.exe: Suspicious.Generic
+[2026-09-26 22:59:20] [HIGH    ] AutoAV           [THREAT] consent.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:21] [HIGH    ] AutoAV           [THREAT] credwiz.exe: Suspicious.Generic
+[2026-09-26 22:59:21] [HIGH    ] AutoAV           [THREAT] curl.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:22] [HIGH    ] AutoAV           [THREAT] CustomShellHost.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:22] [HIGH    ] AutoAV           [THREAT] DataExchangeHost.exe: Suspicious.Generic
+[2026-09-26 22:59:23] [HIGH    ] AutoAV           [THREAT] DeviceCensus.exe: Heuristic.ProcHollow
+[2026-09-26 22:59:24] [HIGH    ] AutoAV           [THREAT] dispdiag.exe: Suspicious.Generic
+[2026-09-26 22:59:25] [HIGH    ] AutoAV           [THREAT] dmcertinst.exe: Heuristic.DPAPI
+[2026-09-26 22:59:25] [HIGH    ] AutoAV           [THREAT] drvinst.exe: Heuristic.ProcHollow
+[2026-09-26 22:59:26] [HIGH    ] AutoAV           [THREAT] DWWIN.EXE: Heuristic.MemAlloc
+[2026-09-26 22:59:26] [HIGH    ] AutoAV           [THREAT] Eap3Host.exe: Suspicious.Generic
+[2026-09-26 22:59:27] [HIGH    ] AutoAV           [THREAT] EhStorAuthn.exe: Suspicious.Generic
+[2026-09-26 22:59:28] [HIGH    ] AutoAV           [THREAT] ETDService.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:29] [HIGH    ] AutoAV           [THREAT] fixmapi.exe: Suspicious.Generic
+[2026-09-26 22:59:31] [HIGH    ] AutoAV           [THREAT] GenValObj.exe: Suspicious.Generic
+[2026-09-26 22:59:33] [HIGH    ] AutoAV           [THREAT] IESettingSync.exe: Heuristic.DPAPI
+[2026-09-26 22:59:34] [HIGH    ] AutoAV           [THREAT] IsoSessionCli.exe: Suspicious.Generic
+[2026-09-26 22:59:36] [HIGH    ] AutoAV           [THREAT] Magnify.exe: Suspicious.Generic
+[2026-09-26 22:59:36] [HIGH    ] AutoAV           [THREAT] mavinject.exe: Heuristic.MemAlloc
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MDMAppInstaller.exe: Suspicious.Generic
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeBCHost.exe: Heuristic.MemAlloc
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeCP.exe: Heuristic.MemAlloc
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeDevTools.exe: Heuristic.MemAlloc
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeSH.exe: Heuristic.MemAlloc
+[2026-09-26 22:59:37] [HIGH    ] AutoAV           [THREAT] MidiSrv.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:39] [HIGH    ] AutoAV           [THREAT] MpSigStub.exe: Suspicious.Generic
+[2026-09-26 22:59:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 22:59:41] [HIGH    ] AutoAV           [THREAT] MRT.exe: Suspicious.Generic
+[2026-09-26 22:59:41] [HIGH    ] AutoAV           [THREAT] msconfig.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:42] [HIGH    ] AutoAV           [THREAT] msra.exe: Suspicious.Generic
+[2026-09-26 22:59:42] [HIGH    ] AutoAV           [THREAT] mstsc.exe: Heuristic.DPAPI
+[2026-09-26 22:59:43] [HIGH    ] AutoAV           [THREAT] Narrator.exe: Suspicious.Generic
+[2026-09-26 22:59:43] [HIGH    ] AutoAV           [THREAT] NDKPerfCmd.exe: Suspicious.Generic
+[2026-09-26 22:59:43] [HIGH    ] AutoAV           [THREAT] NDKPing.exe: Suspicious.Generic
+[2026-09-26 22:59:43] [HIGH    ] AutoAV           [THREAT] netiougc.exe: Suspicious.Generic
+[2026-09-26 22:59:46] [HIGH    ] AutoAV           [THREAT] ntoskrnl.exe: Suspicious.Generic
+[2026-09-26 22:59:46] [HIGH    ] AutoAV           [THREAT] nvdebugdump.exe: Suspicious.Generic
+[2026-09-26 22:59:48] [HIGH    ] AutoAV           [THREAT] nvidia-smi.exe: Suspicious.Generic
+[2026-09-26 22:59:51] [HIGH    ] AutoAV           [THREAT] pcaui.exe: Heuristic.ProcHollow
+[2026-09-26 22:59:52] [HIGH    ] AutoAV           [THREAT] PktMon.exe: Suspicious.Generic
+[2026-09-26 22:59:54] [HIGH    ] AutoAV           [THREAT] rdpinput.exe: Suspicious.Generic
+[2026-09-26 22:59:55] [HIGH    ] AutoAV           [THREAT] rdpshell.exe: Suspicious.Generic
+[2026-09-26 22:59:55] [HIGH    ] AutoAV           [THREAT] rdrleakdiag.exe: Heuristic.NtInject
+[2026-09-26 22:59:56] [HIGH    ] AutoAV           [THREAT] ReFsDedupSvc.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:58] [HIGH    ] AutoAV           [THREAT] rstrui.exe: Suspicious.Generic
+[2026-09-26 22:59:59] [HIGH    ] AutoAV           [THREAT] sc.exe: Heuristic.AntiDebug
+[2026-09-26 22:59:59] [HIGH    ] AutoAV           [THREAT] sdbinst.exe: Heuristic.ProcHollow
+[2026-09-26 22:59:59] [HIGH    ] AutoAV           [THREAT] sdchange.exe: Suspicious.Generic
+[2026-09-26 23:00:00] [HIGH    ] AutoAV           [THREAT] SearchIndexer.exe: Suspicious.Generic
+[2026-09-26 23:00:00] [HIGH    ] AutoAV           [THREAT] SearchProtocolHost.exe: Heuristic.ProcInject
+[2026-09-26 23:00:01] [HIGH    ] AutoAV           [THREAT] SecurityHealthSystray.exe: Suspicious.Generic
+[2026-09-26 23:00:02] [HIGH    ] AutoAV           [THREAT] SensorDataService.exe: Heuristic.AntiDebug
+[2026-09-26 23:00:02] [HIGH    ] AutoAV           [THREAT] services.exe: Heuristic.ProcHollow
+[2026-09-26 23:00:03] [HIGH    ] AutoAV           [THREAT] ShellAppRuntime.exe: Heuristic.AntiDebug
+[2026-09-26 23:00:04] [HIGH    ] AutoAV           [THREAT] sihost.exe: Suspicious.Generic
+[2026-09-26 23:00:04] [HIGH    ] AutoAV           [THREAT] smartscreen.exe: Heuristic.DPAPI
+[2026-09-26 23:00:04] [HIGH    ] AutoAV           [THREAT] smss.exe: Suspicious.Generic
+[2026-09-26 23:00:04] [HIGH    ] AutoAV           [THREAT] SndVol.exe: Suspicious.Generic
+[2026-09-26 23:00:08] [HIGH    ] AutoAV           [THREAT] srdelayed.exe: Suspicious.Generic
+[2026-09-26 23:00:08] [HIGH    ] AutoAV           [THREAT] sudo.exe: Suspicious.Generic
+[2026-09-26 23:00:08] [WARN    ] AutoAV           Hourly scan complete: 500 files scanned, 69 threats found
+[2026-09-26 23:00:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:00:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:01:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:01:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:02:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:02:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:03:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:03:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:04:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:04:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:05:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:05:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:06:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:06:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:07:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:07:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:08:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:08:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:09:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:09:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:10:03] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-26 23:10:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:10:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:11:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:11:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:12:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:12:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:13:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:13:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:14:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:14:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:15:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:15:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:16:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:16:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:17:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:17:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:18:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:18:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:19:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:19:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:20:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:20:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:21:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:21:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:22:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:22:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:23:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:23:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:24:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:24:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:25:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:25:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:26:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:26:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:27:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:27:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:28:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:28:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:29:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:29:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:30:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:30:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:31:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:31:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:32:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:32:40] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:33:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:33:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:34:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:34:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:35:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:35:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:36:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:36:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:37:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:37:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:37:59] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:00] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:00] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:01] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:01] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:02] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:02] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:03] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:03] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:04] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:04] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:05] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:06] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:06] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:07] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:07] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:07] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:07] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:07] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:08] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:08] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:08] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:08] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:08] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:09] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:10] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:38:11] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:11] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:11] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:11] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:11] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:12] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:12] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:12] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:12] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:13] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:38:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:38:51] [INFO    ] AppHub           Integration key copied to clipboard
+[2026-09-26 23:39:01] [INFO    ] AppHub           Discovery complete: 365 apps cataloged | 171 relationship edges
+[2026-09-26 23:39:04] [INFO    ] AppHub           Integration key copied to clipboard
+[2026-09-26 23:39:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:39:28] [INFO    ] ClusterMesh      Cluster Mesh Pairing Key [AEGJ5-46C0-C391-MESH] copied to clipboard.
+[2026-09-26 23:39:38] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:39:39] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:39:40] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:39:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:39:41] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:39:41] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-26 23:40:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:40:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:41:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:41:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:42:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:42:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:43:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:43:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:44:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:44:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:45:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:45:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:46:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:46:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:47:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:47:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:48:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:48:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:49:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:49:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:50:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:50:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:51:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:51:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:52:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:52:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:53:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:53:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:54:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:54:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:55:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:55:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:56:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:56:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:57:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:57:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:58:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:58:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:59:11] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-26 23:59:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:59:14] [HIGH    ] AutoAV           [THREAT] AppVClient.exe: Suspicious.Generic
+[2026-09-26 23:59:15] [HIGH    ] AutoAV           [THREAT] AtBroker.exe: Suspicious.Generic
+[2026-09-26 23:59:15] [HIGH    ] AutoAV           [THREAT] audiodg.exe: Suspicious.Generic
+[2026-09-26 23:59:17] [HIGH    ] AutoAV           [THREAT] bdechangepin.exe: Heuristic.DPAPI
+[2026-09-26 23:59:18] [HIGH    ] AutoAV           [THREAT] bitsadmin.exe: Suspicious.Generic
+[2026-09-26 23:59:18] [HIGH    ] AutoAV           [THREAT] browserexport.exe: Heuristic.DPAPI
+[2026-09-26 23:59:19] [HIGH    ] AutoAV           [THREAT] certreq.exe: Suspicious.Generic
+[2026-09-26 23:59:20] [HIGH    ] AutoAV           [THREAT] charmap.exe: Suspicious.Generic
+[2026-09-26 23:59:21] [HIGH    ] AutoAV           [THREAT] cmdkey.exe: Suspicious.Generic
+[2026-09-26 23:59:22] [HIGH    ] AutoAV           [THREAT] CompatTelRunner.exe: Suspicious.Generic
+[2026-09-26 23:59:23] [HIGH    ] AutoAV           [THREAT] consent.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:23] [HIGH    ] AutoAV           [THREAT] credwiz.exe: Suspicious.Generic
+[2026-09-26 23:59:24] [HIGH    ] AutoAV           [THREAT] curl.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:25] [HIGH    ] AutoAV           [THREAT] CustomShellHost.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:25] [HIGH    ] AutoAV           [THREAT] DataExchangeHost.exe: Suspicious.Generic
+[2026-09-26 23:59:25] [HIGH    ] AutoAV           [THREAT] DeviceCensus.exe: Heuristic.ProcHollow
+[2026-09-26 23:59:27] [HIGH    ] AutoAV           [THREAT] dispdiag.exe: Suspicious.Generic
+[2026-09-26 23:59:28] [HIGH    ] AutoAV           [THREAT] dmcertinst.exe: Heuristic.DPAPI
+[2026-09-26 23:59:28] [HIGH    ] AutoAV           [THREAT] drvinst.exe: Heuristic.ProcHollow
+[2026-09-26 23:59:29] [HIGH    ] AutoAV           [THREAT] DWWIN.EXE: Heuristic.MemAlloc
+[2026-09-26 23:59:29] [HIGH    ] AutoAV           [THREAT] Eap3Host.exe: Suspicious.Generic
+[2026-09-26 23:59:30] [HIGH    ] AutoAV           [THREAT] EhStorAuthn.exe: Suspicious.Generic
+[2026-09-26 23:59:31] [HIGH    ] AutoAV           [THREAT] ETDService.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:32] [HIGH    ] AutoAV           [THREAT] fixmapi.exe: Suspicious.Generic
+[2026-09-26 23:59:34] [HIGH    ] AutoAV           [THREAT] GenValObj.exe: Suspicious.Generic
+[2026-09-26 23:59:36] [HIGH    ] AutoAV           [THREAT] IESettingSync.exe: Heuristic.DPAPI
+[2026-09-26 23:59:37] [HIGH    ] AutoAV           [THREAT] IsoSessionCli.exe: Suspicious.Generic
+[2026-09-26 23:59:39] [HIGH    ] AutoAV           [THREAT] Magnify.exe: Suspicious.Generic
+[2026-09-26 23:59:39] [HIGH    ] AutoAV           [THREAT] mavinject.exe: Heuristic.MemAlloc
+[2026-09-26 23:59:40] [HIGH    ] AutoAV           [THREAT] MDMAppInstaller.exe: Suspicious.Generic
+[2026-09-26 23:59:41] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeBCHost.exe: Heuristic.MemAlloc
+[2026-09-26 23:59:41] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeCP.exe: Heuristic.MemAlloc
+[2026-09-26 23:59:41] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeDevTools.exe: Heuristic.MemAlloc
+[2026-09-26 23:59:41] [HIGH    ] AutoAV           [THREAT] MicrosoftEdgeSH.exe: Heuristic.MemAlloc
+[2026-09-26 23:59:41] [HIGH    ] AutoAV           [THREAT] MidiSrv.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-26 23:59:43] [HIGH    ] AutoAV           [THREAT] MpSigStub.exe: Suspicious.Generic
+[2026-09-26 23:59:45] [HIGH    ] AutoAV           [THREAT] MRT.exe: Suspicious.Generic
+[2026-09-26 23:59:45] [HIGH    ] AutoAV           [THREAT] msconfig.exe: Heuristic.AntiDebug
+[2026-09-26 23:59:46] [HIGH    ] AutoAV           [THREAT] msra.exe: Suspicious.Generic
+[2026-09-26 23:59:47] [HIGH    ] AutoAV           [THREAT] mstsc.exe: Heuristic.DPAPI
+[2026-09-26 23:59:47] [HIGH    ] AutoAV           [THREAT] Narrator.exe: Suspicious.Generic
+[2026-09-26 23:59:47] [HIGH    ] AutoAV           [THREAT] NDKPerfCmd.exe: Suspicious.Generic
+[2026-09-26 23:59:47] [HIGH    ] AutoAV           [THREAT] NDKPing.exe: Suspicious.Generic
+[2026-09-26 23:59:48] [HIGH    ] AutoAV           [THREAT] netiougc.exe: Suspicious.Generic
+[2026-09-26 23:59:50] [HIGH    ] AutoAV           [THREAT] ntoskrnl.exe: Suspicious.Generic
+[2026-09-26 23:59:51] [HIGH    ] AutoAV           [THREAT] nvdebugdump.exe: Suspicious.Generic
+[2026-09-26 23:59:53] [HIGH    ] AutoAV           [THREAT] nvidia-smi.exe: Suspicious.Generic
+[2026-09-26 23:59:56] [HIGH    ] AutoAV           [THREAT] pcaui.exe: Heuristic.ProcHollow
+[2026-09-26 23:59:57] [HIGH    ] AutoAV           [THREAT] PktMon.exe: Suspicious.Generic
+[2026-09-27 00:00:00] [HIGH    ] AutoAV           [THREAT] rdpinput.exe: Suspicious.Generic
+[2026-09-27 00:00:00] [HIGH    ] AutoAV           [THREAT] rdpshell.exe: Suspicious.Generic
+[2026-09-27 00:00:00] [HIGH    ] AutoAV           [THREAT] rdrleakdiag.exe: Heuristic.NtInject
+[2026-09-27 00:00:01] [HIGH    ] AutoAV           [THREAT] ReFsDedupSvc.exe: Heuristic.AntiDebug
+[2026-09-27 00:00:04] [HIGH    ] AutoAV           [THREAT] rstrui.exe: Suspicious.Generic
+[2026-09-27 00:00:04] [HIGH    ] AutoAV           [THREAT] sc.exe: Heuristic.AntiDebug
+[2026-09-27 00:00:05] [HIGH    ] AutoAV           [THREAT] sdbinst.exe: Heuristic.ProcHollow
+[2026-09-27 00:00:05] [HIGH    ] AutoAV           [THREAT] sdchange.exe: Suspicious.Generic
+[2026-09-27 00:00:06] [HIGH    ] AutoAV           [THREAT] SearchIndexer.exe: Suspicious.Generic
+[2026-09-27 00:00:06] [HIGH    ] AutoAV           [THREAT] SearchProtocolHost.exe: Heuristic.ProcInject
+[2026-09-27 00:00:07] [HIGH    ] AutoAV           [THREAT] SecurityHealthSystray.exe: Suspicious.Generic
+[2026-09-27 00:00:08] [HIGH    ] AutoAV           [THREAT] SensorDataService.exe: Heuristic.AntiDebug
+[2026-09-27 00:00:08] [HIGH    ] AutoAV           [THREAT] services.exe: Heuristic.ProcHollow
+[2026-09-27 00:00:09] [HIGH    ] AutoAV           [THREAT] ShellAppRuntime.exe: Heuristic.AntiDebug
+[2026-09-27 00:00:10] [HIGH    ] AutoAV           [THREAT] sihost.exe: Suspicious.Generic
+[2026-09-27 00:00:10] [HIGH    ] AutoAV           [THREAT] smartscreen.exe: Heuristic.DPAPI
+[2026-09-27 00:00:10] [HIGH    ] AutoAV           [THREAT] smss.exe: Suspicious.Generic
+[2026-09-27 00:00:11] [HIGH    ] AutoAV           [THREAT] SndVol.exe: Suspicious.Generic
+[2026-09-27 00:00:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:00:14] [HIGH    ] AutoAV           [THREAT] srdelayed.exe: Suspicious.Generic
+[2026-09-27 00:00:14] [HIGH    ] AutoAV           [THREAT] sudo.exe: Suspicious.Generic
+[2026-09-27 00:00:14] [WARN    ] AutoAV           Hourly scan complete: 500 files scanned, 69 threats found
+[2026-09-27 00:00:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:01:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:01:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:02:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:02:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:03:11] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:03:41] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:04:12] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:04:42] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:07:29 ===
+[2026-09-27 00:07:29] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:07:29] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:07:29] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:07:29] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:07:29] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:07:29] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:07:29] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:07:29] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:07:29] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 118949)
+[2026-09-27 00:07:29] [WARNING ] NetGuard         Baseline: 103 active conns (58 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:07:29] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:07:29] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:07:30] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:07:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:07:31] [INFO    ] AppHub           Discovery complete: 364 apps cataloged | 167 relationship edges
+[2026-09-27 00:07:32] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+[2026-09-27 00:07:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:07:33] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:07:34] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:07:35] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 00:09:13 ===
+[2026-09-27 00:09:13] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:09:13] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:09:13] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:09:13] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:09:13] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:09:13] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:09:13] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:09:13] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:09:13] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 119289)
+[2026-09-27 00:09:13] [WARNING ] NetGuard         Baseline: 120 active conns (66 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:09:13] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:09:13] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:09:14] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:09:15] [INFO    ] AppHub           Discovery complete: 365 apps cataloged | 168 relationship edges
+[2026-09-27 00:09:15] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:09:15] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:13:27 ===
+[2026-09-27 00:13:27] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:13:27] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:13:27] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:13:27] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:13:27] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:13:27] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:13:27] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:13:27] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:13:27] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 120118)
+[2026-09-27 00:13:27] [WARNING ] NetGuard         Baseline: 104 active conns (48 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:13:27] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:13:27] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:13:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:13:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:13:29] [INFO    ] AppHub           Discovery complete: 365 apps cataloged | 169 relationship edges
+[2026-09-27 00:13:30] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:13:30] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:16:02 ===
+[2026-09-27 00:16:02] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:16:02] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:16:02] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:16:02] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:16:02] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:16:02] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:16:02] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:16:02] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:16:02] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 120624)
+[2026-09-27 00:16:02] [WARNING ] NetGuard         Baseline: 103 active conns (52 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:16:02] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:16:02] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:16:03] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:16:04] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:16:04] [INFO    ] AppHub           Discovery complete: 365 apps cataloged | 170 relationship edges
+[2026-09-27 00:16:05] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:16:06] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-27 00:16:06] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:16:07] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:16:08] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:16:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:17:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:17:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:18:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:18:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:19:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:19:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:20:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:20:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:21:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:21:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:22:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:22:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:23:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:23:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:24:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:24:32] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:25:02] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:25:40 ===
+[2026-09-27 00:25:40] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:25:40] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:25:40] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:25:40] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:25:40] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:25:40] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:25:40] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:25:40] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:25:40] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 122512)
+[2026-09-27 00:25:40] [WARNING ] NetGuard         Baseline: 146 active conns (93 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:25:40] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:25:40] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:25:41] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:25:42] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:25:42] [INFO    ] AppHub           Discovery complete: 368 apps cataloged | 175 relationship edges
+[2026-09-27 00:25:43] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:25:44] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-27 00:25:44] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:25:45] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:25:46] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:26:10] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:27:00 ===
+[2026-09-27 00:27:00] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:27:00] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:27:00] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:27:00] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:27:00] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:27:00] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:27:00] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:27:00] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:27:00] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 122773)
+[2026-09-27 00:27:00] [WARNING ] NetGuard         Baseline: 140 active conns (93 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:27:00] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:27:00] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:27:01] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:27:02] [INFO    ] AppHub           Discovery complete: 366 apps cataloged | 174 relationship edges
+[2026-09-27 00:27:02] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:27:03] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 00:28:25 ===
+[2026-09-27 00:28:25] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:28:25] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:28:25] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:28:25] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:28:25] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:28:25] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:28:25] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:28:25] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:28:26] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 123051)
+[2026-09-27 00:28:26] [WARNING ] NetGuard         Baseline: 113 active conns (67 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 00:28:26] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:28:26] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:28:26] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:28:27] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:28:28] [INFO    ] AppHub           Discovery complete: 367 apps cataloged | 177 relationship edges
+[2026-09-27 00:28:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:28:29] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-27 00:28:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:28:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:28:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:28:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.

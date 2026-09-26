@@ -80,6 +80,12 @@ if exist assets\icon.ico (
     copy /y assets\icon.ico release\v1\kaevex.ico >nul 2>&1
     echo [OK]   icon.ico copied to dist and release directories
 )
+if exist assets\world_map_cyber.bmp (
+    copy /y assets\world_map_cyber.bmp dist\world_map_cyber.bmp >nul 2>&1
+    copy /y assets\world_map_cyber.bmp release\world_map_cyber.bmp >nul 2>&1
+    copy /y assets\world_map_cyber.bmp release\v1\world_map_cyber.bmp >nul 2>&1
+    echo [OK]   world_map_cyber.bmp copied to dist and release directories
+)
 
 echo.
 echo ========================================================================
