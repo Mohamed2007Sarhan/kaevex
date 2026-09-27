@@ -32,7 +32,7 @@ typedef struct {
 typedef struct {
     char path[MAX_PATH];
     BOOL touched;
-    time_t touchTime;
+    FILETIME baselineWriteTime;
 } HoneyFile;
 
 /* ?????? Engine state ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
@@ -44,6 +44,8 @@ static int       g_rwChanges3s    = 0;  /* counter in last 3 seconds */
 static BOOL      g_rwAlertFired   = FALSE;
 static BOOL      g_rwMonitoring   = FALSE;
 static HANDLE    g_rwThread       = NULL;
+static HANDLE    g_rwReadyEvent   = NULL;
+static volatile LONG g_rwReadyStatus = 0; /* 0=starting, 1=watch active, -1=open failed */
 static BOOL      g_rwStop         = FALSE;
 static char      g_rwWatchDir[MAX_PATH] = {0};
 static CRITICAL_SECTION g_rwCS;
@@ -155,14 +157,22 @@ static int rw_deploy_honeypots(const char *dir) {
         for(int i=0; i<2 && g_honeyCnt<RW_MAX_HONEY; i++) {
             HoneyFile *hf = &g_honey[g_honeyCnt];
             snprintf(hf->path, MAX_PATH-1, "%s\\~KaevexDecoy_%02d.docx", locs[l], i);
-            /* Create decoy file with canary content */
-            FILE *f=fopen(hf->path,"w");
-            if(f){
-                fprintf(f,"Kaevex Ransomware Honeypot File\n"
-                          "This file is monitored. Unauthorized access triggers alerts.\n"
-                          "ID:%08lX\n",(unsigned long)(GetTickCount()+l*100+i));
-                fclose(f);
-                hf->touched=FALSE; hf->touchTime=0;
+            /* Never overwrite user data if a canary filename already exists. */
+            HANDLE f=CreateFileA(hf->path,GENERIC_WRITE,0,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
+            if(f!=INVALID_HANDLE_VALUE){
+                char content[192]; DWORD written=0;
+                int contentLen=snprintf(content,sizeof(content),
+                    "Kaevex ransomware canary file. Access or modification is monitored.\r\nID:%08lX\r\n",
+                    (unsigned long)(GetTickCount()+l*100+i));
+                BOOL wrote=WriteFile(f,content,(DWORD)contentLen,&written,NULL) && written==(DWORD)contentLen;
+                CloseHandle(f);
+                if(!wrote){ DeleteFileA(hf->path); continue; }
+                hf->touched=FALSE;
+                WIN32_FILE_ATTRIBUTE_DATA baseData={0};
+                if(GetFileAttributesExA(hf->path,GetFileExInfoStandard,&baseData))
+                    hf->baselineWriteTime=baseData.ftLastWriteTime;
+                else
+                    ZeroMemory(&hf->baselineWriteTime,sizeof(hf->baselineWriteTime));
                 g_honeyCnt++;
             }
         }
@@ -182,11 +192,8 @@ static BOOL rw_check_honeypots(char *touchedPath, int pathLen) {
         WIN32_FILE_ATTRIBUTE_DATA fa={0};
         if(!GetFileAttributesExA(g_honey[i].path,GetFileExInfoStandard,&fa)) continue;
         FILETIME ft=fa.ftLastWriteTime;
-        SYSTEMTIME st; FileTimeToSystemTime(&ft,&st);
-        time_t modTime=(time_t)(*(ULONGLONG*)&ft/10000000ULL-11644473600ULL);
-        if(!g_honey[i].touched && modTime>g_honey[i].touchTime && modTime>time(NULL)-60) {
+        if(!g_honey[i].touched && CompareFileTime(&ft,&g_honey[i].baselineWriteTime)>0) {
             g_honey[i].touched=TRUE;
-            g_honey[i].touchTime=modTime;
             if(touchedPath) strncpy(touchedPath,g_honey[i].path,pathLen-1);
             return TRUE;
         }
@@ -205,7 +212,13 @@ static DWORD WINAPI rw_monitor_thread(LPVOID arg) {
         FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
         NULL, OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OVERLAPPED, NULL);
-    if(hDir==INVALID_HANDLE_VALUE) return 0;
+    if(hDir==INVALID_HANDLE_VALUE) {
+        InterlockedExchange(&g_rwReadyStatus,-1);
+        if(g_rwReadyEvent) SetEvent(g_rwReadyEvent);
+        return 0;
+    }
+    InterlockedExchange(&g_rwReadyStatus,1);
+    if(g_rwReadyEvent) SetEvent(g_rwReadyEvent);
 
     BYTE buf[65536]; DWORD ret=0;
     OVERLAPPED ov={0}; ov.hEvent=CreateEventA(NULL,TRUE,FALSE,NULL);
@@ -276,13 +289,30 @@ static DWORD WINAPI rw_monitor_thread(LPVOID arg) {
 
 /* ?????? Start monitoring ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static BOOL rw_start(const char *dir, HWND notifyWnd) {
-    if(g_rwMonitoring) return FALSE;
+    if(g_rwMonitoring || g_rwThread) return FALSE;
     if(!g_rwCSInit){ InitializeCriticalSection(&g_rwCS); g_rwCSInit=TRUE; }
-    strncpy(g_rwWatchDir, dir?dir:"C:\\Users", MAX_PATH-1);
+    char defaultDir[MAX_PATH]={0};
+    if(!dir || !dir[0]) {
+        if(SHGetFolderPathA(NULL,CSIDL_PROFILE,NULL,SHGFP_TYPE_CURRENT,defaultDir)!=S_OK) return FALSE;
+        dir=defaultDir;
+    }
+    DWORD attrs=GetFileAttributesA(dir);
+    if(attrs==INVALID_FILE_ATTRIBUTES || !(attrs&FILE_ATTRIBUTE_DIRECTORY)) return FALSE;
+    strncpy(g_rwWatchDir,dir,MAX_PATH-1); g_rwWatchDir[MAX_PATH-1]='\0';
     g_rwNotifyWnd=notifyWnd; g_rwStop=FALSE; g_rwAlertFired=FALSE;
+    g_rwReadyStatus=0;
+    g_rwReadyEvent=CreateEventA(NULL,TRUE,FALSE,NULL);
+    if(!g_rwReadyEvent) return FALSE;
     g_rwThread=CreateThread(NULL,0,rw_monitor_thread,NULL,0,NULL);
-    g_rwMonitoring=(g_rwThread!=NULL);
-    return g_rwMonitoring;
+    if(!g_rwThread || WaitForSingleObject(g_rwReadyEvent,5000)!=WAIT_OBJECT_0 || InterlockedCompareExchange(&g_rwReadyStatus,0,0)!=1) {
+        g_rwStop=TRUE;
+        if(g_rwThread){ WaitForSingleObject(g_rwThread,3000); CloseHandle(g_rwThread); g_rwThread=NULL; }
+        CloseHandle(g_rwReadyEvent); g_rwReadyEvent=NULL;
+        return FALSE;
+    }
+    CloseHandle(g_rwReadyEvent); g_rwReadyEvent=NULL;
+    g_rwMonitoring=TRUE;
+    return TRUE;
 }
 
 /* ?????? Stop monitoring ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */

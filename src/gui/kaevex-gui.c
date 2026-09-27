@@ -9710,6 +9710,34 @@ static BOOL CheckFirstRun(void) {
     return TRUE;
 }
 
+static int g_onboardingProfileIdx = -1;
+static int g_onboardingSkillLevel = 0; /* 0=beginner, 1=some experience, 2=advanced */
+static BOOL g_onboardingRequestLogin = FALSE;
+static void ShowSupabaseAccountDialog(HWND hwndParent);
+
+static void SaveOnboardingValue(const char *name, DWORD type, const BYTE *data, DWORD size) {
+    HKEY key;
+    if(RegCreateKeyExA(HKEY_CURRENT_USER,"Software\\Kaevex",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL)==ERROR_SUCCESS){
+        RegSetValueExA(key,name,0,type,data,size);
+        RegCloseKey(key);
+    }
+}
+
+static BOOL LoadRansomAutoStart(void) {
+    HKEY key; DWORD enabled=0,type=REG_DWORD,size=sizeof(enabled);
+    if(RegOpenKeyExA(HKEY_CURRENT_USER,"Software\\Kaevex",0,KEY_READ,&key)==ERROR_SUCCESS){
+        RegQueryValueExA(key,"RansomShieldAutoStart",NULL,&type,(BYTE*)&enabled,&size);
+        RegCloseKey(key);
+    }
+    return enabled==1;
+}
+
+static void SaveRansomAutoStart(BOOL enabled) {
+    DWORD value=enabled?1:0;
+    SaveOnboardingValue("RansomShieldAutoStart",REG_DWORD,(const BYTE*)&value,sizeof(value));
+    g_ransomAutoStart=enabled;
+}
+
 static void SetFirstRunCompleted(const char *profileName) {
     HKEY hKey;
     if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, NULL) == ERROR_SUCCESS) {
@@ -9739,9 +9767,8 @@ static void ApplyCustomProfile(HWND hwnd, int profileIdx) {
     /* Real state changes based on profile */
     if(profileIdx == 0) {
         /* Enterprise SOC & Defense */
-        SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDR_START, 0), 0);
         if(!g_cveWatcherActive) SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDU_WATCHER, 0), 0);
-        add_alert("Profile", "INFO", "Armed Profile: Enterprise SOC & Defense (Full Protection Online)");
+        add_alert("Profile", "INFO", "Selected profile: Security operations");
     } else if(profileIdx == 1) {
         /* Gaming Turbo */
         if(!g_gaming.active) SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDT_BOOST, 0), 0);
@@ -10156,7 +10183,7 @@ static DWORD WINAPI FirstRunDiagnosticWorkerThread(LPVOID param) {
             }
         }
     }
-    fr_add_log("NETG","Zero-Trust baseline complete. Adaptive Firewall guard armed.");
+    fr_add_log("NETG","Network baseline completed. No firewall policy was changed by this check.");
     g_frProgress = 44.0f;
     Sleep(300);
 
@@ -10183,7 +10210,7 @@ static DWORD WINAPI FirstRunDiagnosticWorkerThread(LPVOID param) {
                 "VULNERABLE: %d applications have known CVEs — use Patch & CVE Agent to remediate",vulnCount);
             fr_add_log("CVE",vlog);
         } else {
-            fr_add_log("CVE","No critical CVEs detected in installed software. System is up-to-date.");
+            fr_add_log("CVE","No local catalog matches. Catalog coverage and installed Windows KB state are unverified.");
         }
     }
     /* Real: Check Windows Defender status from registry */
@@ -10337,15 +10364,15 @@ static DWORD WINAPI FirstRunDiagnosticWorkerThread(LPVOID param) {
             fr_add_log("SYS-F",plog);
         }
     }
-    /* Real: RansomShield tripwire status */
-    fr_add_log("RANS","RansomShield: Honeypot tripwires armed in Desktop, Documents, Temp");
+    /* No filesystem monitoring or canary files are enabled by this diagnostic scan. */
+    fr_add_log("RANS",g_ransomAutoStart ? "RansomShield auto-start selected; watcher starts after setup confirmation." : "RansomShield remains off until enabled in setup or its page.");
     g_frProgress = 92.0f;
     Sleep(300);
 
     /* ===== PHASE 7: Profile Detection & Proactive Shield Arming ===== */
     g_frPhase = 7;
-    strcpy(g_frPhaseTitle, "PHASE 7 / 7: SYSTEM FORTIFICATION & PROACTIVE SHIELD ARMING");
-    strcpy(g_frDetailText, "Auto-detecting security profile. Arming WAF, anti-SQLi, anti-XSS, adaptive firewall...");
+    strcpy(g_frPhaseTitle, "PHASE 7 / 7: READINESS REVIEW & PROFILE SELECTION");
+    strcpy(g_frDetailText, "Selecting a profile and checking required local components...");
 
     /* Real profile detection */
     if(g_frDiag.dbCount>1 || GetFileAttributesA("C:\\xampp")!=INVALID_FILE_ATTRIBUTES
@@ -10360,21 +10387,26 @@ static DWORD WINAPI FirstRunDiagnosticWorkerThread(LPVOID param) {
         strcpy(g_frDiag.detectedProfile,"Enterprise SOC & Autonomous Defense Node");
         g_frDiag.profileIdx=0;
     }
+    if(g_onboardingProfileIdx>=0 && g_onboardingProfileIdx<6){
+        static const char *profileLabels[]={"Security operations","Gaming","Software development","Sandbox lab","Security learning","Home and personal use"};
+        g_frDiag.profileIdx=g_onboardingProfileIdx;
+        strncpy(g_frDiag.detectedProfile,profileLabels[g_onboardingProfileIdx],sizeof(g_frDiag.detectedProfile)-1);
+    }
     {
         char proflog[180];
         snprintf(proflog,sizeof(proflog),
-            "Detected Profile: [%s] — Integrity Score: %d/100",
-            g_frDiag.detectedProfile,bReport.overallScore);
+            "Selected profile: [%s] — system remediation was not performed",
+            g_frDiag.detectedProfile);
         fr_add_log("PROF",proflog);
     }
-    fr_add_log("SHIE","Inline WAF + Anti-SQLi/XSS/RCE/Brute-Force shield ACTIVE on 0.0.0.0:9009");
-    fr_add_log("KAEV","SYSTEM FULLY FORTIFIED: Kaevex defense matrix synchronized and ready!");
+    fr_add_log("SHIE",g_ransomAutoStart ? "Selected background file monitoring will be verified after setup." : "No persistent protection preference enabled by this diagnostic.");
+    fr_add_log("KAEV","Readiness checks complete. Review findings; no automatic repair was applied.");
 
     g_frProgress=100.0f;
     g_frDone=TRUE;
     if(g_hFrBtn){
         EnableWindow(g_hFrBtn,TRUE);
-        SetWindowTextA(g_hFrBtn,"ARM PLATFORM — LAUNCH SOC DASHBOARD");
+        SetWindowTextA(g_hFrBtn,"SAVE PREFERENCES — OPEN KAevEX");
     }
     InvalidateRect(hwnd,NULL,FALSE);
     return 0;
@@ -10583,8 +10615,8 @@ static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp
 
             char profileHint[128];
             snprintf(profileHint, sizeof(profileHint),
-                "Score: %d/100  |  CVEs found: %d apps  |  Connections: %d  |  Profile ARMED",
-                100, g_frDiag.cveAppsCount, g_frDiag.activeConns);
+                "Inventory: %d packages  |  Connections observed: %d  |  Profile selected",
+                g_frDiag.cveAppsCount, g_frDiag.activeConns);
             SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
             SetTextColor(memDC, RGB(120, 160, 120));
             TextOutA(memDC, cardX + 18, cardY + 52, profileHint, (int)strlen(profileHint));
@@ -10594,7 +10626,7 @@ static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp
         SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         SetTextColor(memDC, g_frDone ? RGB(52, 211, 153) : RGB(140, 160, 185));
         const char *botStat = g_frDone ?
-            "System baseline verified. Proactive WAF & defense matrix fully armed. Click the button to continue." :
+            "Checks finished; findings may be incomplete. No automatic system repair was performed." :
             "Autonomous baseline audit running across host, network and storage subsystems. Please stand by...";
         TextOutA(memDC, conX + 2, H - 36, botStat, (int)strlen(botStat));
 
@@ -10648,10 +10680,8 @@ static LRESULT CALLBACK CyberDiagWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp
     }
     case WM_CLOSE: {
         if (!g_frDone) {
-            if (MessageBoxA(hw, "The initial system defense baseline audit is still running.\nAre you sure you want to skip and launch with default SOC protection?", "Skip First-Run Audit?", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-                ApplyCustomProfile(GetParent(hw) ? GetParent(hw) : g_hwnd, 0);
+            if (MessageBoxA(hw, "Setup checks are still running. Close setup without applying a profile?", "Close Kaevex setup?", MB_YESNO | MB_ICONQUESTION) == IDYES)
                 DestroyWindow(hw);
-            }
             return 0;
         }
         ApplyCustomProfile(GetParent(hw) ? GetParent(hw) : g_hwnd, g_frDiag.profileIdx);
@@ -10773,7 +10803,75 @@ static void ShowFirstRunCyberWizard(HWND hwndParent) {
 
 static void PromptFirstRunWizard(HWND hwnd) {
     if (!CheckFirstRun()) return;
+
+    const TASKDIALOG_BUTTON goals[] = {
+        {101,L"Home and personal files"},
+        {102,L"Software development"},
+        {103,L"Gaming"},
+        {104,L"Security work or learning"},
+        {105,L"General use; decide later"}
+    };
+    TASKDIALOGCONFIG cfg; ZeroMemory(&cfg,sizeof(cfg));
+    cfg.cbSize=sizeof(cfg); cfg.hwndParent=hwnd; cfg.dwFlags=TDF_USE_COMMAND_LINKS|TDF_POSITION_RELATIVE_TO_WINDOW;
+    cfg.pszWindowTitle=L"Kaevex setup"; cfg.pszMainInstruction=L"\U0001F44B Welcome to Kaevex";
+    cfg.pszContent=L"Let’s set up the security dashboard around what you use this PC for. This only chooses a profile; it does not change Windows security settings.";
+    cfg.cButtons=(UINT)(sizeof(goals)/sizeof(goals[0])); cfg.pButtons=goals; cfg.nDefaultButton=105;
+    int choice=105; TaskDialogIndirect(&cfg,&choice,NULL,NULL);
+    switch(choice){ case 101:g_onboardingProfileIdx=5;break; case 102:g_onboardingProfileIdx=2;break; case 103:g_onboardingProfileIdx=1;break; case 104:g_onboardingProfileIdx=4;break; default:g_onboardingProfileIdx=5;break; }
+
+    const TASKDIALOG_BUTTON skills[]={{111,L"I’m new to security"},{112,L"I know the basics"},{113,L"I’m experienced"}};
+    ZeroMemory(&cfg,sizeof(cfg)); cfg.cbSize=sizeof(cfg); cfg.hwndParent=hwnd;
+    cfg.dwFlags=TDF_USE_COMMAND_LINKS|TDF_POSITION_RELATIVE_TO_WINDOW; cfg.pszWindowTitle=L"Personalize Kaevex";
+    cfg.pszMainInstruction=L"How familiar are you with security tools?";
+    cfg.pszContent=L"Your choice controls whether Kaevex opens a short guided tour after setup.";
+    cfg.cButtons=(UINT)(sizeof(skills)/sizeof(skills[0])); cfg.pButtons=skills; cfg.nDefaultButton=111;
+    choice=111; TaskDialogIndirect(&cfg,&choice,NULL,NULL); g_onboardingSkillLevel=(choice==113)?2:((choice==112)?1:0);
+
+    const TASKDIALOG_BUTTON protection[]={{121,L"Enable RansomShield for my Windows user folder"},{122,L"Leave it off for now"}};
+    ZeroMemory(&cfg,sizeof(cfg)); cfg.cbSize=sizeof(cfg); cfg.hwndParent=hwnd;
+    cfg.dwFlags=TDF_USE_COMMAND_LINKS|TDF_POSITION_RELATIVE_TO_WINDOW; cfg.pszWindowTitle=L"Background file monitoring";
+    cfg.pszMainInstruction=L"Start RansomShield when Kaevex runs?";
+    cfg.pszContent=L"RansomShield watches file changes and alerts on suspicious bursts or encrypted-file extensions. It does not prevent every ransomware attack or restore modified files. No decoy files are created unless you choose that action later.";
+    cfg.cButtons=(UINT)(sizeof(protection)/sizeof(protection[0])); cfg.pButtons=protection; cfg.nDefaultButton=122;
+    choice=122; TaskDialogIndirect(&cfg,&choice,NULL,NULL); SaveRansomAutoStart(choice==121);
+
+    const wchar_t *goalNames[]={L"Security operations",L"Gaming",L"Software development",L"Software and sandbox lab",L"Security learning",L"Home and personal files"};
+    const char *goalUtf8="General use";
+    int profile=g_onboardingProfileIdx;
+    if(profile>=0&&profile<6){
+        static char goalBuf[96]; WideCharToMultiByte(CP_UTF8,0,goalNames[profile],-1,goalBuf,sizeof(goalBuf),NULL,NULL); goalUtf8=goalBuf;
+    }
+    SaveOnboardingValue("UserGoal",REG_SZ,(const BYTE*)goalUtf8,(DWORD)strlen(goalUtf8)+1);
+    DWORD skill=(DWORD)g_onboardingSkillLevel;
+    SaveOnboardingValue("UserSkillLevel",REG_DWORD,(const BYTE*)&skill,sizeof(skill));
+
+    const TASKDIALOG_BUTTON account[]={{141,L"Sign in or create an account"},{142,L"Continue with local features"}};
+    ZeroMemory(&cfg,sizeof(cfg)); cfg.cbSize=sizeof(cfg); cfg.hwndParent=hwnd;
+    cfg.dwFlags=TDF_USE_COMMAND_LINKS|TDF_POSITION_RELATIVE_TO_WINDOW; cfg.pszWindowTitle=L"Account setup";
+    cfg.pszMainInstruction=L"Would you like to check your Kaevex account?";
+    cfg.pszContent=L"An account is optional. Local scans and settings work without signing in. Cloud sync requires a configured and reachable account service.";
+    cfg.cButtons=(UINT)(sizeof(account)/sizeof(account[0])); cfg.pButtons=account; cfg.nDefaultButton=142;
+    choice=142; TaskDialogIndirect(&cfg,&choice,NULL,NULL); g_onboardingRequestLogin=(choice==141);
+
     ShowFirstRunCyberWizard(hwnd);
+    if(g_onboardingRequestLogin) ShowSupabaseAccountDialog(hwnd);
+
+    if(g_onboardingSkillLevel==0){
+        const TASKDIALOG_BUTTON guide[]={{131,L"Basics and dashboard"},{132,L"File protection and sandbox"},{133,L"CVE, firewall and AI tools"},{134,L"Done"}};
+        BOOL done=FALSE;
+        while(!done){
+            ZeroMemory(&cfg,sizeof(cfg)); cfg.cbSize=sizeof(cfg); cfg.hwndParent=hwnd;
+            cfg.dwFlags=TDF_USE_COMMAND_LINKS|TDF_POSITION_RELATIVE_TO_WINDOW; cfg.pszWindowTitle=L"Kaevex quick tour";
+            cfg.pszMainInstruction=L"Your guided tour";
+            cfg.pszContent=L"Dashboard: live host counters. Antivirus: scan selected files or folders. NetGuard: inspect local connections. WebGuard: offline signature checks only; it is not an inline website firewall. Choose a topic for details.";
+            cfg.cButtons=(UINT)(sizeof(guide)/sizeof(guide[0])); cfg.pButtons=guide; cfg.nDefaultButton=134;
+            choice=134; TaskDialogIndirect(&cfg,&choice,NULL,NULL);
+            if(choice==131) MessageBoxW(hwnd,L"Dashboard summarizes local observations. Defense Engines lists on-demand modules; it does not mean every feature is running. Use the left menu to open a page; start a scan only when you choose it.",L"Basics",MB_OK|MB_ICONINFORMATION);
+            else if(choice==132) MessageBoxW(hwnd,L"RansomShield monitors the selected Windows user folder and reports suspicious activity; it cannot guarantee prevention or restore files. Canary files are created only if you press Deploy Honeypots. SmartSandbox needs Sandboxie-Plus installed and may refuse to launch if its isolation checks fail.",L"File protection",MB_OK|MB_ICONINFORMATION);
+            else if(choice==133) MessageBoxW(hwnd,L"Patch & CVE shows local catalog candidates and recent NVD advisories; an advisory is not proof that an installed version is vulnerable. Firewall actions change Windows rules. AI and Full Team send text to a configured provider; they do not run scans or apply fixes.",L"Tools and limits",MB_OK|MB_ICONINFORMATION);
+            else done=TRUE;
+        }
+    }
 }
 
 /* ===========================================================================
@@ -14052,13 +14150,20 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
 
         /* RansomShield */
         if(id==IDR_START){
-            rw_start("C:\\Users",hw);
-            add_alert("RansomShield","INFO","Real-time filesystem monitoring started on C:\\Users");
-            SendMessageA(hRwList,LB_INSERTSTRING,0,(LPARAM)"[RansomShield] Active monitoring engaged on C:\\Users");
+            if(rw_start(NULL,hw)){
+                SaveRansomAutoStart(TRUE);
+                char msg[MAX_PATH+96]; snprintf(msg,sizeof(msg),"RansomShield is monitoring %s",g_rwWatchDir);
+                add_alert("RansomShield","INFO",msg);
+                SendMessageA(hRwList,LB_INSERTSTRING,0,(LPARAM)msg);
+            } else {
+                SaveRansomAutoStart(FALSE);
+                MessageBoxA(hw,"RansomShield could not open your Windows user folder for monitoring. It remains off.","RansomShield unavailable",MB_ICONWARNING);
+            }
             InvalidateRect(hw, NULL, FALSE);
             return 0;}
         if(id==IDR_STOP){
             rw_stop();
+            SaveRansomAutoStart(FALSE);
             add_alert("RansomShield","WARNING","Filesystem monitoring stopped");
             SendMessageA(hRwList,LB_INSERTSTRING,0,(LPARAM)"[RansomShield] Filesystem monitoring suspended");
             InvalidateRect(hw, NULL, FALSE);
@@ -15509,6 +15614,7 @@ int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMini
     DwmSetWindowAttribute(g_hwnd,19,&dark,sizeof(dark));
 
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    g_ransomAutoStart=LoadRansomAutoStart();
     CveLoadSchedule();
     CreateControls(g_hwnd);
     Layout(g_hwnd);
@@ -15566,8 +15672,8 @@ int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMini
     PostMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDU_SCAN, 0), 0);
     /* Launch initial app discovery in background */
     disc_run_async(g_hwnd, WM_DISC_DONE);
-    /* Auto-start RansomShield real-time file monitor on startup */
-    PostMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDR_START, 0), 0);
+    /* Resume RansomShield only when the user opted in during setup or settings. */
+    if(g_ransomAutoStart) PostMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDR_START, 0), 0);
     /* Auto-load Adaptive Firewall rules inventory on startup */
     PostMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDF_RELOAD, 0), 0);
 
