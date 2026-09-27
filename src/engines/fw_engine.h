@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define FW_MAX_RULES 512
 
@@ -65,7 +66,7 @@ static int fw_run_capture(const char *cmd, char *out, int outLen) {
 }
 
 /* --- Run a netsh command with UAC elevation ------------------------------- */
-static void fw_run_elevated(const char *netshArgs) {
+static BOOL fw_run_elevated(const char *netshArgs) {
     SHELLEXECUTEINFOA sei; ZeroMemory(&sei, sizeof(sei));
     sei.cbSize      = sizeof(sei);
     sei.lpVerb      = "runas";
@@ -73,10 +74,23 @@ static void fw_run_elevated(const char *netshArgs) {
     sei.lpParameters= netshArgs;
     sei.fMask       = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
     sei.nShow       = SW_HIDE;
-    if(ShellExecuteExA(&sei) && sei.hProcess) {
-        WaitForSingleObject(sei.hProcess, 10000);
-        CloseHandle(sei.hProcess);
+    if(!ShellExecuteExA(&sei) || !sei.hProcess) return FALSE;
+    DWORD wait = WaitForSingleObject(sei.hProcess, 15000);
+    DWORD code = 1;
+    if(wait == WAIT_OBJECT_0) GetExitCodeProcess(sei.hProcess, &code);
+    else TerminateProcess(sei.hProcess, 1);
+    CloseHandle(sei.hProcess);
+    return wait == WAIT_OBJECT_0 && code == 0;
+}
+
+static BOOL fw_safe_rule_text(const char *s, BOOL allowSpace) {
+    if(!s || !*s) return FALSE;
+    for(const unsigned char *p=(const unsigned char*)s; *p; ++p) {
+        if(isalnum(*p) || *p=='_' || *p=='-' || *p=='.' || *p=='\\' || *p==':' ||
+           (allowSpace && *p==' ')) continue;
+        return FALSE;
     }
+    return TRUE;
 }
 
 /* --- Fallback: Read real firewall rules from Windows Registry --- */
@@ -312,6 +326,12 @@ static int fw_load_rules(void) {
 static BOOL fw_add_rule(const char *name, const char *program,
                         const char *dir, const char *action,
                         const char *protocol, const char *port) {
+    if(!fw_safe_rule_text(name, TRUE) ||
+       (program && *program && (!fw_safe_rule_text(program, TRUE) || !strchr(program, ':'))) ||
+       (!dir || (_stricmp(dir,"in") && _stricmp(dir,"out"))) ||
+       (!action || (_stricmp(action,"allow") && _stricmp(action,"block"))) ||
+       (protocol && *protocol && _stricmp(protocol,"tcp") && _stricmp(protocol,"udp") && _stricmp(protocol,"any")) ||
+       (port && *port && !fw_safe_rule_text(port, FALSE))) return FALSE;
     char args[1024];
     if(program && strlen(program) > 0) {
         snprintf(args, sizeof(args),
@@ -329,8 +349,37 @@ static BOOL fw_add_rule(const char *name, const char *program,
             (protocol && *protocol) ? protocol : "tcp",
             (port && *port) ? port : "any");
     }
-    fw_run_elevated(args);
-    return TRUE;
+    return fw_run_elevated(args);
+}
+
+static BOOL fw_add_remote_port_block(const char *name, const char *protocol, const char *port) {
+    if(!fw_safe_rule_text(name, TRUE) || !protocol ||
+       (_stricmp(protocol,"tcp") && _stricmp(protocol,"udp")) ||
+       !fw_safe_rule_text(port, FALSE)) return FALSE;
+    for(const char *p=port; *p; ++p)
+        if(!isdigit((unsigned char)*p) && *p!='-' && *p!=',') return FALSE;
+    char args[512];
+    if(snprintf(args,sizeof(args),
+        "advfirewall firewall add rule name=\"%s\" dir=out action=block enable=yes protocol=%s remoteport=%s profile=any",
+        name,protocol,port) >= (int)sizeof(args)) return FALSE;
+    return fw_run_elevated(args);
+}
+
+/* Emergency containment: deny all network traffic for one verified executable. */
+static void fw_delete_rule(const char *name);
+static BOOL fw_block_program(const char *program) {
+    if(!program || !fw_safe_rule_text(program, TRUE) || !strchr(program, ':')) return FALSE;
+    DWORD attrs=GetFileAttributesA(program);
+    if(attrs==INVALID_FILE_ATTRIBUTES || (attrs&FILE_ATTRIBUTE_DIRECTORY)) return FALSE;
+    char inName[64], outName[64];
+    unsigned long hash=2166136261u;
+    for(const unsigned char *p=(const unsigned char*)program; *p; ++p) hash=(hash^*p)*16777619u;
+    snprintf(inName,sizeof(inName),"Kaevex-CVE-%08lX-In",hash);
+    snprintf(outName,sizeof(outName),"Kaevex-CVE-%08lX-Out",hash);
+    BOOL inOk=fw_add_rule(inName,program,"in","block","any",NULL);
+    BOOL outOk=fw_add_rule(outName,program,"out","block","any",NULL);
+    if(inOk != outOk) fw_delete_rule(inOk?inName:outName);
+    return inOk && outOk;
 }
 
 /* ?????? Block a process completely (in + out) ??????????????????????????????????????????????????????????????????????????????????????????????????? */

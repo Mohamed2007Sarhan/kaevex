@@ -39,7 +39,7 @@ Kaevex is engineered with a strict **Zero-Runtime-Dependency** design philosophy
   |      18 attack categories (SQLi, XSS, RCE, Path Traversal, SSRF, Deserialization).
   |
   +--> 8. SmartSandbox
-         AppContainer isolation, low-integrity tokens, restricted desktop sessions.
+         Sandboxie-Plus per-application persistent boxes and WFP policies.
 ```
 
 ---
@@ -52,9 +52,8 @@ Kaevex is engineered with a strict **Zero-Runtime-Dependency** design philosophy
 - Hourly background worker automatically audits `C:\Windows\System32`, `C:\Program Files`, and `C:\Program Files (x86)`.
 
 ### 2. SmartSandbox (`sbx_engine.h`)
-- Leverages `CreateAppContainerProfile` to configure a sandboxed execution boundary.
-- Applies `SID_AND_ATTRIBUTES` capabilities restricting access to network sockets, local file writing, and device interfaces.
-- Assigns target processes to a dedicated Windows Job Object with memory caps and process creation flags disabled (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`).
+- Uses the separately installed Sandboxie-Plus engine for persistent Windows EXE application boxes. SmartSandbox creates per-EXE boxes, configures WFP deny-all network access, drops admin rights, verifies the stored network and token policy, launches through `Start.exe`, and creates a desktop shortcut through the same sandbox launcher.
+- MSI execution is disabled because enabling Sandboxie's MSI exemptions weakens isolation. This backend is process/file/registry virtualization, not a VM boundary. Linux and macOS backends are not implemented by this Windows-only build.
 
 ### 3. RansomShield (`ransom_engine.h`)
 - Automatically plants honeypot documents (`KaevexDecoy_*.docx`) in monitored directory trees.

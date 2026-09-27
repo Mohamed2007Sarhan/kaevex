@@ -1,0 +1,7 @@
+
+  [ WEBLAYER / WAF INSPECTION TEST ]
+  Target Input Payload:  "ordinary"
+  >>> VERDICT: [CLEAN / BENIGN REQUEST] <<<
+  Anomaly Score:         0 / 100
+  Enforced Action:       HTTP 200 Allowed
+

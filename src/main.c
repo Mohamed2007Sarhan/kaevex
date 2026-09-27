@@ -137,6 +137,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             return kaevex_gui_main(hInstance, NULL, lpCmdLine, (nCmdShow <= 0) ? SW_SHOWNORMAL : nCmdShow, FALSE);
         }
 
+        /* --- Mode B2: Explicit Login/Auth Dialog Flag --- */
+        if (_stricmp(arg1, "--login") == 0 || _stricmp(arg1, "-l") == 0 ||
+            _stricmp(arg1, "--auth") == 0 || _stricmp(arg1, "-a") == 0) {
+            return kaevex_gui_main(hInstance, NULL, "--login", (nCmdShow <= 0) ? SW_SHOWNORMAL : nCmdShow, FALSE);
+        }
+
         /* --- Mode C: CLI Execution in Console --- */
         SetupConsoleIO();
         int res = kaevex_cli_main(argc, argv);

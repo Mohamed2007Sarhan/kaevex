@@ -12424,3 +12424,684 @@ Status: Cryptographically Bound & Scoped
 [2026-09-27 00:28:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
 [2026-09-27 00:28:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
 [2026-09-27 00:28:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:29:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:29:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:30:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:30:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:31:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:31:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:32:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:32:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:33:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:33:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:34:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:34:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:35:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:35:55] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:36:25] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:36:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:37:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:37:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:38:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:38:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:39:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:39:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:40:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:40:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:41:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:41:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:42:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:42:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:43:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:43:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:44:26] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 00:44:56] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 00:54:42 ===
+[2026-09-27 00:54:42] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:54:42] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:54:42] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:54:42] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:54:42] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:54:42] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:54:42] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:54:42] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+=== Kaevex Forensics Log - Session started 2026-09-27 00:55:14 ===
+[2026-09-27 00:55:14] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:55:14] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:55:14] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:55:14] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:55:14] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:55:14] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:55:14] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:55:14] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:55:15] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:55:16] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 00:55:17] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+[2026-09-27 00:55:17] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 00:56:38 ===
+[2026-09-27 00:56:38] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:56:38] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:56:38] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:56:38] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:56:38] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:56:38] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:56:38] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:56:38] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:56:39] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 128579)
+[2026-09-27 00:56:39] [WARNING ] NetGuard         Baseline: 125 active conns (72 Web, 0 DL, 3 Unverified: ChatGPT.exe -> ChatGPT.exe -> 74.125.133.188:5228)
+[2026-09-27 00:56:39] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:56:39] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 00:56:39] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 00:57:47 ===
+[2026-09-27 00:57:47] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 00:57:47] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 00:57:47] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 00:57:47] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 00:57:47] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 00:57:47] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 00:57:47] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 00:57:47] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 00:57:48] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 00:57:48] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 128805)
+[2026-09-27 00:57:48] [WARNING ] NetGuard         Baseline: 104 active conns (57 Web, 0 DL, 3 Unverified: ChatGPT.exe -> ChatGPT.exe -> 74.125.133.188:5228)
+[2026-09-27 00:57:48] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 00:57:48] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+=== Kaevex Forensics Log - Session started 2026-09-27 10:47:38 ===
+[2026-09-27 10:47:38] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 10:47:38] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 10:47:38] [INFO    ] SmartSandbox     AppContainer kernel enforcement subsystem active
+[2026-09-27 10:47:38] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 10:47:38] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 10:47:38] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 10:47:38] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 10:47:39] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 10:47:40] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 10:47:40] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 113305)
+[2026-09-27 10:47:40] [WARNING ] NetGuard         Baseline: 144 active conns (98 Web, 0 DL, 7 Unverified: ChatGPT.exe -> ChatGPT.exe -> 142.251.168.188:5228)
+[2026-09-27 10:47:40] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 10:47:40] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+=== Kaevex Forensics Log - Session started 2026-09-27 11:02:17 ===
+[2026-09-27 11:02:17] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:02:17] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:02:17] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:02:17] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:02:17] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:02:17] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:02:17] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:02:17] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:02:18] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 116175)
+[2026-09-27 11:02:18] [WARNING ] NetGuard         Baseline: 109 active conns (75 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:02:18] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 37 software CVEs + 9 OS CVEs
+[2026-09-27 11:02:18] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:02:18] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:02:20] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:02:21] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:02:21] [INFO    ] AppHub           Discovery complete: 373 apps cataloged | 179 relationship edges
+[2026-09-27 11:02:22] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:02:22] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-27 11:02:23] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:02:24] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:02:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:03:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:03:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:04:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:04:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:05:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:05:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:06:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:06:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:07:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:07:47] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:08:17] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:08:48] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:09:18] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:09:48] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:10:18] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:10:48] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:11:18] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 11:16:08 ===
+[2026-09-27 11:16:08] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:16:08] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:16:08] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:16:08] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:16:08] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:16:08] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:16:08] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:16:08] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:16:08] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 118889)
+[2026-09-27 11:16:08] [WARNING ] NetGuard         Baseline: 94 active conns (57 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:16:08] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:16:08] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:16:09] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:16:10] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:16:11] [INFO    ] AppHub           Discovery complete: 376 apps cataloged | 177 relationship edges
+[2026-09-27 11:16:11] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:16:12] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+[2026-09-27 11:16:12] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 11:18:03 ===
+[2026-09-27 11:18:03] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:18:03] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:18:03] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:18:03] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:18:03] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:18:03] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:18:03] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:18:03] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:18:03] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 119264)
+[2026-09-27 11:18:03] [WARNING ] NetGuard         Baseline: 99 active conns (62 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:18:03] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:18:03] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:18:04] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:18:04] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 177 relationship edges
+[2026-09-27 11:18:05] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:18:05] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 6 threats recorded in database.
+[2026-09-27 11:18:06] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:18:07] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:18:08] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:18:09] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 11:19:24 ===
+[2026-09-27 11:19:24] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:19:24] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:19:24] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:19:24] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:19:24] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:19:24] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:19:24] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:19:24] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:19:24] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 119529)
+[2026-09-27 11:19:24] [WARNING ] NetGuard         Baseline: 106 active conns (69 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:19:24] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:19:24] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:19:25] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:19:26] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:19:26] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 178 relationship edges
+[2026-09-27 11:19:27] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:19:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:19:28] [WARNING ] Antivirus        Startup security audit complete: 19 binaries inspected | 7 threats recorded in database.
+[2026-09-27 11:19:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 11:30:25 ===
+[2026-09-27 11:30:25] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:30:25] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:30:25] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:30:25] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:30:25] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:30:25] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:30:25] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:30:25] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:30:25] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 121687)
+[2026-09-27 11:30:25] [WARNING ] NetGuard         Baseline: 83 active conns (46 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:30:25] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:30:25] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:30:26] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:30:27] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:30:27] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 175 relationship edges
+[2026-09-27 11:30:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:30:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:30:29] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 11:35:20 ===
+[2026-09-27 11:35:20] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:35:20] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:35:20] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:35:20] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:35:20] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:35:20] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:35:20] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:35:20] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:35:20] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 122651)
+[2026-09-27 11:35:20] [WARNING ] NetGuard         Baseline: 86 active conns (49 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:35:20] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:35:20] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:35:21] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:35:22] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:35:23] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 176 relationship edges
+[2026-09-27 11:35:23] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:35:24] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:35:25] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:35:26] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 11:36:46 ===
+[2026-09-27 11:36:46] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 11:36:46] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 11:36:46] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 11:36:46] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 11:36:46] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 11:36:46] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 11:36:46] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 11:36:46] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 11:36:47] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 122932)
+[2026-09-27 11:36:47] [WARNING ] NetGuard         Baseline: 93 active conns (56 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 11:36:47] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 46 critical/high CVEs
+[2026-09-27 11:36:47] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 11:36:48] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:36:49] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:36:49] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 177 relationship edges
+[2026-09-27 11:36:50] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:36:50] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+[2026-09-27 11:36:51] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:36:52] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 11:36:53] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 11:37:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:37:27] [WARNING ] CVE Agent        System vulnerability scan completed.
+[2026-09-27 11:37:28] [WARNING ] CVE Agent        System vulnerability scan completed.
+[2026-09-27 11:37:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:38:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:38:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:39:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:39:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:40:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:40:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:41:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:41:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:42:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:42:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:43:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:43:46] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+[2026-09-27 11:44:16] [CRITICAL] CVE Watcher      CVE Watcher: 53 apps monitored, 37 active CVEs requiring remediation.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:05:10 ===
+[2026-09-27 12:05:10] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:05:10] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:05:10] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:05:10] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:05:10] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:05:10] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:05:10] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:05:10] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:05:10] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 128496)
+[2026-09-27 12:05:10] [WARNING ] NetGuard         Baseline: 97 active conns (60 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:05:10] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:05:10] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:05:11] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:05:12] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:05:12] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 176 relationship edges
+[2026-09-27 12:05:13] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:11:01 ===
+[2026-09-27 12:11:01] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:11:01] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:11:01] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:11:01] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:11:01] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:11:01] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:11:01] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:11:01] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:11:01] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 129642)
+[2026-09-27 12:11:01] [WARNING ] NetGuard         Baseline: 90 active conns (53 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:11:01] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:11:01] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:11:02] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:11:03] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:11:03] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 177 relationship edges
+[2026-09-27 12:11:04] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:11:04] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:11:05] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:11:06] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:11:07] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:11:31] [INFO    ] CVE Watcher      Local advisory catalog: 53 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:13:04 ===
+[2026-09-27 12:13:04] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:13:04] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:13:04] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:13:04] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:13:04] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:13:04] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:13:04] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:13:04] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:13:04] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 130044)
+[2026-09-27 12:13:04] [WARNING ] NetGuard         Baseline: 102 active conns (65 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:13:04] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:13:04] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:13:05] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:13:06] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:13:07] [INFO    ] AppHub           Discovery complete: 373 apps cataloged | 176 relationship edges
+[2026-09-27 12:13:07] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:13:08] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:15:45 ===
+[2026-09-27 12:15:45] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:15:45] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:15:45] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:15:45] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:15:45] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:15:45] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:15:45] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:15:45] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:15:45] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 130570)
+[2026-09-27 12:15:45] [WARNING ] NetGuard         Baseline: 158 active conns (121 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:15:45] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:15:45] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:15:46] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:15:47] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:15:48] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:15:48] [INFO    ] AppHub           Discovery complete: 374 apps cataloged | 177 relationship edges
+[2026-09-27 12:15:49] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:15:49] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:15:50] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:25:31 ===
+[2026-09-27 12:25:31] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:25:31] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:25:31] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:25:31] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:25:31] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:25:31] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:25:31] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:25:31] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:25:31] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 132483)
+[2026-09-27 12:25:31] [WARNING ] NetGuard         Baseline: 104 active conns (67 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:25:31] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:25:31] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:25:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:25:33] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:25:33] [INFO    ] AppHub           Discovery complete: 374 apps cataloged | 178 relationship edges
+[2026-09-27 12:25:34] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:25:35] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:25:36] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:25:36] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:25:37] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:26:01] [INFO    ] CVE Watcher      Local advisory catalog: 53 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:26:54 ===
+[2026-09-27 12:26:54] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:26:54] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:26:54] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:26:54] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:26:54] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:26:54] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:26:54] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:26:54] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:26:54] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 132754)
+[2026-09-27 12:26:54] [WARNING ] NetGuard         Baseline: 128 active conns (91 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:26:54] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:26:54] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:26:55] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:26:56] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:26:57] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 176 relationship edges
+[2026-09-27 12:26:57] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:26:58] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:26:59] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:26:59] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:32:09 ===
+[2026-09-27 12:32:09] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:32:09] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:32:09] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:32:09] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:32:09] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:32:09] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:32:09] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:32:09] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:32:09] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 101015)
+[2026-09-27 12:32:09] [WARNING ] NetGuard         Baseline: 124 active conns (83 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:32:09] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:32:09] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:32:10] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:32:11] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:32:11] [INFO    ] AppHub           Discovery complete: 373 apps cataloged | 180 relationship edges
+[2026-09-27 12:32:12] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:32:13] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:32:14] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:32:14] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:32:15] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:32:23] [INFO    ] Antivirus        Deep system scan initiated across running processes and startup entries.
+[2026-09-27 12:32:39] [INFO    ] CVE Watcher      Local advisory catalog: 53 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-27 12:32:40] [INFO    ] BootkitAudit     Bootkit & System Integrity Clean
+[2026-09-27 12:32:41] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:32:41] [INFO    ] Antivirus        Resolved threats cleared from database (whitelisted files preserved).
+[2026-09-27 12:32:41] [INFO    ] Antivirus        Resolved threats cleared from database (whitelisted files preserved).
+=== Kaevex Forensics Log - Session started 2026-09-27 12:41:11 ===
+[2026-09-27 12:41:11] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:41:11] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:41:11] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:41:11] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:41:11] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:41:11] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:41:11] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:41:11] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:41:11] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 102785)
+[2026-09-27 12:41:11] [WARNING ] NetGuard         Baseline: 100 active conns (63 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:41:11] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:41:11] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:41:12] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:41:13] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:41:13] [INFO    ] AppHub           Discovery complete: 375 apps cataloged | 179 relationship edges
+[2026-09-27 12:41:14] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:42:27 ===
+[2026-09-27 12:42:27] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:42:27] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:42:27] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:42:27] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:42:27] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:42:27] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:42:27] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:42:27] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:42:27] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 103033)
+[2026-09-27 12:42:27] [WARNING ] NetGuard         Baseline: 105 active conns (68 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:42:27] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:42:27] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:42:28] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:29] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:42:30] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 174 relationship edges
+[2026-09-27 12:42:30] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:31] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:42:32] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:33] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:42:34] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:42:38 ===
+[2026-09-27 12:42:38] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:42:38] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:42:38] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:42:38] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:42:38] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:42:38] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:42:38] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:42:38] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:42:38] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 103069)
+[2026-09-27 12:42:38] [WARNING ] NetGuard         Baseline: 117 active conns (80 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:42:38] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:42:38] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:42:39] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:40] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:42:41] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 175 relationship edges
+[2026-09-27 12:42:41] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:42] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:42:43] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:42:44] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:42:44] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:43:06] [WARNING ] CVE Agent        Autonomous vulnerability scan complete: 6 issues identified (3 critical, 3 high, 53 packages).
+[2026-09-27 12:43:08] [WARNING ] CVE Watcher      Local advisory catalog: 53 installed apps, 1 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-27 12:45:32] [INFO    ] Gaming Core      Auto-detect games disabled.
+[2026-09-27 12:45:33] [INFO    ] Gaming Core      Auto-detect running games engaged.
+[2026-09-27 12:45:38] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-27 12:45:41] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 1510 MB RAM purged.
+[2026-09-27 12:45:41] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-27 12:45:41] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 123 MB RAM purged.
+[2026-09-27 12:45:42] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-27 12:45:44] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 111 MB RAM purged.
+[2026-09-27 12:45:47] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-27 12:46:10] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 372 MB RAM purged.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:48:37 ===
+[2026-09-27 12:48:37] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:48:37] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:48:37] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:48:37] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:48:37] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:48:37] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:48:37] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:48:37] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:48:38] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 104241)
+[2026-09-27 12:48:38] [WARNING ] NetGuard         Baseline: 96 active conns (59 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:48:38] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:48:38] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:48:38] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:48:40] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:48:40] [INFO    ] AppHub           Discovery complete: 374 apps cataloged | 177 relationship edges
+[2026-09-27 12:48:41] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:48:42] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:48:43] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:48:43] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:48:44] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:49:12 ===
+[2026-09-27 12:49:12] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:49:12] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:49:12] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:49:12] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:49:12] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:49:12] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:49:12] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:49:12] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:49:12] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 104356)
+[2026-09-27 12:49:12] [WARNING ] NetGuard         Baseline: 106 active conns (69 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:49:12] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:49:12] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:49:13] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:49:14] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:49:14] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 177 relationship edges
+[2026-09-27 12:49:15] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:49:16] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:49:17] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:49:17] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:49:18] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:49:42] [WARNING ] CVE Watcher      Local advisory catalog: 53 installed apps, 1 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-27 12:51:17] [WARNING ] CVE Agent        Unstoppable Code 1.3.0 update did not clear the local CVE candidate. Check the updater result and publisher guidance.
+=== Kaevex Forensics Log - Session started 2026-09-27 12:54:15 ===
+[2026-09-27 12:54:15] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:54:15] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:54:15] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:54:15] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:54:15] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:54:15] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:54:15] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:54:15] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:54:15] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 105345)
+[2026-09-27 12:54:15] [WARNING ] NetGuard         Baseline: 127 active conns (90 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:54:15] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-27 12:54:15] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:54:16] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:54:17] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 176 relationship edges
+[2026-09-27 12:54:17] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:54:18] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:54:19] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:54:20] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:54:20] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:54:21] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 12:58:44 ===
+[2026-09-27 12:58:44] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 12:58:44] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 12:58:44] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 12:58:44] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 12:58:44] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 12:58:44] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 12:58:44] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 12:58:44] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 12:58:45] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 106224)
+[2026-09-27 12:58:45] [WARNING ] NetGuard         Baseline: 90 active conns (53 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 12:58:45] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 12:58:45] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 12:58:45] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:58:46] [INFO    ] AppHub           Discovery complete: 373 apps cataloged | 174 relationship edges
+[2026-09-27 12:58:46] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:58:47] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:58:49] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 12:58:50] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 12:58:50] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 12:58:51] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 13:00:47 ===
+[2026-09-27 13:00:47] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 13:00:47] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 13:00:47] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 13:00:47] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 13:00:47] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 13:00:47] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 13:00:47] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 13:00:47] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 13:00:48] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 106625)
+[2026-09-27 13:00:48] [WARNING ] NetGuard         Baseline: 95 active conns (58 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 13:00:48] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 13:00:48] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 13:00:49] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:00:49] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 175 relationship edges
+[2026-09-27 13:00:50] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:00:51] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:00:52] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:00:53] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:00:53] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 13:00:54] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 13:01:47 ===
+[2026-09-27 13:01:47] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 13:01:47] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 13:01:47] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 13:01:47] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 13:01:47] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 13:01:47] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 13:01:47] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 13:01:48] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 13:01:48] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 106825)
+[2026-09-27 13:01:48] [WARNING ] NetGuard         Baseline: 111 active conns (74 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 13:01:48] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 13:01:48] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 13:01:49] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:01:50] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:01:50] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 180 relationship edges
+[2026-09-27 13:01:51] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:01:52] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:01:53] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 13:01:53] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:01:54] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 13:01:57 ===
+[2026-09-27 13:01:57] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 13:01:57] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 13:01:57] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 13:01:57] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 13:01:57] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 13:01:57] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 13:01:57] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 13:01:57] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 13:01:57] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 106854)
+[2026-09-27 13:01:57] [WARNING ] NetGuard         Baseline: 128 active conns (91 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 13:01:57] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 13:01:57] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 13:01:58] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:01:59] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:02:00] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 180 relationship edges
+[2026-09-27 13:02:00] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:02:01] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:02:02] [WARNING ] CVE Agent        Autonomous vulnerability scan complete: 6 issues identified (3 critical, 3 high, 53 packages).
+[2026-09-27 13:02:02] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:02:03] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+=== Kaevex Forensics Log - Session started 2026-09-27 13:07:21 ===
+[2026-09-27 13:07:21] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 13:07:21] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 13:07:21] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 13:07:21] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 13:07:21] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 13:07:21] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 13:07:21] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 13:07:21] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 13:07:21] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 107912)
+[2026-09-27 13:07:21] [WARNING ] NetGuard         Baseline: 99 active conns (62 Web, 0 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 13:07:21] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 13:07:21] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 13:07:22] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:07:23] [INFO    ] AppHub           Discovery complete: 371 apps cataloged | 177 relationship edges
+[2026-09-27 13:07:23] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:07:24] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:07:25] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:07:26] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 13:07:26] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:07:27] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:07:51] [WARNING ] CVE Watcher      Local advisory catalog: 53 installed apps, 1 potential CVE version matches. Verify with the vendor; no fix was applied.
+=== Kaevex Forensics Log - Session started 2026-09-27 13:14:58 ===
+[2026-09-27 13:14:58] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-27 13:14:58] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-27 13:14:58] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-27 13:14:58] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-27 13:14:58] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-27 13:14:58] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-27 13:14:58] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-27 13:14:58] [INFO    ] RansomShield     Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed
+[2026-09-27 13:14:58] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 109404)
+[2026-09-27 13:14:58] [WARNING ] NetGuard         Baseline: 106 active conns (64 Web, 5 DL, 3 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-27 13:14:58] [WARNING ] CVE Agent        Scanned 53 apps & OS build 26200: Found 6 potential CVE catalog matches
+[2026-09-27 13:14:58] [INFO    ] RansomShield     Real-time filesystem monitoring started on C:\Users
+[2026-09-27 13:14:59] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:15:00] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Documents\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:15:00] [INFO    ] AppHub           Discovery complete: 372 apps cataloged | 176 relationship edges
+[2026-09-27 13:15:01] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:15:02] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Users\Moham\Desktop\~KaevexDecoy_01.docx - Ransomware behavior!
+[2026-09-27 13:15:03] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_00.docx - Ransomware behavior!
+[2026-09-27 13:15:04] [INFO    ] Antivirus        Startup security audit complete: 20 binaries inspected | 0 threats recorded in database.
+[2026-09-27 13:15:04] [CRITICAL] RansomShield     HONEYPOT TRIGGERED: C:\Windows\Temp\~KaevexDecoy_01.docx - Ransomware behavior!

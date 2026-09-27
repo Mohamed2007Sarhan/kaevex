@@ -563,9 +563,8 @@ static void PaintSet(HDC dc, int cx, int cy, int cw, int ch) {
         }
     }
     else if (g_setSubTab == SET_ENGINES) {
-        static const char *engHealth[] = { "All 8 Online (Optimal)", "Auto-Heal Active" };
-        static int curHealth = 0;
-        DrawSetModeSelector(dc, mainX, contentY, mainW, "Defense Engines Fleet Status", "Real-time health monitoring and process control for core subsystems", engHealth, 2, &curHealth);
+        Txt(dc, "Defense Feature Modules", mainX, contentY + 6, mainW, 20, C_TEXT, fMed, DT_LEFT | DT_SINGLELINE);
+        Txt(dc, "Modules run when their feature workflow is invoked. Service health is not available.", mainX, contentY + 28, mainW, 18, C_DIM, fSm, DT_LEFT | DT_SINGLELINE);
 
         int gridY = contentY + 68;
         int colW  = (mainW - 12) / 2;
@@ -583,8 +582,8 @@ static void PaintSet(HDC dc, int cx, int cy, int cw, int ch) {
             DeleteObject(eBg); DeleteObject(ePn);
 
             /* Status Dot */
-            HBRUSH dotBr = CreateSolidBrush(g_eng[i].run ? RGB(16, 185, 129) : RGB(239, 68, 68));
-            HPEN   dotPn = CreatePen(PS_SOLID, 1, g_eng[i].run ? RGB(52, 211, 153) : RGB(248, 113, 113));
+            HBRUSH dotBr = CreateSolidBrush(C_DIM);
+            HPEN   dotPn = CreatePen(PS_SOLID, 1, C_DIM);
             ob = (HBRUSH)SelectObject(dc, dotBr); op = (HPEN)SelectObject(dc, dotPn);
             Ellipse(dc, ex + 12, ey + 12, ex + 22, ey + 22);
             SelectObject(dc, ob); SelectObject(dc, op);
@@ -594,26 +593,11 @@ static void PaintSet(HDC dc, int cx, int cy, int cw, int ch) {
             Txt(dc, g_eng[i].detail, ex + 28, ey + 26, colW - 130, 14, C_DIM, fSm, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
 
             char ldStr[64];
-            snprintf(ldStr, sizeof(ldStr), "Load: %d%%  |  v%s", g_eng[i].load, g_eng[i].version);
+            snprintf(ldStr, sizeof(ldStr), "Health unavailable  |  v%s", g_eng[i].version);
             Txt(dc, ldStr, ex + 28, ey + 42, colW - 130, 14, RGB(6, 182, 212), fSm, DT_LEFT | DT_SINGLELINE);
 
-            /* Action button [ RESTART / STOP ] */
-            int abW = 80, abH = 26;
-            int abX = ex + colW - abW - 12;
-            int abY = ey + (rowH - abH) / 2;
-
-            HBRUSH abBg = CreateSolidBrush(C_PANEL2);
-            HPEN   abPn = CreatePen(PS_SOLID, 1, C_BORDER);
-            ob = (HBRUSH)SelectObject(dc, abBg); op = (HPEN)SelectObject(dc, abPn);
-            RoundRect(dc, abX, abY, abX + abW, abY + abH, 6, 6);
-            SelectObject(dc, ob); SelectObject(dc, op);
-            DeleteObject(abBg); DeleteObject(abPn);
-
-            Txt(dc, g_eng[i].run ? "Restart" : "Start", abX, abY, abW, abH,
-                C_CYAN, fSm, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-            RECT abRc = { abX, abY, abX + abW, abY + abH };
-            RegSetClick(abRc, 1, (void*)&g_eng[i].run, 0);
+            Txt(dc, "On demand", ex + colW - 100, ey + 22, 88, 20,
+                C_DIM, fSm, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
     }
     else if (g_setSubTab == SET_AISOC) {

@@ -35,6 +35,7 @@
 #include "threat_engine.h"
 #include "discovery_engine.h"
 #include "upd_engine.h"
+#include "sbx_engine.h"
 #include "boot_rootkit_engine.h"
 
 #define KAEVEX_VERSION "1.0.0-PROD"
@@ -522,132 +523,8 @@ static void scan_file(const char *path) {
 
 /* ????????? Seed Data ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static void seed_initial_state(void) {
-    char ts[32];
-    get_timestamp(ts, sizeof(ts));
-
-    const char *engines[] = {"WebGuard", "PacketGuard-AV", "SmartSandbox", "Nexus", "HostGuard", "ThreatGuard"};
-    const char *types[]   = {"SQLi", "XSS", "RCE", "Scanner", "BruteForce", "LFI", "SSRF", "Log4Shell"};
-    const char *sevs[]    = {"low", "medium", "high", "critical"};
-    const char *protos[]  = {"TCP", "UDP", "HTTP", "HTTPS", "DNS", "TLS"};
-    const char *attck[]   = {"T1190", "T1059", "T1083", "T1595", "T1078", "T1055"};
-
-    for (int i = 0; i < 6; i++) {
-        Alert *a = &g_alerts[g_alert_count++];
-        a->id = g_alert_id++;
-        strcpy(a->timestamp, ts);
-        strcpy(a->engine, engines[i % 6]);
-        strcpy(a->type, types[i % 8]);
-        strcpy(a->severity, sevs[(i + 1) % 4]);
-        random_ip(a->src_ip);
-        sprintf(a->dst_ip, "192.168.1.%d", (i * 7) % 50 + 10);
-        a->src_port = 1024 + (i * 317) % 50000;
-        a->dst_port = (i % 2 == 0) ? 443 : 80;
-        strcpy(a->proto, protos[i % 6]);
-        sprintf(a->payload, "Inbound inspection: signature match for %s attack pattern", a->type);
-        strcpy(a->attck, attck[i % 6]);
-        a->blocked = (i % 2 == 0);
-        a->ip_banned = a->blocked;
-        if (a->ip_banned) add_ban(a->src_ip);
-    }
-
-    /* Incidents */
-    const char *families[] = {"LockBit Ransomware", "APT29 Bear", "CobaltStrike Infiltration", "Mirai IoT Sweep"};
-    for (int i = 0; i < 3; i++) {
-        Incident *inc = &g_incidents[g_inc_count++];
-        inc->id = g_inc_id++;
-        strcpy(inc->timestamp, ts);
-        snprintf(inc->title, sizeof(inc->title), "%s campaign active", families[i]);
-        snprintf(inc->summary, sizeof(inc->summary), "Nexus correlated %d telemetry events from 4 engines", (i + 1) * 7);
-        random_ip(inc->attacker_ip);
-        sprintf(inc->target_ip, "192.168.1.%d", 20 + i);
-        inc->kill_chain_stage = 3 + i;
-        inc->threat_score = 70 + i * 10;
-        inc->threat_level = (inc->threat_score >= 80) ? 4 : 3;
-        strcpy(inc->threat_family, families[i]);
-        strcpy(inc->techniques, "T1190, T1059, T1071");
-        inc->auto_remediated = (i % 2 == 0);
-    }
-
-    /* IOCs */
-    strcpy(g_iocs[0].type, "IP");       strcpy(g_iocs[0].value, "185.220.101.5");   strcpy(g_iocs[0].threat_actor, "Tor Exit / Scanner"); g_iocs[0].confidence = 95; g_iocs[0].hit_count = 14;
-    strcpy(g_iocs[1].type, "Domain");   strcpy(g_iocs[1].value, "c2-update.xyz");    strcpy(g_iocs[1].threat_actor, "APT29");              g_iocs[1].confidence = 90; g_iocs[1].hit_count = 8;
-    strcpy(g_iocs[2].type, "SHA-256");  strcpy(g_iocs[2].value, "24d004a104d4d54034dbcffc2a4b19a11f39008a575aa614ea04703480b1022c"); strcpy(g_iocs[2].threat_actor, "WannaCry"); g_iocs[2].confidence = 100; g_iocs[2].hit_count = 3;
-    strcpy(g_iocs[3].type, "IP");       strcpy(g_iocs[3].value, "91.240.118.23");   strcpy(g_iocs[3].threat_actor, "LockBit Affiliate"); g_iocs[3].confidence = 88; g_iocs[3].hit_count = 19;
-    g_ioc_count = 4;
-
-    /* Stats */
-    g_stats.av_scanned_files   = 14820;
-    g_stats.av_threats_found   = 14;
-    g_stats.av_quarantined     = 14;
-    g_stats.waf_inspected      = 84210;
-    g_stats.waf_blocked        = 341;
-    g_stats.waf_sqli           = 112;
-    g_stats.waf_xss            = 94;
-    g_stats.waf_rce            = 48;
-    g_stats.waf_traversal      = 39;
-    g_stats.waf_log4shell      = 12;
-    g_stats.waf_other          = 36;
-    g_stats.bus_events         = 124500;
-    g_stats.nexus_incidents    = 3;
-    g_stats.hg_honeypot_active = 32;
-    g_stats.hg_cve_scanned     = 418;
+    /* CLI alert, incident, IOC and metric stores start empty. */
 }
-
-/* ????????? Background Simulation Thread ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-static DWORD WINAPI background_telemetry(LPVOID unused) {
-    (void)unused;
-    int tick = 0;
-    while (g_running) {
-        Sleep(1000);
-        tick++;
-
-        EnterCriticalSection(&g_lock);
-        g_stats.bus_events += (rand() % 8 + 2);
-        g_stats.waf_inspected += (rand() % 5 + 1);
-
-        /* New alert every 12 seconds */
-        if (tick % 12 == 0) {
-            char ts[32];
-            get_timestamp(ts, sizeof(ts));
-            const char *engines[] = {"WebGuard", "PacketGuard-AV", "HostGuard", "ThreatGuard", "PacketEngine", "Zeek"};
-            const char *types[]   = {"SQLi", "XSS", "RCE", "PortScan", "BruteForce", "PathTraversal"};
-            const char *sevs[]    = {"medium", "high", "critical"};
-            const char *attck[]   = {"T1190", "T1059", "T1595", "T1110", "T1083"};
-
-            Alert *a;
-            if (g_alert_count < MAX_ALERTS) {
-                a = &g_alerts[g_alert_count++];
-            } else {
-                memmove(&g_alerts[0], &g_alerts[1], sizeof(Alert) * (MAX_ALERTS - 1));
-                a = &g_alerts[MAX_ALERTS - 1];
-            }
-            a->id = g_alert_id++;
-            strcpy(a->timestamp, ts);
-            strcpy(a->engine, engines[rand() % 6]);
-            strcpy(a->type, types[rand() % 6]);
-            strcpy(a->severity, sevs[rand() % 3]);
-            random_ip(a->src_ip);
-            sprintf(a->dst_ip, "192.168.1.%d", rand() % 50 + 1);
-            a->src_port = rand() % 60000 + 1024;
-            a->dst_port = (rand() % 2 == 0) ? 443 : 80;
-            strcpy(a->proto, (rand() % 2 == 0) ? "HTTPS" : "HTTP");
-            snprintf(a->payload, sizeof(a->payload), "Live event: %s anomaly detected on port %d", a->type, a->dst_port);
-            strcpy(a->attck, attck[rand() % 5]);
-            a->blocked = 1;
-            a->ip_banned = (rand() % 2 == 0);
-            if (a->ip_banned) add_ban(a->src_ip);
-
-            g_stats.waf_blocked++;
-            if (strcmp(a->type, "SQLi") == 0) g_stats.waf_sqli++;
-            else if (strcmp(a->type, "XSS") == 0) g_stats.waf_xss++;
-            else if (strcmp(a->type, "RCE") == 0) g_stats.waf_rce++;
-        }
-        LeaveCriticalSection(&g_lock);
-    }
-    return 0;
-}
-
-/* ----------------- Display Functions ------------------------------------ */
 static void print_banner(void) {
     set_color(C_CYAN);
     printf("========================================================================================================================\n");
@@ -668,37 +545,17 @@ static void cmd_status(void) {
     print_banner();
     printf("\n");
     set_color(C_WHITE);
-    printf("  [ PLATFORM STATUS & ENGINE HEALTH ]\n");
+    printf("  [ PLATFORM OBSERVED STATUS ]\n");
     set_color(C_RESET);
     printf("  Uptime:                %02lldh %02lldm %02llds\n", hrs, mins, secs);
     printf("  Architecture:          x86_64 / Windows Native (Win32 API)\n");
-    printf("  Event Bus:             Lock-Free Zero-Copy Ring (Events: %lld)\n\n", g_stats.bus_events);
-
-    const char *engines[] = {
-        "1. PacketEngine (Suricata Core)",
-        "2. PacketAnalysis (Zeek Core)",
-        "3. HostSecurity (Wazuh Core)",
-        "4. HostGuard (AI CVE & Ransomware)",
-        "5. ThreatGuard (CrowdSec Core)",
-        "6. PacketGuard AV (8-Layer Antivirus)",
-        "7. WebGuard (Web Application Firewall)",
-        "8. SmartSandbox (Process Isolation)",
-        "9. Nexus Correlator (Kill-Chain Engine)"
-    };
-
-    printf("  %-40s %-12s %s\n", "Engine Component", "State", "Operational Details");
-    printf("  ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
-    for (int i = 0; i < 9; i++) {
-        printf("  %-40s ", engines[i]);
-        set_color(C_GREEN);
-        printf("[RUNNING]    ");
-        set_color(C_RESET);
-        if (i == 3) printf("32 Honeypots active | VSS rollback ready\n");
-        else if (i == 5) printf("Real-time scanner active | 8 signatures\n");
-        else if (i == 6) printf("Profile: PROTECT | 18 attack types\n");
-        else if (i == 8) printf("ATT&CK Mapping | 3 active incidents\n");
-        else printf("Active telemetry streaming\n");
-    }
+    printf("  Event Bus:             %lld runtime telemetry ticks; not an engine health score\n", g_stats.bus_events);
+    char sbxStart[MAX_PATH]={0}, sbxIni[MAX_PATH]={0};
+    BOOL sbxInstalled=sbx_find_sandboxie(sbxStart,sizeof(sbxStart),sbxIni,sizeof(sbxIni));
+    printf("  Sandboxie detected:    %s\n", sbxInstalled ? "yes" : "no");
+    printf("  Engine health:         not aggregated; individual feature status must be checked in its module\n");
+    printf("  Threat detections:     %d records observed by this CLI session\n",g_alert_count);
+    printf("  CVE coverage:          local catalog only; an empty catalog is not a clean bill of health\n");
     printf("\n");
 }
 
@@ -805,19 +662,8 @@ static void cmd_hostguard(void) {
     printf("\n  [ HOSTGUARD ??? RANSOMWARE DEFENSE & VULNERABILITY AUDIT ]\n");
     set_color(C_RESET);
 
-    printf("  - Active Decoy Honeypots:       32 high-value lure files\n");
-    printf("  - Target Monitored Extensions:  .docx, .xlsx, .pdf, .sqlite, .keys\n");
-    printf("  - Real-time File System Watch:  ReadDirectoryChangesW (Async OVERLAPPED)\n");
-    printf("  - Volume Shadow Copies (VSS):   Enabled (Automatic rollback available)\n");
-    printf("  - Auto-Containment Sequence:    Suspend process -> VSS Snapshot -> Kill Process -> IP Ban\n\n");
-
-    printf("  Recent Component Vulnerability Scan (CVEs):\n");
-    printf("  %-16s %-10s %-14s %s\n", "Component", "Version", "Risk Level", "CVE Reference / Action");
-    printf("  ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
-    printf("  OpenSSL          3.0.2      HIGH           CVE-2023-0215 (Mitigation Applied)\n");
-    printf("  Node.js Runtime  20.19.0    CLEAN          No known zero-days\n");
-    printf("  Microsoft Edge   121.0.0    CLEAN          Patch verified\n");
-    printf("  Python Runtime   3.11.2     MEDIUM         Audit recommended\n\n");
+    printf("  HostGuard filesystem monitoring, decoy files, VSS rollback, and ransomware containment are not implemented in this CLI build.\n");
+    printf("  CVE results are not included here. Run cve-scan for the configured local advisory catalog; no matches does not mean clean.\n\n");
 }
 
 static void cli_boot_progress(int pct, const char *msg) {
@@ -1059,20 +905,20 @@ static void cmd_waf_test(const char *payload) {
     if (res.detected) {
         g_stats.waf_blocked++;
         set_color(C_RED);
-        printf("  >>> VERDICT: [ATTACK DETECTED & BLOCKED] <<<\n");
+        printf("  >>> VERDICT: [SIGNATURE MATCH IN OFFLINE TEST] <<<\n");
         set_color(C_RESET);
         printf("  Classification:        %s\n", res.attack_type);
         printf("  Anomaly Score:         %d / 100\n", res.score);
         printf("  CWE Identifier:        %s\n", res.cwe);
         printf("  MITRE ATT&CK:          %s\n", res.attck);
         printf("  Detection Details:     %s\n", res.reason);
-        printf("  Enforced Action:       HTTP 403 Forbidden + Source IP Flagged\n");
+        printf("  Enforcement:            None; no HTTP request was sent\n");
     } else {
         set_color(C_GREEN);
-        printf("  >>> VERDICT: [CLEAN / BENIGN REQUEST] <<<\n");
+        printf("  >>> VERDICT: [NO SIGNATURE MATCH IN OFFLINE TEST] <<<\n");
         set_color(C_RESET);
         printf("  Anomaly Score:         0 / 100\n");
-        printf("  Enforced Action:       HTTP 200 Allowed\n");
+        printf("  Enforcement:            None; no HTTP request was sent\n");
     }
     printf("\n");
 }
@@ -1440,7 +1286,7 @@ static void cmd_cve_scan(void) {
     set_color(C_CYAN);
     printf("\n=== KAEVEX AUTONOMOUS CVE AUDIT ENGINE ===\n");
     set_color(C_GRAY);
-    printf("Scanning installed software against 150+ CVE vulnerability signatures...\n\n");
+    printf("Comparing installed software with the configured local advisory catalog...\n\n");
     set_color(C_RESET);
 
     upd_load_builtin_cves();
@@ -1460,7 +1306,7 @@ static void cmd_cve_scan(void) {
         set_color(C_RESET);
     } else {
         set_color(C_GREEN);
-        printf("[+] OS Baseline: Up to date, no unmitigated critical CVEs.\n");
+        printf("[?] No OS build match in the local catalog. Installed KB status was not verified.\n");
         set_color(C_RESET);
     }
 
@@ -1478,7 +1324,7 @@ static void cmd_cve_scan(void) {
         }
     } else {
         set_color(C_GREEN);
-        printf("[+] All %d scanned software applications have 0 known critical CVE vulnerabilities.\n", count);
+        printf("[?] No local-catalog matches among %d apps. This is not proof that they are vulnerability-free.\n", count);
         set_color(C_RESET);
     }
     printf("\n");
@@ -1488,7 +1334,7 @@ static void cmd_cve_fix(void) {
     set_color(C_CYAN);
     printf("\n=== KAEVEX AUTONOMOUS CVE REMEDIATION ENGINE ===\n");
     set_color(C_YELLOW);
-    printf("[*] Starting multi-stage automated patching and OS hardening...\n\n");
+    printf("[*] Starting targeted application updates for local-catalog matches...\n\n");
     set_color(C_RESET);
 
     upd_load_builtin_cves();
@@ -1500,12 +1346,31 @@ static void cmd_cve_fix(void) {
     int totalFixed = upd_auto_fix_all(summary, sizeof(summary));
 
     set_color(C_GREEN);
-    printf("\n[+] Remediation sequence completed. Total mitigations applied: %d\n", totalFixed);
+    printf("\n[+] Update commands reported successful: %d. Verify each result with the publisher advisory.\n", totalFixed);
     if (summary[0]) {
         printf("    %s\n", summary);
     }
     printf("\n");
     set_color(C_RESET);
+}
+
+static void cmd_sandbox_run(const char *path) {
+    if (!path || !*path) {
+        printf("Usage: kaevex sandbox-run <application.exe>\n");
+        return;
+    }
+    const char *ext = strrchr(path, '.');
+    if (!ext || _stricmp(ext, ".exe") != 0 ||
+        GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) {
+        printf("[-] Choose an existing EXE. MSI installers are not supported by this backend.\n");
+        return;
+    }
+    if (!sbx_launch_sandboxie_exe(path)) {
+        printf("[-] Sandbox launch failed. Nothing was started. Verify Sandboxie-Plus and its hardened network-block configuration.\n");
+        return;
+    }
+    printf("[+] Started in persistent Sandboxie box %s with network blocked.\n", g_sbx.externalBoxName);
+    printf("[i] Review or discard the box contents using Sandboxie-Plus. A desktop shortcut was created when possible.\n");
 }
 
 static void cmd_link(const char *appA, const char *appB) {
@@ -1602,15 +1467,16 @@ static void print_help(void) {
     set_color(C_RESET);
     printf("  %-24s %s\n", "Command", "Description");
     printf("  ----------------------------------------------------------------------------------------------------\n");
-    printf("  %-24s %s\n", "status", "Display platform status and health of all 8 engines");
+    printf("  %-24s %s\n", "status", "Display observed runtime status; no aggregate engine health claim");
     printf("  %-24s %s\n", "apps / discover", "Deep application discovery across 9 system sources");
     printf("  %-24s %s\n", "stacks", "Inspect multi-component software stacks (XAMPP, WAMP, Node)");
     printf("  %-24s %s\n", "graph / topology", "Display cross-application socket & IPC relationship topology");
     printf("  %-24s %s\n", "connections", "Active network sockets correlated to application identities");
     printf("  %-24s %s\n", "link <appA> <appB>", "Cryptographically bind two applications with an Integration Key");
     printf("  %-24s %s\n", "keys", "List cryptographically generated application integration tokens");
-    printf("  %-24s %s\n", "cve-scan", "Scan installed software and OS against 150+ CVE signatures");
-    printf("  %-24s %s\n", "cve-fix", "Automated 1-click winget & OS vulnerability remediation");
+    printf("  %-24s %s\n", "cve-scan", "Compare installed inventory with the configured advisory catalog");
+    printf("  %-24s %s\n", "cve-fix", "Run targeted package updates for catalog candidates");
+    printf("  %-24s %s\n", "sandbox-run <exe>", "Launch an EXE in a persistent Sandboxie box with network blocked");
     printf("  %-24s %s\n", "custom-mode", "Interactive setup wizard for tailored system operating profiles");
     printf("  %-24s %s\n", "boot-audit / rootkit", "Deep UEFI SecureBoot, MBR, WinVerifyTrust & Rogue SCM service audit");
     printf("  %-24s %s\n", "stats", "Show real-time security counters across all defense tiers");
@@ -1620,7 +1486,7 @@ static void print_help(void) {
     printf("  %-24s %s\n", "waf <payload>", "Test input string against WebGuard WAF inspection");
     printf("  %-24s %s\n", "alerts [limit]", "List recent intrusion detection alerts (default: 10)");
     printf("  %-24s %s\n", "incidents", "View Nexus correlated cyber kill-chain incidents");
-    printf("  %-24s %s\n", "hostguard", "Display HostGuard ransomware decoy & CVE audit status");
+    printf("  %-24s %s\n", "hostguard", "Display available host security audit status and limitations");
     printf("  %-24s %s\n", "ioc", "Show Threat Intelligence IOC indicators & banned IPs");
     printf("  %-24s %s\n", "block <ip>", "Manually ban an IP address across firewall rules");
     printf("  %-24s %s\n", "unblock <ip>", "Unban a previously blocked IP address");
@@ -1710,7 +1576,6 @@ int kaevex_cli_main(int argc, char **argv) {
         } else if (_stricmp(cmd, "stats") == 0) {
             cmd_stats();
         } else if (_stricmp(cmd, "monitor") == 0) {
-            CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
             cmd_monitor();
         } else if (_stricmp(cmd, "scan") == 0) {
             if (argc > 2) scan_file(argv[2]);
@@ -1758,6 +1623,8 @@ int kaevex_cli_main(int argc, char **argv) {
             cmd_cve_scan();
         } else if (_stricmp(cmd, "cve-fix") == 0 || _stricmp(cmd, "cvefix") == 0) {
             cmd_cve_fix();
+        } else if (_stricmp(cmd, "sandbox-run") == 0) {
+            cmd_sandbox_run(argc > 2 ? argv[2] : "");
         } else if (_stricmp(cmd, "link") == 0) {
             cmd_link(argc > 2 ? argv[2] : "", argc > 3 ? argv[3] : "");
         } else if (_stricmp(cmd, "keys") == 0) {
@@ -1779,8 +1646,7 @@ int kaevex_cli_main(int argc, char **argv) {
         return 0;
     }
 
-    /* Start background simulation thread for interactive shell */
-    CreateThread(NULL, 0, background_telemetry, NULL, 0, NULL);
+    /* Start the real game-mode watchdog for interactive shell. */
     threat_start_game_watchdog();
 
     /* Interactive Shell Mode */
@@ -1868,6 +1734,8 @@ int kaevex_cli_main(int argc, char **argv) {
             cmd_cve_scan();
         } else if (_stricmp(cmd, "cve-fix") == 0 || _stricmp(cmd, "cvefix") == 0) {
             cmd_cve_fix();
+        } else if (_stricmp(cmd, "sandbox-run") == 0) {
+            cmd_sandbox_run(arg);
         } else if (_stricmp(cmd, "link") == 0) {
             char a1[128] = {0}, a2[128] = {0};
             if (sscanf(arg, "%127s %127s", a1, a2) == 2) {

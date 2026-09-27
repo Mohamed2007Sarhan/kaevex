@@ -1,29 +1,23 @@
-# Autonomous CVE Intelligence & Real-Time Patch Agent
+# CVE detection and remediation status
 
-## Overview
+The CVE view inventories installed Windows applications from the registry and reads OS build metadata. Its bundled application and OS CVE catalogs were cleared because the entries were unverified and included unrelated-product matches. A catalog match, when present, remains a candidate rather than proof; installed KB state is not verified.
 
-Kaevex integrates an **Autonomous CVE Agent** (`upd_engine.h`) designed to deliver continuous vulnerability posture awareness for both the Windows Operating System and all installed third-party software.
+The GUI can fetch NVD 2.0 CVEs published in the preceding seven days using WinHTTP. Requests use valid `pubStartDate`/`pubEndDate` filters and paginate at 2,000 records per page; the UI retains the newest 512 advisories as `NVD Intel`. These entries are not matched to CPE product/version ranges and cannot trigger Auto-Fix. This is recent-feed coverage, not a complete historical CVE database. CISA KEV/vendor feeds are not connected. The source supports an optional `NVD_API_KEY` environment variable.
 
----
+A live run on the normal Windows host verified the app's WinHTTP fetch/parser against NVD: 2,825 records downloaded and parsed for the seven-day window; 512 retained for display. The feed can fail later due to network/API availability and preserves the last successful data on failure.
 
-## Capabilities
+Optional periodic checks are saved per-user and run only while the GUI is open. They refresh the local registry/build-catalog inventory and can synchronize the seven-day NVD feed at the selected interval (15 minutes, 1 hour, 6 hours, or 24 hours). They do not run as a service or while the program is closed.
 
-### 1. Operating System Build Audit
-- Reads live Windows registry values (`CurrentBuild`, `UBR`, `DisplayVersion`, `ProductName`).
-- Detects missing hotfixes and active OS-level zero-days (e.g., CVE-2024-38077 RDL RCE, CVE-2024-30078 Wi-Fi Driver RCE, CVE-2024-21307 Hyper-V DoS).
-- Provides one-click automated mitigations (disabling vulnerable service endpoints, enforcing core isolation, or triggering Windows Update).
+Auto-Fix can issue `winget upgrade --id` for a local application candidate only when it has a package ID. Success means the installer process exited successfully before timeout; it does not prove that a CVE is fixed. If the update fails and a verified executable path is available, Auto-Fix may add inbound and outbound Windows Firewall block rules as network containment. This can break that app's network functions and is disclosed in Ask Before Applying; Quiet Mode skips the confirmation. Partial rule creation is rolled back where possible. OS build matches are advisory only: installed KB state is not verified and no OS policy is changed automatically.
 
-### 2. Live Software Inventory & 2024-2026 Catalog Matching
-- Enumerates installed 32-bit and 64-bit software from:
-  - `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`
-  - `HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall`
-- Parses semantic version numbers using `upd_ver_cmp`.
-- Cross-references each installed application against the local dynamic database (`dist\data\cve_catalog.json`) containing recent high-severity CVEs for Git, Python, WinRAR, 7-Zip, Microsoft Office, Node.js, and Google Chrome.
+The registry watcher can trigger a local inventory/catalog re-scan after changes. It is not an external threat-intelligence feed.
 
-### 3. Continuous Registry Watcher
-- Background telemetry thread checks registry write timestamps every 30 seconds.
-- When an application installation or update is detected, the agent immediately triggers an autonomous re-scan to re-evaluate system exposure without requiring user intervention.
+## SmartSandbox
 
-### 4. AI-Powered CVE Remediation & Sandboxing
-- **AI Fix CVEs (`IDU_AIFIX`)**: Dispatches the selected vulnerable item to the AI SOC Analyst, generating immediate patch instructions, configuration workarounds, and custom firewall block rules.
-- **Sandbox & Update (`IDU_SANDBOX`)**: Immediately isolates the vulnerable application inside an AppContainer sandbox while simultaneously launching Windows Update or Winget to apply the vendor's patch safely.
+The GUI and CLI share the Sandboxie launcher. It accepts existing `.exe` files only, requires Sandboxie Plus and its WFP support to be installed, applies and verifies deny-all network settings and reduced admin rights before launch, and aborts if configuration or launch fails. The current machine has no Sandboxie installation, so only fail-closed behavior can be verified here; no app was launched.
+
+## AI Team
+
+Full Team sends one or five role-specific text prompts to the configured provider. Its manual local-review action collects current installed-app count, local catalog-candidate count, firewall status, and Sandboxie/WFP status. The team does not execute application exploits/fuzzing, inspect application source files, or apply fixes. Periodic role observations show process/listener/firewall telemetry only; they are not AI-driven tests. Provider/network/key failure must not be presented as a completed security test.
+
+The NVIDIA-compatible provider uses `z-ai/glm-5.3-flash` through NVIDIA's OpenAI-compatible endpoint. Configure a valid replacement key in the app or `NVIDIA_API_KEY`; keys are protected with DPAPI when saved by the Windows app. The key pasted into the earlier conversation was exposed and should be revoked; it was not used for this verification.

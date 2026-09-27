@@ -24,7 +24,7 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -o dist\Kaevex-GUI.exe ^
     src\gui\kaevex-gui.c ^
     -lcomctl32 -lws2_32 -liphlpapi -lshell32 ^
-    -lole32 -loleaut32 -lcomdlg32 -lcrypt32 ^
+    -lole32 -loleaut32 -luuid -lcomdlg32 -lcrypt32 ^
     -lpsapi -ldwmapi -luxtheme -lwinhttp ^
     -lshlwapi -lntdll -ladvapi32 -luser32 -lgdi32
 

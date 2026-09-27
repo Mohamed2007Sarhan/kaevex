@@ -6,22 +6,22 @@
 [![Dependencies](https://img.shields.io/badge/Dependencies-Zero%20External%20Runtimes-success.svg)](https://github.com/kaevex/fire)
 [![Version](https://img.shields.io/badge/Release-v1.0.0--PROD-red.svg)](https://github.com/kaevex/fire)
 
-**Kaevex Security Platform v1.0** is an enterprise-grade, native Win32/C cybersecurity defense suite and Security Operations Center (SOC) platform engineered specifically for Windows endpoints, servers, and hyper-converged clusters. 
+**Kaevex Security Platform v1.0** is an experimental native Win32/C security application. It is not yet a validated enterprise SOC or release-ready endpoint protection product.
 
-Kaevex operates with **zero external runtime dependencies** (no Python, no JVM, no .NET runtime requirements). It leverages raw Windows kernel APIs, CryptoAPI/BCrypt, IP Helper, Filtering Platform (WFP), AppContainer, Volume Shadow Copy Service (VSS), and WinHTTP to deliver sub-millisecond telemetry processing, AI-driven incident analysis, automated vulnerability patching, and autonomous defense.
+> **Release status:** Review builds have been compiled, but full end-to-end GUI and machine-level validation has not been completed. Modules are a mixture of working local workflows and unavailable integrations; the interface must not be interpreted as proof of protection. Read the feature limitations below and the linked setup guides before use.
+
+Kaevex's native Windows components do not require Python, JVM, or .NET runtimes. SmartSandbox requires a separate Sandboxie-Plus installation; other engines use Windows APIs including CryptoAPI/BCrypt, IP Helper, WFP, AppContainer, VSS, and WinHTTP.
 
 ---
 
-## Key Highlights & Innovations (v1.0)
+## Implemented workflows and current limits
 
-- **Autonomous Full Team AI Center**: Groq-accelerated multi-agent operations center featuring specialized AI command agents for **Red Team** (Offensive Ops), **Blue Team** (Defense & SOC), **Purple Team** (Adversary Emulation), **Yellow Team** (AppSec & Code Review), and **Green Team** (Awareness & Compliance).
-- **Dual AI SOC Analyst**: Seamless hybrid conversational intelligence combining cloud inference (NVIDIA Kimi-K3 / DeepSeek with 2-second timeout protection) and an instant on-device SOC fallback engine.
-- **Autonomous CVE Agent & Real-time Registry Watcher**: Live Windows OS build identification and installed software inventory. Automatically cross-references software versions against an embedded 2024-2026 CVE intelligence catalog, watches registry changes in real time, and provides 1-click automated AI remediation or AppContainer sandboxing.
-- **Always-Active RansomShield**: Autonomous file-system tripwires with mass-encryption canary honeypots, rapid behavioral detection, and automated VSS Volume Shadow Copy snapshots for instant recovery.
-- **SmartSandbox 5-Layer Isolation**: AppContainer kernel isolation, restricted security tokens, job objects, low integrity level, and alternate desktop separation for zero-escape binary testing.
-- **Hardened Gaming & Anti-Cheat Compatibility**: Real-time detection of AAA titles (CS2, Valorant, GTA V, Apex Legends, Dota 2) with zero false-positives on kernel anti-cheat drivers (Vanguard, EAC, BattlEye), automated background telemetry down-throttling, and FPS priority boosting.
-- **Adaptive Defender Firewall Control**: COM and Netsh integration providing one-click emergency lockdown, port isolation, DNS sinkholing, and automated baseline enforcement.
-- **Multi-Server SOC Cluster Mesh**: Decentralized LAN host discovery, cryptographic token-based server pairing, ping latency monitoring, and clustered threat intelligence sharing over a native REST micro-API.
+- **Patch & CVE:** inventories installed applications, fetches recent NVD advisories, and can request targeted `winget` upgrades for configured local catalog matches. NVD results are not product/version matched and cannot trigger Auto-Fix. This is not a complete vulnerability scanner; see [CVE coverage and remediation limits](docs/CVE_INTELLIGENCE.md).
+- **SmartSandbox:** starts an existing EXE in an installed Sandboxie-Plus box and fails closed when its configured checks fail. MSI is unsupported. Per-process file, network, and API telemetry is unavailable; this is not a VM boundary. See [SmartSandbox setup and limits](docs/SMARTSANDBOX.md).
+- **RansomShield:** filesystem monitoring and honeypot deployment are manual actions. VSS snapshot creation can be requested, but snapshot restoration is not implemented. No protection starts merely because the GUI opens.
+- **Defense Engines:** workflows are invoked on demand. This build has no per-engine service-health controller, so the UI does not claim that all engines are online.
+- **Full Team:** dispatches text-only role prompts to a configured AI provider. Agents do not run scans, inspect files, or apply fixes; all test findings must come from separate tool output.
+- **Host and network views:** display locally observable counters where available. Geolocation attack feeds and several external detection integrations are not connected.
 
 ---
 
@@ -44,7 +44,7 @@ Kaevex operates with **zero external runtime dependencies** (no Python, no JVM, 
                                                                  |
                                   +-------------------------------------------------------------+
                                   |     WINDOWS NT KERNEL & WIN32 APIS (Pure Native / 0-Deps)    |
-                                  |     CryptoAPI | WFP | IP Helper | VSS | AppContainer | DWM  |
+                                  |     CryptoAPI | WFP | IP Helper | VSS | Sandboxie-Plus | DWM |
                                   +-------------------------------------------------------------+
 ```
 
@@ -71,7 +71,7 @@ c:\Users\Moham\Desktop\keavex\fire\
 │   │   ├── fw_engine.h             # Adaptive Firewall & Netsh controller
 │   │   ├── net_engine.h            # NetGuard traffic, port binding & DNS sinkhole
 │   │   ├── ransom_engine.h         # RansomShield, canary honeypots & VSS
-│   │   ├── sbx_engine.h            # SmartSandbox AppContainer 5-layer isolation
+│   │   ├── sbx_engine.h            # SmartSandbox Sandboxie-Plus integration
 │   │   ├── soc_engine.h            # Inter-server discovery & cryptographic mesh
 │   │   ├── threat_engine.h         # Gaming detection, FPS boost & forensics
 │   │   ├── upd_engine.h            # Autonomous CVE agent & software inventory
@@ -131,7 +131,7 @@ c:\Users\Moham\Desktop\keavex\fire\
 | 04 | **WebGuard WAF** | 18-category real-time payload inspector defending against SQLi, XSS, RCE, Path Traversal, SSRF, and command injection. |
 | 05 | **Antivirus Core** | Real-time CryptoAPI SHA-256 and MD5 hashing, heuristic PE header analyzer, file reputation checking, and hourly automated scanning. |
 | 06 | **RansomShield** | Autonomous honeypot canary deployment (`KaevexDecoy_*.docx`), file-modification tripwire, and VSS Shadow Copy snapshots. |
-| 07 | **SmartSandbox** | Kernel-enforced AppContainer execution environment with 6 policy status cards (network, write, process, registry, clipboard, DLL). |
+| 07 | **SmartSandbox** | Sandboxie-Plus persistent EXE boxes, WFP network deny rule, reduced admin rights, and desktop shortcuts. MSI is disabled in hardened mode; Sandboxie-Plus must be installed separately. |
 | 08 | **Adaptive Firewall** | Windows Defender Firewall integration, 1-click Emergency Lockdown, automated baseline rules, and custom port filters. |
 | 09 | **Patch & CVE Agent** | OS build identification, installed software inventory, continuous Registry change watcher, 1-click AI Fix, and Sandboxing. |
 | 10 | **Gaming & Threat** | Anti-cheat compatibility monitor (Vanguard/BattlEye/EAC), game process detector (CS2, Valorant, GTA V), and FPS priority booster. |

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <psapi.h>
+#include <wincrypt.h>
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -77,6 +78,8 @@ static void together_ai_get_model(char *out, size_t maxOut) {
     LeaveCriticalSection(&g_togetherAiCS);
 }
 
+static void together_ai_save_key(const char *key);
+
 static void together_ai_get_key(char *out, size_t maxOut) {
     together_ai_init();
     EnterCriticalSection(&g_togetherAiCS);
@@ -97,23 +100,43 @@ static void together_ai_get_key(char *out, size_t maxOut) {
         return;
     }
 
-    /* 2. Check Windows Registry HKCU\Software\Kaevex */
+    /* 2. Read the current DPAPI-protected per-user value. */
     HKEY hKey;
     if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        DWORD dwType = REG_SZ;
-        DWORD dwSize = (DWORD)maxOut;
-        if (RegQueryValueExA(hKey, "TogetherApiKey", NULL, &dwType, (BYTE*)out, &dwSize) == ERROR_SUCCESS && out[0]) {
-            RegCloseKey(hKey);
-            together_ai_set_key(out);
-            return;
+        DWORD type = 0, blobSize = 0;
+        if (RegQueryValueExA(hKey, "AIKeyProtected", NULL, &type, NULL, &blobSize) == ERROR_SUCCESS &&
+            type == REG_BINARY && blobSize > 0 && blobSize <= 4096) {
+            BYTE *blobBytes = (BYTE*)malloc(blobSize);
+            if (blobBytes && RegQueryValueExA(hKey, "AIKeyProtected", NULL, &type, blobBytes, &blobSize) == ERROR_SUCCESS) {
+                DATA_BLOB encrypted = { blobSize, blobBytes }, plain = { 0, NULL };
+                if (CryptUnprotectData(&encrypted, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &plain) &&
+                    plain.cbData > 0 && plain.cbData < maxOut) {
+                    memcpy(out, plain.pbData, plain.cbData);
+                    out[plain.cbData] = '\0';
+                    together_ai_set_key(out);
+                    LocalFree(plain.pbData);
+                    free(blobBytes);
+                    RegCloseKey(hKey);
+                    return;
+                }
+                if (plain.pbData) LocalFree(plain.pbData);
+            }
+            if (blobBytes) free(blobBytes);
         }
-        dwSize = (DWORD)maxOut;
-        if (RegQueryValueExA(hKey, "AIApiKey", NULL, &dwType, (BYTE*)out, &dwSize) == ERROR_SUCCESS && out[0]) {
-            RegCloseKey(hKey);
-            together_ai_set_key(out);
-            return;
+        /* Migrate old plaintext values to DPAPI and remove the plaintext copy. */
+        char legacy[256] = {0};
+        DWORD legacySize = sizeof(legacy), legacyType = REG_SZ;
+        if (RegQueryValueExA(hKey, "TogetherApiKey", NULL, &legacyType, (BYTE*)legacy, &legacySize) != ERROR_SUCCESS || !legacy[0]) {
+            legacySize = sizeof(legacy); legacyType = REG_SZ;
+            RegQueryValueExA(hKey, "AIApiKey", NULL, &legacyType, (BYTE*)legacy, &legacySize);
         }
         RegCloseKey(hKey);
+        if (legacy[0]) {
+            strncpy(out, legacy, maxOut - 1); out[maxOut - 1] = '\0';
+            together_ai_save_key(legacy);
+            SecureZeroMemory(legacy, sizeof(legacy));
+            return;
+        }
     }
 
     out[0] = '\0';
@@ -124,9 +147,16 @@ static void together_ai_save_key(const char *key) {
     HKEY hKey;
     if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hKey, NULL) == ERROR_SUCCESS) {
         if (key && key[0]) {
-            RegSetValueExA(hKey, "TogetherApiKey", 0, REG_SZ, (const BYTE*)key, (DWORD)strlen(key));
-            RegSetValueExA(hKey, "AIApiKey", 0, REG_SZ, (const BYTE*)key, (DWORD)strlen(key));
+            DATA_BLOB plain = { (DWORD)strlen(key), (BYTE*)key }, encrypted = { 0, NULL };
+            if (CryptProtectData(&plain, L"Kaevex provider API key", NULL, NULL, NULL,
+                                 CRYPTPROTECT_UI_FORBIDDEN, &encrypted)) {
+                RegSetValueExA(hKey, "AIKeyProtected", 0, REG_BINARY, encrypted.pbData, encrypted.cbData);
+                LocalFree(encrypted.pbData);
+            }
+            RegDeleteValueA(hKey, "TogetherApiKey");
+            RegDeleteValueA(hKey, "AIApiKey");
         } else {
+            RegDeleteValueA(hKey, "AIKeyProtected");
             RegDeleteValueA(hKey, "TogetherApiKey");
             RegDeleteValueA(hKey, "AIApiKey");
         }
@@ -247,18 +277,19 @@ static void together_ai_generate_local_fallback(const char *prompt, const char *
 
     snprintf(out, maxOut,
         "[Kaevex Autonomous Intelligence - %s Team Analyst]\n"
-        "• DeepSeek-V4 Analysis: Host verified under real-time telemetry inspection.\n"
-        "• System Health: %lu MB / %lu MB RAM (%lu%%) | %d Active System Processes.\n"
-        "• Defensive Posture: 8 Enterprise Security Engines running at 100%% health.\n"
-        "• Threat Correlation: Evaluated prompt against 150+ MITRE ATT&CK vectors.\n"
-        "• Recommendation: Enforce strict application whitelisting and maintain live WAF inspection.",
+        "• Local snapshot: %lu MB / %lu MB RAM (%lu%%) | %d active processes.\n"
+        "• This is a local telemetry summary; no threat-vector database evaluation was run.\n"
+        "• Recommendation: review application allowlisting and firewall policy for this host.",
         teamName,
         usedMB, totalMB, (unsigned long)ms.dwMemoryLoad,
         procCount);
 }
 
 /* ---- Core Together AI DeepSeek-V4 HTTPS Client ---------------------------- */
-static BOOL together_ai_chat_query(
+static BOOL ai_compatible_chat_query(
+    const wchar_t *apiHost,
+    const wchar_t *apiPath,
+    const wchar_t *userAgent,
     const char *customKey,
     const char *customModel,
     const char *systemPrompt,
@@ -319,15 +350,15 @@ static BOOL together_ai_chat_query(
 
     /* 5. WinHTTP Connection to api.together.xyz */
     BOOL success = FALSE;
-    HINTERNET hSess = WinHttpOpen(L"Kaevex-DeepSeekV4/1.0",
+    HINTERNET hSess = WinHttpOpen(userAgent ? userAgent : L"Kaevex-AI/1.0",
                                   WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                   WINHTTP_NO_PROXY_NAME,
                                   WINHTTP_NO_PROXY_BYPASS, 0);
     if (hSess) {
         WinHttpSetTimeouts(hSess, 6000, 8000, 15000, 30000);
-        HINTERNET hConn = WinHttpConnect(hSess, TOGETHER_AI_HOST, TOGETHER_AI_PORT, 0);
+        HINTERNET hConn = WinHttpConnect(hSess, apiHost ? apiHost : TOGETHER_AI_HOST, TOGETHER_AI_PORT, 0);
         if (hConn) {
-            HINTERNET hReq = WinHttpOpenRequest(hConn, L"POST", TOGETHER_AI_PATH,
+            HINTERNET hReq = WinHttpOpenRequest(hConn, L"POST", apiPath ? apiPath : TOGETHER_AI_PATH,
                                                 NULL, WINHTTP_NO_REFERER,
                                                 WINHTTP_DEFAULT_ACCEPT_TYPES,
                                                 WINHTTP_FLAG_SECURE);
@@ -387,6 +418,23 @@ static BOOL together_ai_chat_query(
 
     free(jsonPayload);
     return success;
+}
+
+static BOOL together_ai_chat_query(const char *key, const char *model, const char *systemPrompt,
+    const char *userPrompt, float temperature, int maxTokens, char *out, size_t outLen, int *status) {
+    return ai_compatible_chat_query(TOGETHER_AI_HOST, TOGETHER_AI_PATH, L"Kaevex-Together/1.0",
+        key, model, systemPrompt, userPrompt, temperature, maxTokens, out, outLen, status);
+}
+
+#define NVIDIA_AI_HOST L"integrate.api.nvidia.com"
+#define NVIDIA_AI_PATH L"/v1/chat/completions"
+#define NVIDIA_AI_MODEL "z-ai/glm-5.3-flash"
+static BOOL nvidia_ai_chat_query(const char *key, const char *systemPrompt, const char *userPrompt,
+    float temperature, int maxTokens, char *out, size_t outLen, int *status) {
+    if (!key || !key[0]) key = getenv("NVIDIA_API_KEY");
+    if (!key || !key[0]) return FALSE;
+    return ai_compatible_chat_query(NVIDIA_AI_HOST, NVIDIA_AI_PATH, L"Kaevex-NVIDIA-GLM/1.0",
+        key, NVIDIA_AI_MODEL, systemPrompt, userPrompt, temperature, maxTokens, out, outLen, status);
 }
 
 #endif /* AI_TOGETHER_ENGINE_H */

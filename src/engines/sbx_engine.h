@@ -24,8 +24,11 @@
 #include <windows.h>
 #include <psapi.h>
 #include <sddl.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 #include <stdio.h>
 #include <time.h>
+#include <ctype.h>
 
 /* ?????? AppContainer API typedefs (loaded dynamically from userenv.dll) ???????????????????????? */
 typedef HRESULT (WINAPI *PFN_CreateAppContainerProfile)(PCWSTR,PCWSTR,PCWSTR,
@@ -63,9 +66,185 @@ typedef struct {
     /* Memory stats */
     SIZE_T  peakMemory;
     DWORD   cpuMs;
+    BOOL    externalSandboxie;
+    char    externalBoxName[64];
+    char    externalStartPath[MAX_PATH];
 } SbxSession;
 
 static SbxSession g_sbx = {0};
+static void sbx_log(SbxSession *s, const char *msg);
+
+/* Sandboxie-Plus backend. MSI is deliberately rejected: Sandboxie's MSI
+ * exemptions weaken containment. The persistent box is configured to block
+ * all network traffic before any target process is started. */
+static BOOL sbx_find_sandboxie(char *startExe, size_t cap, char *iniExe, size_t iniCap) {
+    static const char *roots[] = {
+        "C:\\Program Files\\Sandboxie-Plus",
+        "C:\\Program Files\\Sandboxie",
+        "C:\\Program Files (x86)\\Sandboxie-Plus",
+        "C:\\Program Files (x86)\\Sandboxie"
+    };
+    for (size_t i = 0; i < sizeof(roots)/sizeof(roots[0]); ++i) {
+        snprintf(startExe, cap, "%s\\Start.exe", roots[i]);
+        snprintf(iniExe, iniCap, "%s\\SbieIni.exe", roots[i]);
+        if (GetFileAttributesA(startExe) != INVALID_FILE_ATTRIBUTES &&
+            GetFileAttributesA(iniExe) != INVALID_FILE_ATTRIBUTES) return TRUE;
+    }
+    startExe[0] = iniExe[0] = '\0';
+    return FALSE;
+}
+
+static BOOL sbx_run_sbie_tool(const char *exe, const char *args, BOOL waitForExit) {
+    char cmd[4 * MAX_PATH];
+    STARTUPINFOA si; PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si)); ZeroMemory(&pi, sizeof(pi));
+    si.cb = sizeof(si); si.dwFlags = STARTF_USESHOWWINDOW; si.wShowWindow = SW_HIDE;
+    if (snprintf(cmd, sizeof(cmd), "\"%s\" %s", exe, args) >= (int)sizeof(cmd)) return FALSE;
+    if (!CreateProcessA(exe, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) return FALSE;
+    if (waitForExit) {
+        DWORD w = WaitForSingleObject(pi.hProcess, 15000), ec = 1;
+        if (w == WAIT_OBJECT_0) GetExitCodeProcess(pi.hProcess, &ec);
+        else {
+            TerminateProcess(pi.hProcess, 1);
+            WaitForSingleObject(pi.hProcess, 1000);
+        }
+        CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+        return w == WAIT_OBJECT_0 && ec == 0;
+    }
+    CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+    return TRUE;
+}
+
+static BOOL sbx_sbie_query_has(const char *exe, const char *section, const char *setting,
+                               const char *expected) {
+    SECURITY_ATTRIBUTES sa; HANDLE readPipe = NULL, writePipe = NULL;
+    sa.nLength = sizeof(sa); sa.lpSecurityDescriptor = NULL; sa.bInheritHandle = TRUE;
+    if (!CreatePipe(&readPipe, &writePipe, &sa, 0)) return FALSE;
+    SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+    char cmd[2 * MAX_PATH]; STARTUPINFOA si; PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si)); ZeroMemory(&pi, sizeof(pi));
+    si.cb = sizeof(si); si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE; si.hStdOutput = writePipe; si.hStdError = writePipe;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    BOOL ok = snprintf(cmd, sizeof(cmd), "\"%s\" query %s %s", exe, section, setting) < (int)sizeof(cmd) &&
+              CreateProcessA(exe, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+    CloseHandle(writePipe);
+    if (!ok) { CloseHandle(readPipe); return FALSE; }
+    DWORD wait = WaitForSingleObject(pi.hProcess, 15000), exitCode = 1;
+    if (wait != WAIT_OBJECT_0) {
+        TerminateProcess(pi.hProcess, 1);
+        WaitForSingleObject(pi.hProcess, 1000);
+    } else {
+        GetExitCodeProcess(pi.hProcess, &exitCode);
+    }
+    char output[4096]; DWORD got = 0;
+    BOOL readOk = ReadFile(readPipe, output, sizeof(output)-1, &got, NULL);
+    if (readOk) output[got] = '\0'; else output[0] = '\0';
+    CloseHandle(readPipe); CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+    if (wait != WAIT_OBJECT_0 || exitCode != 0 || !readOk) return FALSE;
+    for (char *p = output; *p; ++p) *p = (char)tolower((unsigned char)*p);
+    char wanted[256];
+    if (snprintf(wanted, sizeof(wanted), "%s", expected) >= (int)sizeof(wanted)) return FALSE;
+    for (char *p = wanted; *p; ++p) *p = (char)tolower((unsigned char)*p);
+    return strstr(output, wanted) != NULL;
+}
+
+static BOOL sbx_make_box_id(const char *exePath, char *out, size_t cap) {
+    const char *base = strrchr(exePath, '\\');
+    base = base ? base + 1 : exePath;
+    char stem[48]; size_t n = 0;
+    while (base[n] && base[n] != '.' && n < sizeof(stem)-1) {
+        unsigned char c = (unsigned char)base[n];
+        stem[n] = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                   (c >= '0' && c <= '9') || c == '_') ? (char)c : '_';
+        ++n;
+    }
+    stem[n] = '\0';
+    if (!n) return FALSE;
+    /* Include a path-derived suffix to avoid same-name applications sharing a box. */
+    DWORD hash = 2166136261u;
+    for (const unsigned char *p = (const unsigned char *)exePath; *p; ++p)
+        hash = (hash ^ (DWORD)tolower(*p)) * 16777619u;
+    return snprintf(out, cap, "Kaevex_%.14s_%08lX", stem, (unsigned long)hash) < (int)cap;
+}
+
+static BOOL sbx_create_sandbox_shortcut(const char *startExe, const char *exePath,
+                                        const char *boxName) {
+    char desktop[MAX_PATH], shortcut[MAX_PATH], args[2 * MAX_PATH], workdir[MAX_PATH];
+    if (FAILED(SHGetFolderPathA(NULL, CSIDL_DESKTOPDIRECTORY, NULL, SHGFP_TYPE_CURRENT, desktop))) return FALSE;
+    const char *base = strrchr(exePath, '\\'); base = base ? base + 1 : exePath;
+    char label[MAX_PATH]; snprintf(label, sizeof(label), "%s", base);
+    char *dot = strrchr(label, '.'); if (dot) *dot = '\0';
+    snprintf(workdir, sizeof(workdir), "%s", exePath);
+    char *slash = strrchr(workdir, '\\'); if (slash) *slash = '\0'; else GetCurrentDirectoryA(sizeof(workdir), workdir);
+    if (snprintf(shortcut, sizeof(shortcut), "%s\\%s (Kaevex Sandbox).lnk", desktop, label) >= (int)sizeof(shortcut)) return FALSE;
+    if (snprintf(args, sizeof(args), "/box:%s \"%s\"", boxName, exePath) >= (int)sizeof(args)) return FALSE;
+
+    IShellLinkA *link = NULL; IPersistFile *persist = NULL; BOOL ok = FALSE;
+    HRESULT hr = CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
+                                  &IID_IShellLinkA, (void **)&link);
+    if (SUCCEEDED(hr) && link) {
+        link->lpVtbl->SetPath(link, startExe);
+        link->lpVtbl->SetArguments(link, args);
+        link->lpVtbl->SetDescription(link, "Launch this application inside its persistent, network-blocked Kaevex sandbox.");
+        link->lpVtbl->SetWorkingDirectory(link, workdir);
+        link->lpVtbl->SetIconLocation(link, exePath, 0);
+        hr = link->lpVtbl->QueryInterface(link, &IID_IPersistFile, (void **)&persist);
+        if (SUCCEEDED(hr) && persist) {
+            wchar_t wShortcut[MAX_PATH];
+            if (MultiByteToWideChar(CP_ACP, 0, shortcut, -1, wShortcut, MAX_PATH) > 0 &&
+                SUCCEEDED(persist->lpVtbl->Save(persist, wShortcut, TRUE))) ok = TRUE;
+            persist->lpVtbl->Release(persist);
+        }
+        link->lpVtbl->Release(link);
+    }
+    return ok;
+}
+
+static BOOL sbx_launch_sandboxie_exe(const char *exePath) {
+    char startExe[MAX_PATH], iniExe[MAX_PATH], boxName[64], args[MAX_PATH + 160], setArgs[256];
+    if (!exePath || !*exePath || !sbx_find_sandboxie(startExe, sizeof(startExe), iniExe, sizeof(iniExe)) ||
+        !sbx_make_box_id(exePath, boxName, sizeof(boxName))) return FALSE;
+    const char *ext = strrchr(exePath, '.');
+    if (!ext || _stricmp(ext, ".exe") != 0) return FALSE;
+    DWORD fileAttrs = GetFileAttributesA(exePath);
+    if (fileAttrs == INVALID_FILE_ATTRIBUTES || (fileAttrs & FILE_ATTRIBUTE_DIRECTORY)) return FALSE;
+
+    /* Require the Sandboxie WFP firewall, then apply deny-all to this box.
+       No MSI exemptions are set. Any failed configuration step aborts launch. */
+    const char *keys[] = {"Enabled y", "ConfigLevel 10", "DropAdminRights y",
+                          "FakeAdminRights y", "UseSecurityMode y",
+                          "MsiInstallerExemptions n", "AllowNetworkAccess n",
+                          "NetworkAccess \"*,Block;Protocol=Any\""};
+    if (!sbx_run_sbie_tool(iniExe, "set GlobalSettings NetworkEnableWFP y", TRUE)) return FALSE;
+    for (size_t i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i) {
+        if (snprintf(setArgs, sizeof(setArgs), "set %s %s", boxName, keys[i]) >= (int)sizeof(setArgs) ||
+            !sbx_run_sbie_tool(iniExe, setArgs, TRUE)) return FALSE;
+    }
+    if (!sbx_run_sbie_tool(startExe, "/reload", TRUE) ||
+        !sbx_sbie_query_has(iniExe, "GlobalSettings", "NetworkEnableWFP", "y") ||
+        !sbx_sbie_query_has(iniExe, boxName, "NetworkAccess", "*,Block;Protocol=Any") ||
+        !sbx_sbie_query_has(iniExe, boxName, "AllowNetworkAccess", "n") ||
+        !sbx_sbie_query_has(iniExe, boxName, "DropAdminRights", "y") ||
+        !sbx_sbie_query_has(iniExe, boxName, "FakeAdminRights", "y") ||
+        !sbx_sbie_query_has(iniExe, boxName, "MsiInstallerExemptions", "n")) return FALSE;
+
+    if (snprintf(args, sizeof(args), "/box:%s \"%s\"", boxName, exePath) >= (int)sizeof(args)) return FALSE;
+    if (!sbx_run_sbie_tool(startExe, args, FALSE)) return FALSE;
+    sbx_create_sandbox_shortcut(startExe, exePath, boxName);
+
+    if (!g_sbx.active) {
+        ZeroMemory(&g_sbx, sizeof(g_sbx));
+        InitializeCriticalSection(&g_sbx.logCS);
+        g_sbx.startTime = time(NULL);
+    }
+    g_sbx.active = TRUE;
+    g_sbx.externalSandboxie = TRUE;
+    strncpy(g_sbx.externalBoxName, boxName, sizeof(g_sbx.externalBoxName)-1);
+    strncpy(g_sbx.externalStartPath, startExe, sizeof(g_sbx.externalStartPath)-1);
+    sbx_log(&g_sbx, "Sandboxie-Plus persistent box launched; WFP network deny-all configured");
+    return TRUE;
+}
 
 /* ?????? Load userenv APIs dynamically ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static void sbx_load_apis(void) {
@@ -293,6 +472,15 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
 /* ?????? Kill the sandbox ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static void sbx_kill(void) {
     if(!g_sbx.active) return;
+    if(g_sbx.externalSandboxie) {
+        char stopArgs[128];
+        snprintf(stopArgs, sizeof(stopArgs), "/box:%s /terminate", g_sbx.externalBoxName);
+        sbx_run_sbie_tool(g_sbx.externalStartPath, stopArgs, TRUE);
+        sbx_log(&g_sbx, "Sandboxie box terminated; persistent application data retained");
+        g_sbx.active = FALSE;
+        g_sbx.externalSandboxie = FALSE;
+        return;
+    }
     if(g_sbx.hJob) { TerminateJobObject(g_sbx.hJob, 1); CloseHandle(g_sbx.hJob); g_sbx.hJob = NULL; }
     if(g_sbx.hProcess) { CloseHandle(g_sbx.hProcess); g_sbx.hProcess = NULL; }
     if(g_sbx.acSid && g_pfnDeleteAC) { g_pfnDeleteAC(g_sbx.containerName); FreeSid(g_sbx.acSid); g_sbx.acSid = NULL; }

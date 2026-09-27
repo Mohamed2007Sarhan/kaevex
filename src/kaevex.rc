@@ -9,6 +9,9 @@
 // World Map Bitmap
 101 BITMAP "assets\\world_map_cyber.bmp"
 
+// Auth Dialog Hologram Shield Bitmap
+102 BITMAP "assets\\auth_hologram.bmp"
+
 // Version Information
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     1,0,0,0

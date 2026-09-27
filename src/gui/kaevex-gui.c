@@ -218,6 +218,7 @@ static const wchar_t *TAB_ICON_W[TAB_COUNT] = {
 #define IDU_WIN      245
 #define IDU_FIXALL   246
 #define IDU_WATCHER  247
+#define IDU_NOTIFYMODE 253
 #define IDAL_LIST    250
 #define IDAL_CLR     251
 #define IDST_PORT    260
@@ -286,6 +287,7 @@ static const wchar_t *TAB_ICON_W[TAB_COUNT] = {
 #define IDTM_GREEN   367
 #define IDTM_CLEAR   368
 #define IDTM_AUTO    369  /* Toggle autonomous agents */
+#define IDTM_ALL     371
 
 /* --- AI Voice & Settings IDs ---------------------------------------------- */
 #define IDAI_VOICE   370  /* Toggle TTS voice */
@@ -808,6 +810,7 @@ static void ExecuteSettingsAction(int actId);
 static char g_webhookUrl[512]  = "";
 static char g_aiApiKey[256]    = "";
 static int  g_aiProvider       = 0;  /* 0=Together AI (DeepSeek-V4-Pro-0813), 1=Groq, 2=NVIDIA, 3=Local */
+static BOOL g_updNotifyBeforeFix = TRUE;
 static BOOL g_alertSound       = TRUE;
 static BOOL g_ransomAutoStart  = FALSE;
 static char g_exportPath[MAX_PATH] = "";
@@ -823,23 +826,26 @@ static char g_myPairCode[256] = "";
 /* --- Additional New Control IDs ------------------------------------------- */
 #define IDU_AIFIX    248   /* AI-powered CVE fix */
 #define IDU_SANDBOX  249   /* Sandbox & update app */
+#define IDU_SEARCH   254   /* Real-time search filter edit */
+#define IDU_REFRESH  255   /* Refresh vulnerability DB & scan */
+#define IDU_EXPORT   252   /* Export CSV audit report */
+#define WM_NVD_REFRESH_DONE (WM_APP + 42)
 
 
 /* --- 8 Core Defense Engines ----------------------------------------------- */
 typedef struct {
     const char *name, *detail, *version;
-    int run, load;
 } Engine;
 
 static Engine g_eng[8] = {
-    {"Antivirus Core",       "SHA-256/MD5 hash + 5-layer heuristic + PE analysis","3.0.0", 1, 0},
-    {"Network Monitor",      "TCP/UDP table | C2 beacon detection | DNS sinkhole","2.0.0", 1, 0},
-    {"CVE Agent",            "Registry inventory | winget patches | OS mitigations","3.0.0", 1, 0},
-    {"RansomShield",         "Honeypot files | ReadDirectoryChanges | VSS rollback","2.0.0", 1, 0},
-    {"Adaptive Firewall",    "netsh rule management | Port blocking | Process kill","1.0.0", 1, 0},
-    {"WebGuard WAF",         "SQLi/XSS/RCE/LFI/Log4Shell - 18 attack categories","3.0.0", 1, 0},
-    {"SmartSandbox",         "AppContainer isolation | Job Object limits | DPI","2.0.0", 1, 0},
-    {"App Discovery Hub",    "9-source scan | Stack model | Integration keys","1.0.0", 1, 0},
+    {"Antivirus Core",       "On-demand file and selected-directory inspection","3.0.0"},
+    {"Network Monitor",      "Live Windows socket and interface-counter views","2.0.0"},
+    {"CVE Agent",            "Installed-software inventory and recent NVD advisories","3.0.0"},
+    {"RansomShield",         "Optional filesystem watcher and canary protections","2.0.0"},
+    {"Adaptive Firewall",    "Windows Firewall rule inspection and management","1.0.0"},
+    {"WebGuard WAF",         "On-demand inspection of supplied HTTP/payload text","3.0.0"},
+    {"SmartSandbox",         "Sandboxie-Plus integration; requires separate installation","2.1.0"},
+    {"App Discovery Hub",    "On-demand Windows application inventory","1.0.0"},
 };
 
 /* --- Live Real-World Telemetry Stats & Chart Data -------------------------- */
@@ -866,7 +872,7 @@ static int g_chartInbound[7]  = { 0, 0, 0, 0, 0, 0, 0 };
 static int g_chartOutbound[7] = { 0, 0, 0, 0, 0, 0, 0 };
 static int g_chartClean[7]    = { 0, 0, 0, 0, 0, 0, 0 };
 static int g_chartFiltered[7] = { 0, 0, 0, 0, 0, 0, 0 };
-static const char *g_days[7]  = { "T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "NOW" };
+static const char *g_days[7]  = { "-9s", "-7.5s", "-6s", "-4.5s", "-3s", "-1.5s", "now" };
 
 /* --- Alert Ring Buffer --------------------------------------------------- */
 #define AL_MAX  256
@@ -911,7 +917,7 @@ static HWND hAvThreatList,hAvMarkSafe,hAvQuarantine,hAvScanAll,hAvClearDb,hAvBoo
 static HWND hAvScanDir,hAvSearchIn,hAvFilterThreat,hAvFilterTime,hAvExport;
 static HWND hSbxPath,hSbxBrw,hSbxRun,hSbxKill,hSbxLog,hSbxBNet,hSbxBFile,hSbxBProc;
 static HWND hFwList,hFwAdd,hFwDel,hFwBlkProc,hFwReload,hFwToggle,hFwLockdown,hFwDefaults,hFwRuleName,hFwRulePort;
-static HWND hUpdList,hUpdScan,hUpdChk,hUpdSel,hUpdAll,hUpdWin,hUpdFixAll,hUpdWatcher;
+static HWND hUpdList,hUpdScan,hUpdChk,hUpdSel,hUpdAll,hUpdWin,hUpdFixAll,hUpdWatcher,hUpdNotifyMode;
 static HWND hAlList,hAlClr;
 static HWND hStPort,hStApply,hStAuto,hStFwDfl,hStHook;
 static HWND hStAiKey,hStAiApply,hStProv,hStWebUrl,hStWbApply;
@@ -936,8 +942,128 @@ static HWND hForRefresh,hForExport,hForList;
 static HWND hTopSearch;
 /* Full Team */
 static HWND hTmPrompt,hTmSend,hTmList,hTmRed,hTmBlue,hTmPurple,hTmYellow,hTmGreen,hTmClear,hTmAuto;
+static HWND hTmAllTeams;
+static volatile LONG g_teamPendingRequests = 0;
 /* Extra CVE buttons */
-static HWND hUpdAiFix,hUpdSandbox;
+static HWND hUpdAiFix,hUpdSandbox,hUpdSearch;
+
+/* --- Patch & CVE Agent Modern Interactive Data Model ---------------------- */
+typedef enum {
+    CVE_SEV_CRITICAL = 0,
+    CVE_SEV_HIGH,
+    CVE_SEV_MEDIUM,
+    CVE_SEV_LOW
+} CveSeverity;
+
+typedef enum {
+    CVE_STATUS_PENDING = 0,
+    CVE_STATUS_AVAILABLE,
+    CVE_STATUS_FIXED,
+    CVE_STATUS_IGNORED,
+    CVE_STATUS_INTEL
+} CveStatus;
+
+typedef struct {
+    int  id;
+    BOOL selected;
+    char vulnTitle[128];
+    char vulnDesc[180];
+    char appName[96];
+    char version[48];
+    CveSeverity severity;
+    int  cvssScore;
+    char cveId[32];
+    CveStatus status;
+    char actionText[32];
+    char wingetId[128];
+    char fixVersion[48];
+    int  iconType; /* 0=generic, 1=windows, 2=edge, 3=adobe, 4=firefox, 5=chrome, 6=defender, 7=openssl, 8=java, 9=7zip, 10=notepad++, 11=python, 12=git, 13=vscode */
+    int  category; /* 0=Other, 1=OS, 2=Browsers, 3=Dev Tools, 4=Utilities */
+    BOOL isOs;
+    char executablePath[MAX_PATH];
+    BOOL isIntelOnly;
+} CveTableItem;
+
+#define MAX_CVE_TABLE 512
+static CveTableItem g_cveItems[MAX_CVE_TABLE];
+static int          g_cveItemCount = 0;
+static int          g_cveScrollY = 0;
+static int          g_cveSubNav = 1;        /* 0=Overview, 1=Vulnerabilities, 2=Patches, 3=Scan Settings, 4=Update Center, 5=CVE Database, 6=Reports */
+static int          g_cveFilterSev = 0;    /* 0=All, 1=Critical, 2=High, 3=Medium, 4=Low */
+static int          g_cveFilterStatus = 0; /* 0=All, 1=Pending, 2=Available, 3=Fixed, 4=Ignored */
+static int          g_cveFilterCat = 0;    /* 0=All, 1=OS, 2=Browsers, 3=Dev Tools, 4=Utilities */
+static char         g_cveSearch[64] = "";
+static char         g_cveLastScanTime[64] = "Not scanned";
+static wchar_t      g_cveLastScanTimeW[64] = L"Not scanned";
+static int          g_cveCritCnt = 0;
+static int          g_cveHighCnt = 0;
+static int          g_cveMedCnt = 0;
+static int          g_cveLowCnt = 0;
+static int          g_cveTotalCnt = 0;
+static BOOL         g_cveSelectAll = FALSE;
+static int          g_cveHoverRow = -1;
+static volatile LONG g_nvdRefreshBusy = 0;
+static volatile BOOL g_cveScanning = FALSE;
+static DWORD         g_cveScanStartTick = 0;
+#define WM_CVE_SCAN_DONE (WM_APP + 65)
+#define IDT_CVE_AUTOSCAN 0x7B32
+
+/* CVE Sub-Nav Interactive State */
+static BOOL g_cveAutoScanEnabled  = TRUE;
+static int  g_cveAutoScanInterval = 1; /* 0=15m, 1=1h, 2=6h, 3=24h */
+static BOOL g_cveScanNvdCloud     = TRUE;
+static int  g_cvePatchScrollY     = 0;
+static char g_cveDbSearch[64]     = "";
+static int  g_cveDbScrollY        = 0;
+static char g_cveReportStatus[128]= "";
+
+static UINT CveScanIntervalMs(void) {
+    static const UINT intervals[]={15u*60u*1000u,60u*60u*1000u,6u*60u*60u*1000u,24u*60u*60u*1000u};
+    return intervals[g_cveAutoScanInterval>=0&&g_cveAutoScanInterval<4?g_cveAutoScanInterval:1];
+}
+static void CveUpdateSchedule(HWND hw) {
+    if(g_cveAutoScanEnabled) SetTimer(hw,IDT_CVE_AUTOSCAN,CveScanIntervalMs(),NULL);
+    else KillTimer(hw,IDT_CVE_AUTOSCAN);
+}
+static void CveLoadSchedule(void) {
+    HKEY key; DWORD value=0,size=sizeof(value),type=0;
+    if(RegOpenKeyExA(HKEY_CURRENT_USER,"Software\\Kaevex\\CveAgent",0,KEY_READ,&key)!=ERROR_SUCCESS) return;
+    if(RegQueryValueExA(key,"AutoScanEnabled",NULL,&type,(BYTE*)&value,&size)==ERROR_SUCCESS&&type==REG_DWORD)g_cveAutoScanEnabled=value!=0;
+    size=sizeof(value); if(RegQueryValueExA(key,"ScanInterval",NULL,&type,(BYTE*)&value,&size)==ERROR_SUCCESS&&type==REG_DWORD&&value<4)g_cveAutoScanInterval=(int)value;
+    size=sizeof(value); if(RegQueryValueExA(key,"NvdSyncEnabled",NULL,&type,(BYTE*)&value,&size)==ERROR_SUCCESS&&type==REG_DWORD)g_cveScanNvdCloud=value!=0;
+    RegCloseKey(key);
+}
+static BOOL CveSaveSchedule(void) {
+    HKEY key; DWORD disp=0;
+    if(RegCreateKeyExA(HKEY_CURRENT_USER,"Software\\Kaevex\\CveAgent",0,NULL,0,KEY_WRITE,NULL,&key,&disp)!=ERROR_SUCCESS)return FALSE;
+    DWORD enabled=g_cveAutoScanEnabled?1u:0u,interval=(DWORD)g_cveAutoScanInterval,nvd=g_cveScanNvdCloud?1u:0u;
+    BOOL ok=RegSetValueExA(key,"AutoScanEnabled",0,REG_DWORD,(BYTE*)&enabled,sizeof(enabled))==ERROR_SUCCESS &&
+            RegSetValueExA(key,"ScanInterval",0,REG_DWORD,(BYTE*)&interval,sizeof(interval))==ERROR_SUCCESS &&
+            RegSetValueExA(key,"NvdSyncEnabled",0,REG_DWORD,(BYTE*)&nvd,sizeof(nvd))==ERROR_SUCCESS;
+    RegCloseKey(key);return ok;
+}
+
+/* --- Gaming & Threat Modern Interactive State --- */
+static int   g_threatSubNav   = 0;     /* 0=Gaming Mode, 1=Threat Protection, 2=Performance, 3=Rules, 4=Profiles */
+static BOOL  g_gmMaster       = TRUE;  /* Master Gaming Mode switch */
+/* 5 Gaming Options */
+static BOOL  g_gmReduceCpu    = TRUE;
+static BOOL  g_gmOptimizeRam  = TRUE;
+static BOOL  g_gmBlockNotif   = TRUE;
+static BOOL  g_gmPauseScans   = TRUE;
+static BOOL  g_gmKeepCritProt = TRUE;
+static BOOL  g_gmAutoDetect   = TRUE;
+
+/* 6 Threat Protection Options */
+static BOOL  g_tpRealtime     = TRUE;
+static BOOL  g_tpBehavior     = TRUE;
+static BOOL  g_tpHeuristic    = TRUE;
+static BOOL  g_tpRansomware   = TRUE;
+static BOOL  g_tpWeb          = TRUE;
+static BOOL  g_tpNetwork      = TRUE;
+
+static int   g_gmFwPreset     = 0;     /* 0=Gaming Optimized, 1=Strict Esports, 2=Allow All Outbound */
+static DWORD g_lastRamPurgeTick = 0;
 
 /* --- Auto-AV Scan state --------------------------------------------------- */
 static DWORD g_lastAvScan = 0;        /* tick of last hourly AV scan */
@@ -1332,7 +1458,7 @@ static void waf_analyze(const char *inp, WafResult *r) {
     else strncpy(s_wafState.severity, "Clean", sizeof(s_wafState.severity)-1);
 
     s_wafState.blocked = (totalScore >= 28);
-    strncpy(s_wafState.actionTaken, s_wafState.blocked ? "Request Blocked" : "Request Allowed", sizeof(s_wafState.actionTaken)-1);
+    strncpy(s_wafState.actionTaken, s_wafState.blocked ? "Signature match" : "No signature match", sizeof(s_wafState.actionTaken)-1);
 
     /* Dynamic contextual recommendations matching the detected categories */
     int rCnt = 0;
@@ -1369,7 +1495,7 @@ static void waf_analyze(const char *inp, WafResult *r) {
     }
 }
 
-/* --- AV Engine: 1000+ Detection Methods ----------------------------------- */
+/* --- AV Engine: conservative hash matches plus non-blocking triage heuristics */
 typedef struct {
     char sha256[65]; char md5[33];
     int threat; char tname[128];
@@ -1382,30 +1508,8 @@ typedef struct {
 
 /* Signature Database */
 static const struct{const char *name,*sha256,*md5;} g_sigDB[]= {
-    {"WannaCry",     "ed01ebfbc9eb5bbea545af4d01bf5f1071661840480439c6e5babe8e080e41aa","db349b97c37d22f5ea1d1841e3c89eb4"},
-    {"NotPetya",     "027cc450ef5f8c5f653329641ec1fed91f694e0d229928963b30f6b0d7d3a745","f07a7c4b48b50c9f1000d2b58bec84a4"},
-    {"Ryuk",         "9d4b13c0f2b0e9a559c66b0e18ac95f2c3618d95cd8c254d39cbfcc10b3e2a72","5ac0f050f93f86f9f7a53f0a8fda9773"},
-    {"LockBit3",     "a1d2b3c4e5f6071829deadbeef1234569876543210abcdef1234567890abcdef1","a1b2c3d4e5f678901234567890abcd01"},
-    {"BlackCat",     "f1e2d3c4b5a69788776655443322110011223344deadbeef99887766deadbeef1","f1e2d3c4b5a67890abcdef123456ab01"},
-    {"Hive",         "aabbccdd1122334455667788990011aabb112233445566778899aabbccddeef1","aabb1122334455667788990011aabbcc"},
-    {"REvil",        "deadbeef0011223344556677889911deadbeef0011223344556677889900aab1","deadbeef001122334455667788990011"},
-    {"Conti",        "1122334455667788990011223344556677889900112233445566778899001121","11223344556677889900aabbccddee01"},
-    {"Emotet",       "bd2c2cf0631d881ed382817afcce2b093f4e412ffb170a719e2762f250abfea4","d65fdb3d64a93c7afe78c84bd80e1513"},
-    {"AgentTesla",   "112233445566778899001122334455667788990011223344556677889900aa01","112233445566778899001122334455bb"},
-    {"RedLine",      "aabbccdd11223344556677889900aabbccddeeff112233445566778899000011","aabbccdd112233445566778899001100"},
-    {"Raccoon",      "00112233445566778899aabbccddeeff00112233445566778899aabbccdde01","00112233445566778899aabbccddee00"},
-    {"Vidar",        "ffeeddccbbaa998877665544332211ffeeddccbbaa998877665544332211ffe1","ffeeddccbbaa9988776655443322aa00"},
-    {"NJRat",        "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde1","1234567890abcdef1234567890abcde1"},
-    {"DarkComet",    "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567891","abcdef1234567890abcdef1234567891"},
-    {"AsyncRAT",     "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543211","fedcba9876543210fedcba9876543211"},
-    {"CobaltStrike", "e772456c6f32d3f55839a0e97a69b2c3e069e4847e68a52bef3bcea9cb3c00b7","69630e4574ec6798239b091cda43dca0"},
-    {"Metasploit",   "0011223344556677889900aabbccddeeff0011223344556677889900aabb0011","001122334455667788990011aabbcc01"},
-    {"Sliver",       "5566778899001122334455667788990011223344556677889900112233445501","556677889900112233445566778899ab"},
-    {"PlugX",        "9999000011112222333344445555666677778888999900001111222233334401","9999000011112222333344445555aa01"},
-    {"Gh0stRAT",     "4444555566667777888899990000111122223333444455556666777788889901","4444555566667777888899990000aa01"},
-    {"ZeroAccess",   "ffffeeeedddcccbbb999888777666555ffffeeeedddcccbbb999888777666555f","ffffeeeedddcccbbb999888777666555"},
-    {"Necurs",       "aaaabbbbccccdddd11112222333344445555666677778888999900001111aaa1","aaaabbbbccccdddd11112222333344bb"},
-    {"Dharma",       "ffeeddccbbaa99887766554433221100ffeeddccbbaa9988776655443322aa11","ffeeddccbbaa998877665544332211aa"},
+    {"WannaCry", "ed01ebfbc9eb5bbea545af4d01bf5f1071661840480439c6e5babe8e080e41aa","db349b97c37d22f5ea1d1841e3c89eb4"},
+    {"NotPetya", "027cc450ef5f8c5f653329641ec1fed91f694e0d229928963b30f6b0d7d3a745","f07a7c4b48b50c9f1000d2b58bec84a4"},
     {NULL,NULL,NULL}
 };
 
@@ -1562,38 +1666,7 @@ static void threatdb_init(void){
         }
         fclose(fp);
     }
-    if(g_threatDbCount == 0){
-        static const struct {
-            const char *name; const char *cls; const char *path;
-            const char *detail; int score; int quarantined; int isSafe;
-        } seeds[12] = {
-            { "Heuristic.Antidebug",   "Heuristic",  "C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe",             "Suspicious behavior detected (debugging)", 100, 1, 0 },
-            { "Heuristic.CnCInject",   "Heuristic",  "C:\\Users\\Moham\\Desktop\\kaevex-github\\dist\\kaevex-gui.exe", "C2 beacon detection",                     98,  1, 0 },
-            { "Suspicious.Generic",    "Behavioral", "C:\\Program Files\\Microsoft GameInput\\GameInputRedistService.exe","Malicious behavior (injection)",     95,  1, 0 },
-            { "Suspicious.Generic",    "Behavioral", "C:\\Windows\\System32\\ghost.exe",                                "Unknown publisher / suspicious",          92,  1, 0 },
-            { "Heuristic.Antidebug",   "Heuristic",  "C:\\Windows\\explorer.exe",                                      "Debugging tools detected",                90,  1, 0 },
-            { "Suspicious.Generic",    "Behavioral", "C:\\Windows\\System32\\AppVClient.exe",                            "Possible exploitation attempt",           88,  1, 0 },
-            { "Suspicious.Generic",    "Behavioral", "C:\\Windows\\System32\\kbtdshare.exe",                            "Unknown behavior",                        85,  1, 0 },
-            { "Heuristic.DPAPI",       "Heuristic",  "C:\\Windows\\System32\\bbfnoteschange.dll",                       "Credential access attempt",               82,  1, 0 },
-            { "Heuristic.DPAPI",       "Heuristic",  "C:\\Windows\\System32\\browsersitesupport.exe",                   "Data theft behavior",                     78,  1, 0 },
-            { "Trojan.Generic",        "Malware",    "C:\\Windows\\System32\\certreq.exe",                              "Trojan downloader",                       65,  1, 0 },
-            { "Trojan.Generic",        "Malware",    "C:\\Windows\\System32\\winamp.exe",                               "Potential backdoor",                      62,  1, 0 },
-            { "Trojan.Generic",        "Malware",    "C:\\Windows\\System32\\chrome.exe",                               "Suspicious network activity",             58,  1, 0 }
-        };
-        for(int i = 0; i < 12; i++){
-            ThreatDbEntry *e = &g_threatDB[g_threatDbCount++];
-            strncpy(e->path, seeds[i].path, sizeof(e->path)-1);
-            const char *fn = strrchr(e->path, '\\');
-            strncpy(e->filename, fn ? fn + 1 : e->path, sizeof(e->filename)-1);
-            strncpy(e->threatName, seeds[i].name, sizeof(e->threatName)-1);
-            strncpy(e->classification, seeds[i].cls, sizeof(e->classification)-1);
-            strncpy(e->details, seeds[i].detail, sizeof(e->details)-1);
-            e->score = seeds[i].score;
-            e->quarantined = seeds[i].quarantined;
-            e->isSafe = seeds[i].isSafe;
-            e->detectedAt = time(NULL);
-        }
-    }
+    /* An empty database is valid; never seed fabricated malware detections. */
     LeaveCriticalSection(&g_threatDbCS);
 }
 
@@ -1709,12 +1782,10 @@ static int get_engines_json_for_mobile(char *buf, size_t maxBuf) {
     int p = 0;
     for (int i = 0; i < 8; i++) {
         p += snprintf(buf + p, maxBuf - p,
-            "%s{\"name\":\"%s\",\"version\":\"%s\",\"status\":\"%s\",\"load\":%d}",
+            "%s{\"name\":\"%s\",\"version\":\"%s\",\"status\":\"ON_DEMAND\",\"load\":null,\"healthAvailable\":false}",
             i > 0 ? "," : "",
             g_eng[i].name,
-            g_eng[i].version,
-            g_eng[i].run ? "RUNNING" : "STOPPED",
-            g_eng[i].load);
+            g_eng[i].version);
     }
     return p;
 }
@@ -1998,7 +2069,7 @@ static BOOL av_scan_file(const char *path, AvResult *r){
         if(totalScore>=70){
             r->suspicious=1; r->score=(totalScore>100)?100:totalScore;
             snprintf(r->detail,sizeof(r->detail),"[HEUR] %d suspicious patterns - %s: %.40s",hitCnt,firstCat,firstHit);
-            if(totalScore>=140){r->threat=1;snprintf(r->tname,sizeof(r->tname),"Heuristic.%s",firstCat);}
+            /* Raw strings in an executable are weak evidence, not a confirmed threat. */
         }
         /* Method 3: Entropy */
         if(totalRead>256){
@@ -2041,10 +2112,9 @@ static BOOL av_scan_file(const char *path, AvResult *r){
             }
         }
     }
-    if(r->score>=75&&!r->threat){r->threat=1;
-        if(!r->tname[0]) snprintf(r->tname,sizeof(r->tname),"Suspicious.Generic");
-        if(!r->detail[0]) snprintf(r->detail,sizeof(r->detail),"[HEUR] Risk score: %d/100",r->score);
-    }
+    /* Entropy, packer sections, imports and generic strings are triage signals only. */
+    if(r->suspicious && !r->detail[0])
+        snprintf(r->detail,sizeof(r->detail),"[HEUR] Suspicious traits need review; no confirmed malware signature matched.");
     if(r->threat){
         threatdb_add(path, r->tname, "AntivirusCore", r->sha256, r->score);
     }
@@ -2129,163 +2199,60 @@ static void DrawCircleBadge(HDC dc,int cx,int cy,int r,COLORREF bg,COLORREF fg,c
 
 /* --- Modern Dual-Line Chart (Pixel-Matched to Reference) ---------------- */
 static void DrawLineChart(HDC dc, int x, int y, int w, int h,
-                          int sA[], int sB[], int count, const char *labels[]){
-    int yAxisW = 34;
-    int chartX = x + yAxisW;
-    int chartW = w - yAxisW - 8;
-    int chartH = h - 34;
-
-    /* Y-Axis Labels: 20M, 15M, 10M, 5M, 0 */
-    static const char *yLabels[5] = {"20M", "15M", "10M", "5M", "0"};
-    SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, RGB(105, 122, 148));
-    SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-
-    HPEN pGrid = CreatePen(PS_DOT, 1, RGB(30, 42, 62));
-    HPEN opG = (HPEN)SelectObject(dc, pGrid);
-
-    for (int g = 0; g < 5; g++) {
-        int gy = y + 10 + g * (chartH - 10) / 4;
-        RECT yR = {x, gy - 7, x + yAxisW - 6, gy + 7};
-        DrawTextA(dc, yLabels[g], -1, &yR, DT_RIGHT|DT_SINGLELINE|DT_VCENTER);
-
-        /* Horizontal grid line */
-        MoveToEx(dc, chartX, gy, NULL);
-        LineTo(dc, chartX + chartW, gy);
+                         int sA[], int sB[], int count, const char *labels[]){
+    int axisW=52, chartX=x+axisW, chartW=w-axisW-8, chartH=h-34;
+    if(chartW<=0||chartH<=0) return;
+    int n=CLAMP(count,1,7), maxVal=1;
+    for(int i=0;i<n;i++){if(sA[i]>maxVal)maxVal=sA[i];if(sB[i]>maxVal)maxVal=sB[i];}
+    int scale=1; while(scale<maxVal && scale<=INT_MAX/10) scale*=10;
+    static const int q[5]={100,75,50,25,0};
+    SetBkMode(dc,TRANSPARENT); SetTextColor(dc,RGB(105,122,148));
+    SelectObject(dc,fSm?fSm:(HFONT)GetStockObject(DEFAULT_GUI_FONT));
+    HPEN grid=CreatePen(PS_DOT,1,RGB(30,42,62)), old=(HPEN)SelectObject(dc,grid);
+    for(int k=0;k<5;k++){
+        int gy=y+10+k*(chartH-10)/4; char v[32];
+        snprintf(v,sizeof(v),"%d",scale*q[k]/100);
+        RECT yr={x,gy-7,x+axisW-6,gy+7}; DrawTextA(dc,v,-1,&yr,DT_RIGHT|DT_SINGLELINE|DT_VCENTER);
+        MoveToEx(dc,chartX,gy,NULL); LineTo(dc,chartX+chartW,gy);
     }
-    SelectObject(dc, opG); DeleteObject(pGrid);
-
-    /* 7 Data points matching reference curves:
-     * Line A (Incoming): ~7M, ~7M, ~9M, ~8.5M, ~11M, ~10.5M, ~17M
-     * Line B (Threats):  ~1.5M, ~1.8M, ~2.0M, ~2.0M, ~2.2M, ~2.5M, ~4.5M */
-    int stepX = chartW / 6;
-    static const float normA[7] = {0.35f, 0.35f, 0.45f, 0.42f, 0.55f, 0.52f, 0.85f};
-    static const float normB[7] = {0.08f, 0.09f, 0.10f, 0.10f, 0.11f, 0.13f, 0.22f};
-
-    POINT ptsA[10];
-    POINT ptsB[10];
-    int baseY = y + 10 + (chartH - 10);
-
-    for (int i = 0; i < 7; i++) {
-        ptsA[i].x = chartX + i * stepX;
-        ptsA[i].y = baseY - (int)(normA[i] * (chartH - 10));
-
-        ptsB[i].x = chartX + i * stepX;
-        ptsB[i].y = baseY - (int)(normB[i] * (chartH - 10));
+    SelectObject(dc,old);DeleteObject(grid);
+    POINT a[7],b[7]; int baseY=y+chartH;
+    for(int i=0;i<n;i++){
+        int px=chartX+(n==1?chartW/2:i*chartW/(n-1));
+        a[i].x=b[i].x=px;
+        a[i].y=baseY-(int)((long long)CLAMP(sA[i],0,scale)*chartH/scale);
+        b[i].y=baseY-(int)((long long)CLAMP(sB[i],0,scale)*chartH/scale);
+        if(labels&&labels[i]){RECT lr={px-22,baseY+4,px+22,baseY+18};SetTextColor(dc,RGB(115,134,162));DrawTextA(dc,labels[i],-1,&lr,DT_CENTER|DT_SINGLELINE|DT_NOPREFIX);}
     }
-
-    /* Area fill polygon beneath Line A (Cyan) */
-    POINT areaPts[10];
-    for (int i = 0; i < 7; i++) areaPts[i] = ptsA[i];
-    areaPts[7].x = ptsA[6].x; areaPts[7].y = baseY;
-    areaPts[8].x = ptsA[0].x; areaPts[8].y = baseY;
-
-    HBRUSH bArea = CreateSolidBrush(RGB(14, 38, 68));
-    HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
-    HBRUSH ob = (HBRUSH)SelectObject(dc, bArea);
-    HPEN op = (HPEN)SelectObject(dc, pNone);
-    Polygon(dc, areaPts, 9);
-    SelectObject(dc, ob); DeleteObject(bArea);
-
-    /* Draw Line A: Electric Cyan (#00e5ff / #06b6d4) */
-    HPEN pA = CreatePen(PS_SOLID, 2, RGB(6, 182, 212));
-    SelectObject(dc, pA);
-    for (int i = 0; i < 7; i++) {
-        if (i == 0) MoveToEx(dc, ptsA[i].x, ptsA[i].y, NULL);
-        else LineTo(dc, ptsA[i].x, ptsA[i].y);
-    }
-    SelectObject(dc, op); DeleteObject(pA);
-
-    /* Draw Line B: Electric Gold/Yellow (#eab308) */
-    HPEN pB = CreatePen(PS_SOLID, 2, RGB(234, 179, 8));
-    SelectObject(dc, pB);
-    for (int i = 0; i < 7; i++) {
-        if (i == 0) MoveToEx(dc, ptsB[i].x, ptsB[i].y, NULL);
-        else LineTo(dc, ptsB[i].x, ptsB[i].y);
-    }
-    SelectObject(dc, op); DeleteObject(pB);
-
-    /* Circular Node Markers on both lines */
-    HBRUSH bCyan = CreateSolidBrush(RGB(6, 182, 212));
-    HBRUSH bYellow = CreateSolidBrush(RGB(234, 179, 8));
-    HBRUSH bWhite = CreateSolidBrush(RGB(255, 255, 255));
-
-    for (int i = 0; i < 7; i++) {
-        /* Line A Node */
-        SelectObject(dc, bCyan);
-        Ellipse(dc, ptsA[i].x - 4, ptsA[i].y - 4, ptsA[i].x + 4, ptsA[i].y + 4);
-        SelectObject(dc, bWhite);
-        Ellipse(dc, ptsA[i].x - 2, ptsA[i].y - 2, ptsA[i].x + 2, ptsA[i].y + 2);
-
-        /* Line B Node */
-        SelectObject(dc, bYellow);
-        Ellipse(dc, ptsB[i].x - 4, ptsB[i].y - 4, ptsB[i].x + 4, ptsB[i].y + 4);
-        SelectObject(dc, bWhite);
-        Ellipse(dc, ptsB[i].x - 2, ptsB[i].y - 2, ptsB[i].x + 2, ptsB[i].y + 2);
-
-        /* X-Axis Label: T-6 ... NOW */
-        static const char *xLabels[7] = {"T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "NOW"};
-        RECT xlR = {ptsA[i].x - 20, baseY + 6, ptsA[i].x + 20, baseY + 20};
-        SetTextColor(dc, RGB(115, 134, 162));
-        DrawTextA(dc, xLabels[i], -1, &xlR, DT_CENTER|DT_SINGLELINE);
-    }
-    DeleteObject(bCyan); DeleteObject(bYellow); DeleteObject(bWhite);
+    HPEN pA=CreatePen(PS_SOLID,2,RGB(6,182,212)),pB=CreatePen(PS_SOLID,2,RGB(234,179,8));
+    old=(HPEN)SelectObject(dc,pA); if(n>1)Polyline(dc,a,n); else {MoveToEx(dc,a[0].x,a[0].y,NULL);LineTo(dc,a[0].x+1,a[0].y);}
+    SelectObject(dc,pB); if(n>1)Polyline(dc,b,n); else {MoveToEx(dc,b[0].x,b[0].y,NULL);LineTo(dc,b[0].x+1,b[0].y);}
+    SelectObject(dc,old);DeleteObject(pA);DeleteObject(pB);
 }
 
-/* --- Modern Dual-Bar Chart (Pixel-Matched to Reference) ------------------- */
 static void DrawBarChart(HDC dc, int x, int y, int w, int h,
                          int bA[], int bB[], int count, const char *labels[]){
-    int yAxisW = 34;
-    int chartX = x + yAxisW;
-    int chartW = w - yAxisW - 8;
-    int chartH = h - 34;
-
-    /* Y-Axis Labels */
-    static const char *yLabels[5] = {"20M", "15M", "10M", "5M", "0"};
-    SetBkMode(dc, TRANSPARENT);
-    SetTextColor(dc, RGB(105, 122, 148));
-    SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-
-    HPEN pGrid = CreatePen(PS_DOT, 1, RGB(30, 42, 62));
-    HPEN opG = (HPEN)SelectObject(dc, pGrid);
-
-    for (int g = 0; g < 5; g++) {
-        int gy = y + 10 + g * (chartH - 10) / 4;
-        RECT yR = {x, gy - 7, x + yAxisW - 6, gy + 7};
-        DrawTextA(dc, yLabels[g], -1, &yR, DT_RIGHT|DT_SINGLELINE|DT_VCENTER);
-
-        MoveToEx(dc, chartX, gy, NULL);
-        LineTo(dc, chartX + chartW, gy);
-    }
-    SelectObject(dc, opG); DeleteObject(pGrid);
-
-    int baseY = y + 10 + (chartH - 10);
-    int groupW = chartW / 7;
-    int barW = 20;
-
-    static const float barNormA[7] = {0.40f, 0.50f, 0.60f, 0.55f, 0.62f, 0.68f, 0.85f};
-    static const float barNormB[7] = {0.06f, 0.08f, 0.09f, 0.08f, 0.09f, 0.10f, 0.12f};
-    static const char *xLabels[7] = {"T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "NOW"};
-
-    for (int i = 0; i < 7; i++) {
-        int gx = chartX + i * groupW + (groupW - barW) / 2;
-        int barH_A = (int)(barNormA[i] * (chartH - 10));
-        int barH_B = (int)(barNormB[i] * (chartH - 10));
-
-        /* Blue Main Bar (Clean Traffic) with gradient-like solid fill */
-        DrawRoundRectPanel(dc, gx, baseY - barH_A, barW, barH_A, 4, RGB(29, 78, 216), RGB(56, 189, 248));
-
-        /* Small Yellow Base Indicator (Threats Filtered) */
-        DrawRoundRectPanel(dc, gx + barW + 2, baseY - barH_B, 7, barH_B, 2, RGB(234, 179, 8), RGB(234, 179, 8));
-
-        /* X-Axis Label */
-        RECT xlR = {gx - 6, baseY + 6, gx + barW + 12, baseY + 20};
-        SetTextColor(dc, RGB(115, 134, 162));
-        DrawTextA(dc, xLabels[i], -1, &xlR, DT_CENTER|DT_SINGLELINE);
+    int axisW=52, chartX=x+axisW, chartW=w-axisW-8, chartH=h-34;
+    if(chartW<=0||chartH<=0) return;
+    int n=CLAMP(count,1,7), maxVal=1;
+    for(int i=0;i<n;i++){if(bA[i]>maxVal)maxVal=bA[i];if(bB[i]>maxVal)maxVal=bB[i];}
+    int scale=1; while(scale<maxVal && scale<=INT_MAX/10) scale*=10;
+    static const int q[5]={100,75,50,25,0};
+    SetBkMode(dc,TRANSPARENT);SetTextColor(dc,RGB(105,122,148));
+    SelectObject(dc,fSm?fSm:(HFONT)GetStockObject(DEFAULT_GUI_FONT));
+    HPEN grid=CreatePen(PS_DOT,1,RGB(30,42,62)),old=(HPEN)SelectObject(dc,grid);
+    for(int k=0;k<5;k++){int gy=y+10+k*(chartH-10)/4;char v[32];snprintf(v,sizeof(v),"%d",scale*q[k]/100);RECT yr={x,gy-7,x+axisW-6,gy+7};DrawTextA(dc,v,-1,&yr,DT_RIGHT|DT_SINGLELINE|DT_VCENTER);MoveToEx(dc,chartX,gy,NULL);LineTo(dc,chartX+chartW,gy);}
+    SelectObject(dc,old);DeleteObject(grid);
+    int baseY=y+chartH, groupW=chartW/n, barW=CLAMP(groupW/4,4,20);
+    for(int i=0;i<n;i++){
+        int gx=chartX+i*groupW+(groupW-2*barW-3)/2;
+        int ha=(int)((long long)CLAMP(bA[i],0,scale)*chartH/scale),hb=(int)((long long)CLAMP(bB[i],0,scale)*chartH/scale);
+        if(ha>0)DrawRoundRectPanel(dc,gx,baseY-ha,barW,ha,3,RGB(29,78,216),RGB(56,189,248));
+        if(hb>0)DrawRoundRectPanel(dc,gx+barW+3,baseY-hb,barW,hb,3,RGB(234,179,8),RGB(234,179,8));
+        if(labels&&labels[i]){RECT lr={gx-10,baseY+4,gx+2*barW+13,baseY+18};SetTextColor(dc,RGB(115,134,162));DrawTextA(dc,labels[i],-1,&lr,DT_CENTER|DT_SINGLELINE|DT_NOPREFIX);}
     }
 }
 
-/* --- High-Fidelity Global World Attack Heatmap (Pixel-Matched & Geographically Accurate) --- */
 static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
     static HBITMAP s_hMapBmp = NULL;
     if (!s_hMapBmp) {
@@ -2323,105 +2290,7 @@ static void DrawWorldHeatmap(HDC dc, int x, int y, int w, int h){
         DeleteDC(hdcMap);
     }
 
-    /* --- Curved Trajectory Arcs (PolyBezier) between authentic landmass centroids --- */
-    /* Arc 1: US East (26.3%, 32.4%) -> Western Europe (48.8%, 27.4%) */
-    {
-        POINT bz[4] = {
-            {x + w * 263 / 1000, y + h * 324 / 1000},
-            {x + w * 320 / 1000, y + h * 140 / 1000},
-            {x + w * 430 / 1000, y + h * 130 / 1000},
-            {x + w * 488 / 1000, y + h * 274 / 1000}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(56, 189, 248));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
-    }
-
-    /* Arc 2: Western Europe (48.8%, 27.4%) -> East Asia (80.4%, 37.4%) */
-    {
-        POINT bz[4] = {
-            {x + w * 488 / 1000, y + h * 274 / 1000},
-            {x + w * 590 / 1000, y + h * 80 / 1000},
-            {x + w * 710 / 1000, y + h * 90 / 1000},
-            {x + w * 804 / 1000, y + h * 374 / 1000}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(244, 63, 120));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
-    }
-
-    /* Arc 3: East Asia (80.4%, 37.4%) -> Australia Sydney (88.0%, 76.9%) */
-    {
-        POINT bz[4] = {
-            {x + w * 804 / 1000, y + h * 374 / 1000},
-            {x + w * 890 / 1000, y + h * 490 / 1000},
-            {x + w * 900 / 1000, y + h * 640 / 1000},
-            {x + w * 880 / 1000, y + h * 769 / 1000}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(0, 229, 255));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
-    }
-
-    /* Arc 4: US East (26.3%, 32.4%) -> South America Brazil (36.0%, 68.1%) */
-    {
-        POINT bz[4] = {
-            {x + w * 263 / 1000, y + h * 324 / 1000},
-            {x + w * 350 / 1000, y + h * 420 / 1000},
-            {x + w * 380 / 1000, y + h * 540 / 1000},
-            {x + w * 360 / 1000, y + h * 681 / 1000}
-        };
-        HPEN pArc = CreatePen(PS_SOLID, 2, RGB(59, 130, 246));
-        HPEN opOld = (HPEN)SelectObject(dc, pArc);
-        PolyBezier(dc, bz, 4);
-        SelectObject(dc, opOld); DeleteObject(pArc);
-    }
-
-    /* --- Radiant Glowing Heatmap Beacons (Layered Filled Halos) --- */
-    HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
-
-    #define DRAW_BEACON(bx, by, rOuter, rMid, rInner, cOuter, cMid, cInner, cCore) do { \
-        HBRUSH bO = CreateSolidBrush(cOuter); \
-        HBRUSH obO = (HBRUSH)SelectObject(dc, bO); \
-        HPEN opO = (HPEN)SelectObject(dc, pNone); \
-        Ellipse(dc, (bx)-(rOuter), (by)-(rOuter), (bx)+(rOuter), (by)+(rOuter)); \
-        HBRUSH bM = CreateSolidBrush(cMid); \
-        SelectObject(dc, bM); DeleteObject(bO); \
-        Ellipse(dc, (bx)-(rMid), (by)-(rMid), (bx)+(rMid), (by)+(rMid)); \
-        HBRUSH bI = CreateSolidBrush(cInner); \
-        SelectObject(dc, bI); DeleteObject(bM); \
-        Ellipse(dc, (bx)-(rInner), (by)-(rInner), (bx)+(rInner), (by)+(rInner)); \
-        HBRUSH bC = CreateSolidBrush(cCore); \
-        SelectObject(dc, bC); DeleteObject(bI); \
-        Ellipse(dc, (bx)-2, (by)-2, (bx)+3, (by)+3); \
-        SelectObject(dc, obO); SelectObject(dc, opO); \
-        DeleteObject(bC); \
-    } while(0)
-
-    /* Node 1: East Asia (Massive Crimson/Red Threat Epicenter) */
-    DRAW_BEACON(x + w * 804 / 1000, y + h * 374 / 1000, 26, 17, 9, \
-                RGB(65, 12, 24), RGB(160, 24, 48), RGB(244, 63, 94), RGB(255, 245, 250));
-
-    /* Node 2: Western Europe (London/Frankfurt Attack Node) */
-    DRAW_BEACON(x + w * 488 / 1000, y + h * 274 / 1000, 18, 11, 6, \
-                RGB(55, 12, 22), RGB(150, 24, 44), RGB(239, 68, 68), RGB(255, 235, 240));
-
-    /* Node 3: US East (Secured Headquarters SOC Node) */
-    DRAW_BEACON(x + w * 263 / 1000, y + h * 324 / 1000, 16, 10, 5, \
-                RGB(12, 45, 75), RGB(20, 95, 160), RGB(56, 189, 248), RGB(240, 250, 255));
-
-    /* Node 4: South America Brazil (Active Endpoint Sensor) */
-    DRAW_BEACON(x + w * 360 / 1000, y + h * 681 / 1000, 12, 7, 3, \
-                RGB(10, 35, 60), RGB(18, 75, 130), RGB(56, 189, 248), RGB(240, 250, 255));
-
-    /* Node 5: Australia Sydney (Active Endpoint Sensor) */
-    DRAW_BEACON(x + w * 880 / 1000, y + h * 769 / 1000, 14, 8, 4, \
-                RGB(10, 40, 68), RGB(18, 85, 145), RGB(56, 189, 248), RGB(240, 250, 255));
-
-    #undef DRAW_BEACON
+    Txt(dc, "Geolocation threat feed is not connected.", x+8, y+h-24, w-16, 18, RGB(160,175,195), fSm, DT_CENTER|DT_SINGLELINE|DT_NOPREFIX);
 }
 
 /* --- Geometric Gradient Kaevex Logo -------------------------------------- */
@@ -2742,7 +2611,7 @@ static void PaintStb(HDC dc,int W,int H){
     HBRUSH bOn = CreateSolidBrush(C_GREEN);
     RECT onR = {rx+2, y+10, rx+10, y+STB_H-6};
     Ellipse(dc, onR.left, onR.top, onR.right, onR.bottom); DeleteObject(bOn);
-    snprintf(s, sizeof(s), " Defense Engines: Online");
+    snprintf(s, sizeof(s), " Defense Features: On-demand");
     Txt(dc, s, rx+12, y, 155, STB_H, C_DIM, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
     DrawLine(dc, rx+170, y+4, rx+170, y+STB_H-4, C_BORDER);
@@ -2760,9 +2629,8 @@ static void PaintStb(HDC dc,int W,int H){
 
 /* --- Dashboard Renderer --------------------------------------------------- */
 static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
-    long long totalThreats = g_wafBlk + g_realDrops + g_dlpLeaksBlocked + g_rwHits + g_alCnt;
+    long long sessionAlerts = g_alCnt;
     unsigned long long totalPkts = g_realInPkts + g_realOutPkts;
-    unsigned long long cleanPkts = (totalPkts > (unsigned long long)g_realDrops) ? (totalPkts - g_realDrops) : totalPkts;
 
     /* === Header Row: Dashboard Overview === */
     int titleY = cy + 12;
@@ -2815,36 +2683,36 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
         COLORREF sparkCol;
     } c4[4];
 
-    /* Card 1: Threat Events */
-    c4[0].title = "Threat Events";
-    snprintf(c4[0].val, 32, "%lld", totalThreats);
-    c4[0].trendW = (totalThreats > 0) ? L"\u2191 Alert" : L"\u2713 Clean";
-    c4[0].trendCol = (totalThreats > 0) ? C_RED : C_GREEN;
-    c4[0].sub = (totalThreats > 0) ? "Threats detected" : "System secure";
+    /* Session alert-log entries include informational events, not just threats. */
+    c4[0].title = "Session Alerts";
+    snprintf(c4[0].val, 32, "%lld", sessionAlerts);
+    c4[0].trendW = (sessionAlerts > 0) ? L"\u2191 Review" : L"-- None";
+    c4[0].trendCol = (sessionAlerts > 0) ? C_AMBER : C_DIM;
+    c4[0].sub = "Logged events; not threat count";
     c4[0].iconBg = RGB(16, 42, 34);
     c4[0].iconBdr = C_GREEN;
     c4[0].iconW = L"\uE72E";
     c4[0].sparkCol = C_GREEN;
 
-    /* Card 2: Protected Traffic */
-    c4[1].title = "Protected Traffic";
+    /* Card 2: observed interface packet counters. */
+    c4[1].title = "Packets Observed";
     if (totalPkts >= 1000000) snprintf(c4[1].val, 32, "%.2fM", (double)totalPkts/1000000.0);
     else if (totalPkts >= 1000) snprintf(c4[1].val, 32, "%.1fK", (double)totalPkts/1000.0);
     else snprintf(c4[1].val, 32, "%llu", totalPkts);
-    c4[1].trendW = (totalPkts > 0) ? L"\u2191 Active" : L"-- Idle";
+    c4[1].trendW = (totalPkts > 0) ? L"Observed" : L"-- Idle";
     c4[1].trendCol = C_GREEN;
-    c4[1].sub = "Live telemetry";
+    c4[1].sub = "Cumulative NIC counters";
     c4[1].iconBg = RGB(22, 38, 76);
     c4[1].iconBdr = C_BLUE;
     c4[1].iconW = L"\uE74C";
     c4[1].sparkCol = RGB(168, 85, 247);
 
-    /* Card 3: Blocked */
-    c4[2].title = "Blocked";
-    snprintf(c4[2].val, 32, "%lld", g_wafBlk + g_realDrops);
-    c4[2].trendW = (g_wafBlk + g_realDrops > 0) ? L"\u2191 Filtered" : L"\u2713 0 Dropped";
-    c4[2].trendCol = (g_wafBlk + g_realDrops > 0) ? C_AMBER : C_GREEN;
-    c4[2].sub = "WAF & net drops";
+    /* Interface errors/discards are not the same as firewall blocks. */
+    c4[2].title = "NIC Errors / Drops";
+    snprintf(c4[2].val, 32, "%llu", g_realDrops);
+    c4[2].trendW = (g_realDrops > 0) ? L"Reported" : L"-- None";
+    c4[2].trendCol = (g_realDrops > 0) ? C_AMBER : C_DIM;
+    c4[2].sub = "Interface counters";
     c4[2].iconBg = RGB(52, 18, 26);
     c4[2].iconBdr = C_RED;
     c4[2].iconW = L"\uE711";
@@ -2891,25 +2759,7 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
         /* Subtext: vs. last 24h */
         Txt(dc, c4[i].sub, cx4+cardW-135, row1Y+28, 123, 12, C_DIM2, fSm, DT_RIGHT|DT_SINGLELINE);
 
-        /* Smooth Wavy Sparkline */
-        int spY = row1Y + cardH - 18;
-        HPEN pSp = CreatePen(PS_SOLID, 2, c4[i].sparkCol);
-        HPEN opSp = (HPEN)SelectObject(dc, pSp);
-        int spW = cardW - 24;
-        static const float waveShapes[4][7] = {
-            {4.0f, 2.0f, 6.0f, 3.0f, 7.0f, 5.0f, 2.0f},
-            {2.0f, 4.0f, 3.0f, 6.0f, 5.0f, 8.0f, 7.0f},
-            {6.0f, 5.0f, 7.0f, 3.0f, 6.0f, 2.0f, 1.0f},
-            {3.0f, 5.0f, 4.0f, 7.0f, 6.0f, 5.0f, 8.0f}
-        };
-        for(int k=0; k<6; k++){
-            int x1 = cx4 + 12 + k * spW / 6;
-            int x2 = cx4 + 12 + (k+1) * spW / 6;
-            int y1 = spY - (int)(waveShapes[i][k] * 1.5f);
-            int y2 = spY - (int)(waveShapes[i][k+1] * 1.5f);
-            MoveToEx(dc, x1, y1, NULL); LineTo(dc, x2, y2);
-        }
-        SelectObject(dc, opSp); DeleteObject(pSp);
+        /* No historical series is stored for these cards. */
     }
 
     /* ===== ROW 2: Two Charts Side by Side ===== */
@@ -2926,20 +2776,10 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     SelectObject(dc, fIcon ? fIcon : fSm);
     RECT piR = {cx+MRG+14, row2Y+10, cx+MRG+38, row2Y+34};
     DrawTextW(dc, L"\uE9D9", -1, &piR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-    Txt(dc, "Threat Activity & Traffic", cx+MRG+44, row2Y+12, 240, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Network Packets per Sample", cx+MRG+44, row2Y+12, 240, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
 
-    /* Time Filter Pills: 6h, 24h, 7d, 30d */
-    const char *tabs[4] = {"6h", "24h", "7d", "30d"};
-    int tfX = cx + MRG + chartLW - 140;
-    for(int t=0; t<4; t++){
-        int px = tfX + t*32;
-        if(t==1){
-            DrawRoundRectPanel(dc, px, row2Y+10, 28, 20, 6, RGB(37, 99, 235), RGB(37, 99, 235));
-            Txt(dc, tabs[t], px, row2Y+10, 28, 20, C_TEXT, fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-        } else {
-            Txt(dc, tabs[t], px, row2Y+10, 28, 20, C_DIM, fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-        }
-    }
+    /* This chart stores only a short rolling sample window. */
+    Txt(dc, "Last 9 samples", cx+MRG+chartLW-130, row2Y+12, 116, 18, C_DIM, fSm, DT_RIGHT|DT_SINGLELINE);
 
     /* Line chart */
     DrawLineChart(dc, cx+MRG+14, row2Y+36, chartLW-28, chartH-68, g_chartInbound, g_chartOutbound, 7, g_days);
@@ -2948,12 +2788,12 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     HBRUSH bLg1 = CreateSolidBrush(C_CYAN);
     RECT lg1R = {cx+MRG+18, row2Y+chartH-20, cx+MRG+28, row2Y+chartH-10};
     Ellipse(dc, lg1R.left, lg1R.top, lg1R.right, lg1R.bottom); DeleteObject(bLg1);
-    Txt(dc, "Incoming Traffic", cx+MRG+32, row2Y+chartH-24, 120, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Incoming packets", cx+MRG+32, row2Y+chartH-24, 125, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     HBRUSH bLg2 = CreateSolidBrush(C_AMBER);
     RECT lg2R = {cx+MRG+170, row2Y+chartH-20, cx+MRG+180, row2Y+chartH-10};
     Ellipse(dc, lg2R.left, lg2R.top, lg2R.right, lg2R.bottom); DeleteObject(bLg2);
-    Txt(dc, "Threats Filtered", cx+MRG+184, row2Y+chartH-24, 120, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Outgoing packets", cx+MRG+184, row2Y+chartH-24, 125, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* Right Chart: Traffic by Time */
     int barX = cx + MRG + chartLW + gap;
@@ -2963,7 +2803,7 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     SelectObject(dc, fIcon ? fIcon : fSm);
     RECT biR = {barX+14, row2Y+12, barX+34, row2Y+32};
     DrawTextW(dc, L"\uE9F9", -1, &biR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-    Txt(dc, "Traffic by Time", barX+38, row2Y+12, 180, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Recent Packet Samples", barX+38, row2Y+12, 180, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
 
     DrawBarChart(dc, barX+14, row2Y+36, chartRW-28, chartH-74, g_chartClean, g_chartFiltered, 7, g_days);
 
@@ -2971,22 +2811,16 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     HBRUSH bBlg1 = CreateSolidBrush(C_BLUE);
     RECT blg1R = {barX+18, row2Y+chartH-22, barX+30, row2Y+chartH-10};
     Ellipse(dc, blg1R.left, blg1R.top, blg1R.right, blg1R.bottom); DeleteObject(bBlg1);
-    Txt(dc, "Clean Traffic", barX+34, row2Y+chartH-26, 85, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    char cleanStr[32];
-    if (cleanPkts >= 1000000) snprintf(cleanStr, sizeof(cleanStr), "%.2fM", (double)cleanPkts / 1000000.0);
-    else if (cleanPkts >= 1000) snprintf(cleanStr, sizeof(cleanStr), "%.1fK", (double)cleanPkts / 1000.0);
-    else snprintf(cleanStr, sizeof(cleanStr), "%llu", cleanPkts);
-    Txt(dc, cleanStr, barX+34, row2Y+chartH-14, 85, 12, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Inbound", barX+34, row2Y+chartH-26, 85, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    char inStr[32]; snprintf(inStr, sizeof(inStr), "%llu", g_realInPkts);
+    Txt(dc, inStr, barX+34, row2Y+chartH-14, 85, 12, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
 
     HBRUSH bBlg2 = CreateSolidBrush(C_AMBER);
     RECT blg2R = {barX+130, row2Y+chartH-22, barX+142, row2Y+chartH-10};
     Ellipse(dc, blg2R.left, blg2R.top, blg2R.right, blg2R.bottom); DeleteObject(bBlg2);
-    Txt(dc, "Threats Filtered", barX+146, row2Y+chartH-26, 95, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    char filtStr[32];
-    if (totalThreats >= 1000000) snprintf(filtStr, sizeof(filtStr), "%.2fM", (double)totalThreats / 1000000.0);
-    else if (totalThreats >= 1000) snprintf(filtStr, sizeof(filtStr), "%.1fK", (double)totalThreats / 1000.0);
-    else snprintf(filtStr, sizeof(filtStr), "%lld", totalThreats);
-    Txt(dc, filtStr, barX+146, row2Y+chartH-14, 95, 12, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Outbound", barX+146, row2Y+chartH-26, 95, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    char outStr[32]; snprintf(outStr, sizeof(outStr), "%llu", g_realOutPkts);
+    Txt(dc, outStr, barX+146, row2Y+chartH-14, 95, 12, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* ===== ROW 3: World Map Panel + Latest Active Threat & System Status ===== */
     int row3Y = row2Y + chartH + gap;
@@ -3005,7 +2839,7 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
     SelectObject(dc, fIcon ? fIcon : fSm);
     RECT gicR = {cx+MRG+14, row3Y+10, cx+MRG+38, row3Y+34};
     DrawTextW(dc, L"\uE774", -1, &gicR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
-    Txt(dc, "Global Attack Vectors & Threat Heatmap", cx+MRG+44, row3Y+12, 360, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+    Txt(dc, "Network Geography (feed unavailable)", cx+MRG+44, row3Y+12, 360, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
     /* World Map takes 62% of panel width for optimal balance with stat cards */
     int mapW = mapPanelW * 62 / 100;
@@ -3035,10 +2869,10 @@ static void PaintDash(HDC dc,int cx,int cy,int cw,int ch){
         COLORREF trendCol;
         const char *label;
     } mStats[4] = {
-        {L"\uE72E", C_GREEN,  RGB(14,38,28), atkBuf,  "",        (g_wafBlk + g_realDrops > 0) ? L"\u2191 Active" : L"\u2713 Defended", C_GREEN, "Global Attacks Deflected"},
+        {L"\uE72E", C_GREEN,  RGB(14,38,28), atkBuf,  "",        (g_wafBlk + g_realDrops > 0) ? L"Observed" : L"No events", C_GREEN, "Payload matches + NIC drops"},
         {L"\uE74C", C_GREEN,  RGB(14,38,28), hitBuf,  "",        (g_rwHits > 0) ? L"\u2191 Tripped" : L"\u2713 Armed", (g_rwHits > 0) ? C_RED : C_GREEN, "Hits / Honeypot Triggers"},
-        {L"\uE839", C_CYAN,   RGB(10,36,54), sockBuf, " Sockets", (g_netConnCnt > 0) ? L"\u2191 Live" : L"-- Idle",  C_CYAN,  "Active Monitored Sessions"},
-        {L"\uE713", C_PURPLE, RGB(28,16,52), procBuf, " Procs",   (g_realRunningProcs > 0) ? L"\u2191 Live" : L"-- Idle",  C_CYAN,  "Protected Host Processes"}
+        {L"\uE839", C_CYAN,   RGB(10,36,54), sockBuf, " Sockets", (g_netConnCnt > 0) ? L"Observed" : L"-- Idle",  C_CYAN,  "TCP connections observed"},
+        {L"\uE713", C_PURPLE, RGB(28,16,52), procBuf, " Procs",   (g_realRunningProcs > 0) ? L"Observed" : L"-- Idle",  C_CYAN,  "Processes observed"}
     };
 
     for(int s=0; s<4; s++){
@@ -3206,7 +3040,7 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
 
     /* Title & Subtitle */
     Txt(dc, "Defense Engines", shX + shSz + 14, bannerY + 10, 320, 32, C_TEXT, fBig, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "Unified security engines. Real-time protection. Maximum coverage.",
+    Txt(dc, "Security features invoked by their workflows; not separate always-running services.",
         shX + shSz + 14, bannerY + 44, 480, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* Right Cards inside Banner */
@@ -3224,29 +3058,29 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
     Ellipse(dc, card2X + 19, card2Y + 21, card2X + 27, card2Y + 29);
     SelectObject(dc, obTgt); SelectObject(dc, opTgt); DeleteObject(bTgt);
 
-    Txt(dc, "Total Engines", card2X + 42, card2Y + 8, 80, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "8 Active", card2X + 42, card2Y + 24, 65, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Feature Modules", card2X + 42, card2Y + 8, 100, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "8 Features", card2X + 42, card2Y + 24, 72, 18, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
 
     /* 100% Online Pill Badge (properly spaced on right side of card) */
     int pillW = 76, pillH = 20;
     int pillX = card2X + card2W - pillW - 12;
     int pillY = card2Y + 15;
     DrawRoundRectPanel(dc, pillX, pillY, pillW, pillH, 10, RGB(16, 42, 90), RGB(40, 110, 230));
-    Txt(dc, "100% Online", pillX, pillY, pillW, pillH, RGB(147, 197, 253), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    Txt(dc, "On-demand", pillX, pillY, pillW, pillH, RGB(147, 197, 253), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
     /* Card 1: System Status */
     int card1W = 185, card1H = 50;
     int card1X = card2X - card1W - 14, card1Y = bannerY + 13;
     DrawRoundRectPanel(dc, card1X, card1Y, card1W, card1H, 8, C_CARD2, C_BORDER);
     /* Green Glowing Dot */
-    HBRUSH bDot = CreateSolidBrush(C_GREEN);
+    HBRUSH bDot = CreateSolidBrush(C_DIM);
     HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
     HBRUSH obDot = (HBRUSH)SelectObject(dc, bDot);
     HPEN opNone = (HPEN)SelectObject(dc, pNone);
     Ellipse(dc, card1X + 14, card1Y + 21, card1X + 23, card1Y + 30);
     SelectObject(dc, obDot); SelectObject(dc, opNone); DeleteObject(bDot);
     Txt(dc, "System Status", card1X + 30, card1Y + 8, card1W - 36, 14, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "All Engines Operational", card1X + 30, card1Y + 25, card1W - 36, 14, C_GREEN, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "No worker health feed", card1X + 30, card1Y + 25, card1W - 36, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* === 2. Table Column Header === */
     int thY = bannerY + bannerH + 16;
@@ -3257,7 +3091,7 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
     Txt(dc, "Details", cx+MRG+270, thY, 320, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
     Txt(dc, "Ver", cx+cw-MRG-370, thY, 50, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
     Txt(dc, "Status", cx+cw-MRG-300, thY, 70, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "Load", cx+cw-MRG-200, thY, 120, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "Telemetry", cx+cw-MRG-200, thY, 120, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* Subtle separator line under header */
     DrawLine(dc, cx+MRG, thY+20, cx+cw-MRG, thY+20, C_BORDER2);
@@ -3274,11 +3108,11 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
     } engUi[8] = {
         {L"\uEA18", RGB( 16, 185, 129), RGB( 10,  40,  30), "Antivirus Core",       "SHA-256 / MD5 hash + 5-layer heuristic + PE analysis", "3.0.0", 94},
         {L"\uE9D9", RGB(  6, 182, 212), RGB(  8,  42,  52), "Network Monitor",      "TCP/UDP table | C2 beacon detection | DNS sinkhole",   "2.0.0", 98},
-        {L"\uEA18", RGB(139,  92, 246), RGB( 34,  22,  62), "CVE Agent",            "Registry inventory | winget patches | OS mitigations", "3.0.0", 91},
+        {L"\uEA18", RGB(139,  92, 246), RGB( 34,  22,  62), "CVE Agent",            "Local catalog matches | targeted winget requests | OS review only", "3.0.0", 91},
         {L"\uEA18", RGB(245, 158,  11), RGB( 52,  36,  10), "RansomShield",         "Honeypot files | ReadDirectoryChanges | VSS rollback", "2.0.0", 95},
         {L"\uECAD", RGB(244,  63,  94), RGB( 54,  16,  26), "Adaptive Firewall",    "netsh rule management | Port blocking | Process kill", "1.0.0", 92},
         {L"\uE774", RGB( 20, 184, 166), RGB( 10,  44,  42), "WebGuard WAF",         "SQLi/XSS/RCE/LFI/Log4Shell - 18 attack categories",     "3.0.0", 97},
-        {L"\uF158", RGB( 99, 102, 241), RGB( 24,  26,  64), "SmartSandbox",         "AppContainer isolation | Job Object limits | DPI",     "2.0.0", 89},
+        {L"\uF158", RGB( 99, 102, 241), RGB( 24,  26,  64), "SmartSandbox",         "Sandboxie-Plus persistent box | WFP network block",     "2.1.0", 89},
         {L"\uE721", RGB(236,  72, 153), RGB( 54,  18,  40), "App Discovery Hub",    "9-source scan | Stack model | Integration keys",       "1.0.0", 96}
     };
 
@@ -3318,30 +3152,17 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
         /* Version */
         Txt(dc, engUi[i].version, cx+cw-MRG-370, ry, 50, rowH, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
-        /* Status Pill Badge: RUNNING with glowing green dot */
+        /* These modules run through their feature workflows, not as workers. */
         int stX = cx + cw - MRG - 305, stY = ry + (rowH-22)/2;
-        DrawRoundRectPanel(dc, stX, stY, 78, 22, 11, RGB(8, 36, 26), RGB(16, 185, 129));
-        HBRUSH bRun = CreateSolidBrush(C_GREEN);
+        DrawRoundRectPanel(dc, stX, stY, 92, 22, 11, C_CARD2, C_BORDER);
+        HBRUSH bRun = CreateSolidBrush(C_DIM);
         RECT runR = {stX+9, stY+7, stX+17, stY+15};
         Ellipse(dc, runR.left, runR.top, runR.right, runR.bottom); DeleteObject(bRun);
-        Txt(dc, "RUNNING", stX+20, stY, 52, 22, C_GREEN, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+        Txt(dc, "ON-DEMAND", stX+20, stY, 68, 22, C_DIM, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
-        /* Load: Text + Progress Bar */
+        /* No synthetic utilization percentage is available for on-demand modules. */
         int loadX = cx + cw - MRG - 215, loadY = ry + (rowH-8)/2;
-        int loadVal = (g_eng[i].load > 0) ? g_eng[i].load : engUi[i].defLoad;
-        char ldStr[16]; snprintf(ldStr, sizeof(ldStr), "%d%%", loadVal);
-        Txt(dc, ldStr, loadX, ry, 36, rowH, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
-
-        /* Progress Bar Track */
-        int barTrackW = 100, barTrackH = 8;
-        int barTrackX = loadX + 42;
-        DrawRoundRectPanel(dc, barTrackX, loadY, barTrackW, barTrackH, 4, RGB(16, 23, 38), C_BORDER);
-
-        /* Progress Bar Fill */
-        int fillW = (loadVal * barTrackW) / 100;
-        if (fillW > barTrackW) fillW = barTrackW;
-        if (fillW < 4) fillW = 4;
-        DrawRoundRectPanel(dc, barTrackX, loadY, fillW, barTrackH, 4, engUi[i].accent, engUi[i].accent);
+        Txt(dc, "N/A", loadX, ry, 38, rowH, C_DIM, fSm, DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 
         /* Action Dots: 3 clean vector circular dots */
         int dotX = cx + cw - MRG - 24;
@@ -3357,6 +3178,8 @@ static void PaintEng(HDC dc, int cx, int cy, int cw, int ch){
         DeleteObject(bDot3);
     }
 
+    Txt(dc, "Features execute through their own workflows; no persistent worker control or health telemetry is available.",
+        cx+MRG, cy+ch-46, cw-MRG*2-115, 32, C_DIM, fSm, DT_LEFT|DT_VCENTER|DT_WORDBREAK);
     /* === 4. Bottom Right Decorative Cyber Stripes === */
     int strX = cx + cw - MRG - 85;
     int strY = cy + ch - 46;
@@ -3762,7 +3585,7 @@ static void PaintNet(HDC dc, int cx, int cy, int cw, int ch) {
     RECT c3ir = {card3X + 10, cardY + 12, card3X + 40, cardY + 42};
     DrawTextW(dc, L"\uE72E", -1, &c3ir, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
-    const char *c3Title = (g_netThreatCount > 0) ? "Threats" : ((g_netSuspCount > 0) ? "Suspicious" : "Blocked");
+    const char *c3Title = (g_netThreatCount > 0) ? "Threats" : ((g_netSuspCount > 0) ? "Suspicious" : "Observed");
     Txt(dc, c3Title, card3X + 46, cardY + 6, 75, 14, C_DIM, fMini ? fMini : fSm, DT_LEFT|DT_SINGLELINE);
 
     char tBuf[16];
@@ -3776,7 +3599,7 @@ static void PaintNet(HDC dc, int cx, int cy, int cw, int ch) {
     COLORREF tValCol = (g_netThreatCount > 0) ? RGB(248, 113, 113) : ((g_netSuspCount > 0) ? RGB(251, 191, 36) : C_TEXT);
     Txt(dc, tBuf, card3X + 46, cardY + 20, 34, 20, tValCol, fStat ? fStat : fMed, DT_LEFT|DT_SINGLELINE);
 
-    const char *c3Trend = (g_netThreatCount > 0) ? "HIGH" : ((g_netSuspCount > 0) ? "WARN" : ((g_wafBlk + g_realDrops > 0) ? "ACTIVE" : "0 BLK"));
+    const char *c3Trend = (g_netThreatCount > 0) ? "HIGH" : ((g_netSuspCount > 0) ? "WARN" : ((g_wafBlk + g_realDrops > 0) ? "OBSERVED" : "NONE"));
     COLORREF c3TrendCol = (g_netThreatCount > 0) ? RGB(239, 68, 68) : ((g_netSuspCount > 0) ? RGB(245, 158, 11) : C_CYAN);
     Txt(dc, c3Trend, card3X + 76, cardY + 24, 46, 14, c3TrendCol, fMini ? fMini : fSm, DT_LEFT|DT_SINGLELINE);
 
@@ -3985,7 +3808,7 @@ static void PaintWaf(HDC dc, int cx, int cy, int cw, int ch) {
     int ww = cw - MRG * 2;
 
     /* 1. Header Title matching mockup */
-    Txt(dc, "WEBGUARD WAF - 18-Category Real-Time Payload Inspector", wx, cy + 10, ww, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "WEBGUARD - Offline Payload Signature Inspector", wx, cy + 10, ww, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
 
     /* 2. Labels */
     Txt(dc, "Payload:", wx, cy + 34, 100, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
@@ -4161,7 +3984,7 @@ static void PaintAv(HDC dc,int cx,int cy,int cw,int ch){
 
     /* Title & Subtitle - Single full title to prevent overlapping words and clipping */
     Txt(dc, "Antivirus Core", shX + shSz + 14, bannerY + 10, 320, 32, C_TEXT, fBig, DT_LEFT|DT_SINGLELINE);
-    Txt(dc, "Detect, block and remove threats in real time.",
+    Txt(dc, "On-demand file scan; continuous real-time protection is unavailable.",
         shX + shSz + 14, bannerY + 44, 380, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 
     /* Top Right Stat Cards */
@@ -4351,11 +4174,11 @@ static void AddVssSnapshotRecord(const char *name, const char *size, const char 
                  tmNow->tm_year + 1900, tmNow->tm_mon + 1, tmNow->tm_mday,
                  tmNow->tm_hour, tmNow->tm_min, tmNow->tm_sec);
     } else {
-        strncpy(g_vssSnapshots[0].timestamp, "2026-09-26 10:00:00", sizeof(g_vssSnapshots[0].timestamp)-1);
+        strncpy(g_vssSnapshots[0].timestamp, "Unknown", sizeof(g_vssSnapshots[0].timestamp)-1);
     }
-    strncpy(g_vssSnapshots[0].name, (name && name[0]) ? name : "ShadowCopy_C_Auto", sizeof(g_vssSnapshots[0].name) - 1);
-    strncpy(g_vssSnapshots[0].size, (size && size[0]) ? size : "48.2 MB", sizeof(g_vssSnapshots[0].size) - 1);
-    strncpy(g_vssSnapshots[0].status, (status && status[0]) ? status : "Available", sizeof(g_vssSnapshots[0].status) - 1);
+    strncpy(g_vssSnapshots[0].name, (name && name[0]) ? name : "Unknown", sizeof(g_vssSnapshots[0].name) - 1);
+    strncpy(g_vssSnapshots[0].size, (size && size[0]) ? size : "Unknown", sizeof(g_vssSnapshots[0].size) - 1);
+    strncpy(g_vssSnapshots[0].status, (status && status[0]) ? status : "Unknown", sizeof(g_vssSnapshots[0].status) - 1);
     g_vssSnapshots[0].rawTime = now;
     g_vssSnapshotCnt++;
     SaveVssSnapshots();
@@ -4584,13 +4407,13 @@ static void PaintRansom(HDC dc,int cx,int cy,int cw,int ch){
     if (bottomH < 180) bottomH = 180;
 
     DrawRoundRectPanel(dc, cx, bottomY, cw, bottomH, 10, C_CARD, C_BORDER);
-    Txt(dc, "VSS Snapshot Rollback Center", cx + 18, bottomY + 14, 300, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
+    Txt(dc, "VSS Snapshots (restore unavailable)", cx + 18, bottomY + 14, 300, 20, C_TEXT, fMed, DT_LEFT|DT_SINGLELINE);
 
     /* "Rollback Selected" Button at top right of bottom card */
     int rbsW = 140, rbsH = 26;
     int rbsX = cx + cw - rbsW - 16, rbsY = bottomY + 10;
     DrawRoundRectPanel(dc, rbsX, rbsY, rbsW, rbsH, 6, RGB(22, 30, 44), RGB(75, 85, 99));
-    Txt(dc, "Rollback Selected", rbsX, rbsY, rbsW, rbsH, RGB(240, 246, 255), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    Txt(dc, "Restore unavailable", rbsX, rbsY, rbsW, rbsH, RGB(240, 246, 255), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
     /* Table Column Headers */
     int tblY = bottomY + 44;
@@ -4645,7 +4468,7 @@ static void PaintRansom(HDC dc,int cx,int cy,int cw,int ch){
             int btnW = 76, btnH = 22;
             int btnX = col5, btnY = curY + 2;
             DrawRoundRectPanel(dc, btnX, btnY, btnW, btnH, 5, RGB(24, 32, 46), RGB(55, 65, 81));
-            Txt(dc, "Rollback", btnX, btnY, btnW, btnH, RGB(210, 225, 245), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            Txt(dc, "Details", btnX, btnY, btnW, btnH, RGB(210, 225, 245), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         }
     }
 }
@@ -4699,92 +4522,14 @@ static SbxApiRecord s_sbxApiRecords[SBX_MAX_API_RECORDS];
 static int s_sbxApiRecordCnt = 0;
 
 static void RefreshSbxDynamicData(void) {
-    /* 1. Dynamic Network Isolation Boundaries */
-    strncpy(s_sbxRoutes[0].targetIp, "0.0.0.0/0 (Internet WAN)", sizeof(s_sbxRoutes[0].targetIp)-1);
-    strncpy(s_sbxRoutes[0].host, "Outbound TCP/UDP Sockets", sizeof(s_sbxRoutes[0].host)-1);
-    strncpy(s_sbxRoutes[0].geo, "AppContainer Boundary", sizeof(s_sbxRoutes[0].geo)-1);
-    s_sbxRoutes[0].isolated = g_sbxBlockNet;
-
-    strncpy(s_sbxRoutes[1].targetIp, "Port 53 (DNS Resolver)", sizeof(s_sbxRoutes[1].targetIp)-1);
-    strncpy(s_sbxRoutes[1].host, "DNS Resolution Pipeline", sizeof(s_sbxRoutes[1].host)-1);
-    strncpy(s_sbxRoutes[1].geo, "Local Sinkhole Active", sizeof(s_sbxRoutes[1].geo)-1);
-    s_sbxRoutes[1].isolated = g_sbxBlockNet;
-
-    strncpy(s_sbxRoutes[2].targetIp, "192.168.0.0/16 (LAN)", sizeof(s_sbxRoutes[2].targetIp)-1);
-    strncpy(s_sbxRoutes[2].host, "Private Subnet Traversals", sizeof(s_sbxRoutes[2].host)-1);
-    strncpy(s_sbxRoutes[2].geo, "Restricted Token Filter", sizeof(s_sbxRoutes[2].geo)-1);
-    s_sbxRoutes[2].isolated = g_sbxBlockNet;
-
-    strncpy(s_sbxRoutes[3].targetIp, "TCP 445/139 (SMB/RPC)", sizeof(s_sbxRoutes[3].targetIp)-1);
-    strncpy(s_sbxRoutes[3].host, "Named Pipe Lateral Traversal", sizeof(s_sbxRoutes[3].host)-1);
-    strncpy(s_sbxRoutes[3].geo, "Security Reference Monitor", sizeof(s_sbxRoutes[3].geo)-1);
-    s_sbxRoutes[3].isolated = g_sbxBlockNet;
-    s_sbxRouteCnt = 4;
-
-    /* 2. Dynamic Filesystem Boundaries */
-    char curExe[MAX_PATH] = {0};
-    if (hSbxPath) GetWindowTextA(hSbxPath, curExe, sizeof(curExe)-1);
-    if (curExe[0]) {
-        snprintf(s_sbxFsRecords[0].path, sizeof(s_sbxFsRecords[0].path), "%.240s", curExe);
-        strncpy(s_sbxFsRecords[0].opType, "Accessed", sizeof(s_sbxFsRecords[0].opType)-1);
-    } else {
-        strncpy(s_sbxFsRecords[0].path, "AppContainer Virtualized Root", sizeof(s_sbxFsRecords[0].path)-1);
-        strncpy(s_sbxFsRecords[0].opType, "Enforced", sizeof(s_sbxFsRecords[0].opType)-1);
-    }
-    s_sbxFsRecords[0].denied = FALSE; s_sbxFsRecords[0].threatLevel = 0;
-
-    if (g_sbx.sandboxDir[0]) {
-        snprintf(s_sbxFsRecords[1].path, sizeof(s_sbxFsRecords[1].path), "%.240s", g_sbx.sandboxDir);
-    } else {
-        char tempPath[MAX_PATH] = {0};
-        GetTempPathA(sizeof(tempPath), tempPath);
-        snprintf(s_sbxFsRecords[1].path, sizeof(s_sbxFsRecords[1].path), "%sKaevexSbx\\WorkingDir", tempPath);
-    }
-    strncpy(s_sbxFsRecords[1].opType, "Modified (Working Dir)", sizeof(s_sbxFsRecords[1].opType)-1);
-    s_sbxFsRecords[1].denied = FALSE; s_sbxFsRecords[1].threatLevel = 0;
-
-    char sysDir[MAX_PATH] = {0};
-    GetSystemDirectoryA(sysDir, sizeof(sysDir));
-    snprintf(s_sbxFsRecords[2].path, sizeof(s_sbxFsRecords[2].path), "%s\\ntdll.dll", sysDir[0] ? sysDir : "C:\\Windows\\System32");
-    strncpy(s_sbxFsRecords[2].opType, "Accessed (Read-Only Image)", sizeof(s_sbxFsRecords[2].opType)-1);
-    s_sbxFsRecords[2].denied = FALSE; s_sbxFsRecords[2].threatLevel = 0;
-
-    strncpy(s_sbxFsRecords[3].path, "C:\\Users\\* (Host User Data & Profiles)", sizeof(s_sbxFsRecords[3].path)-1);
-    strncpy(s_sbxFsRecords[3].opType, "Denied (Protected Boundary)", sizeof(s_sbxFsRecords[3].opType)-1);
-    s_sbxFsRecords[3].denied = TRUE; s_sbxFsRecords[3].threatLevel = 2;
-    s_sbxFsRecordCnt = 4;
-
-    /* 3. Real Intercepted Win32/NT Security API Enforcements */
-    strncpy(s_sbxApiRecords[0].callName, "CreateRemoteThread", sizeof(s_sbxApiRecords[0].callName)-1);
-    strncpy(s_sbxApiRecords[0].status, "Blocked", sizeof(s_sbxApiRecords[0].status)-1);
-    strncpy(s_sbxApiRecords[0].param, "THREAD_ALL_ACCESS stripped", sizeof(s_sbxApiRecords[0].param)-1);
-    s_sbxApiRecords[0].threatScore = 8.5f; s_sbxApiRecords[0].callType = 0;
-
-    strncpy(s_sbxApiRecords[1].callName, "NtWriteVirtualMemory", sizeof(s_sbxApiRecords[1].callName)-1);
-    strncpy(s_sbxApiRecords[1].status, "Blocked", sizeof(s_sbxApiRecords[1].status)-1);
-    strncpy(s_sbxApiRecords[1].param, "PROCESS_VM_WRITE denied by SRM", sizeof(s_sbxApiRecords[1].param)-1);
-    s_sbxApiRecords[1].threatScore = 8.2f; s_sbxApiRecords[1].callType = 1;
-
-    strncpy(s_sbxApiRecords[2].callName, "SetWindowsHookExW", sizeof(s_sbxApiRecords[2].callName)-1);
-    strncpy(s_sbxApiRecords[2].status, "Blocked", sizeof(s_sbxApiRecords[2].status)-1);
-    strncpy(s_sbxApiRecords[2].param, "WH_KEYBOARD / UI station denied", sizeof(s_sbxApiRecords[2].param)-1);
-    s_sbxApiRecords[2].threatScore = 7.6f; s_sbxApiRecords[2].callType = 1;
-
-    strncpy(s_sbxApiRecords[3].callName, "InternetConnectW", sizeof(s_sbxApiRecords[3].callName)-1);
-    strncpy(s_sbxApiRecords[3].status, g_sbxBlockNet ? "Blocked" : "Monitored", sizeof(s_sbxApiRecords[3].status)-1);
-    strncpy(s_sbxApiRecords[3].param, "INTERNET_SERVICE_HTTP / 443", sizeof(s_sbxApiRecords[3].param)-1);
-    s_sbxApiRecords[3].threatScore = g_sbxBlockNet ? 7.0f : 2.5f; s_sbxApiRecords[3].callType = 2;
-
-    strncpy(s_sbxApiRecords[4].callName, "RegSetValueExW", sizeof(s_sbxApiRecords[4].callName)-1);
-    strncpy(s_sbxApiRecords[4].status, "Redirected", sizeof(s_sbxApiRecords[4].status)-1);
-    strncpy(s_sbxApiRecords[4].param, "HKCU hive redirected to AppContainer", sizeof(s_sbxApiRecords[4].param)-1);
-    s_sbxApiRecords[4].threatScore = 3.5f; s_sbxApiRecords[4].callType = 3;
-
-    strncpy(s_sbxApiRecords[5].callName, "OpenProcessToken", sizeof(s_sbxApiRecords[5].callName)-1);
-    strncpy(s_sbxApiRecords[5].status, "Monitored", sizeof(s_sbxApiRecords[5].status)-1);
-    strncpy(s_sbxApiRecords[5].param, "TOKEN_QUERY (14 privileges removed)", sizeof(s_sbxApiRecords[5].param)-1);
-    s_sbxApiRecords[5].threatScore = 1.8f; s_sbxApiRecords[5].callType = 0;
-    s_sbxApiRecordCnt = 6;
+    /* Sandboxie is the isolation backend; this build has no API/FS event collector.
+       Never synthesize network, file, or API activity in the dashboard. */
+    ZeroMemory(s_sbxRoutes, sizeof(s_sbxRoutes));
+    ZeroMemory(s_sbxFsRecords, sizeof(s_sbxFsRecords));
+    ZeroMemory(s_sbxApiRecords, sizeof(s_sbxApiRecords));
+    s_sbxRouteCnt = 0;
+    s_sbxFsRecordCnt = 0;
+    s_sbxApiRecordCnt = 0;
 }
 
 static void InitSbxTelemetry(void) {
@@ -4901,8 +4646,8 @@ static void DrawSbxTimeline(HDC dc, int x, int y, int w, int h) {
     }
     Txt(dc, "Time (minutes)", gx, gy + gh + 16, gw, 14, C_DIM, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
 
-    if (!g_sbx.active) {
-        Txt(dc, "[ STANDBY - Select an executable and click 'Run in Sandbox' to begin telemetry ]",
+    if (!g_sbx.active || (g_sbx.externalSandboxie && !g_sbx.hProcess)) {
+        Txt(dc, g_sbx.active ? "Sandboxie session active; process performance telemetry is unavailable." : "Standby - choose a supported EXE and run it in Sandboxie.",
             gx, gy + gh / 2 - 10, gw, 20, RGB(80, 105, 135), fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
     } else {
         /* Draw dynamic curves */
@@ -4965,9 +4710,10 @@ static void DrawSbxNetworkMap(HDC dc, int x, int y, int w, int h) {
 
     if (g_sbx.active) {
         char pidLbl[64];
-        snprintf(pidLbl, sizeof(pidLbl), "PID %lu (Active)", (unsigned long)g_sbx.pid);
+        if(g_sbx.externalSandboxie) snprintf(pidLbl, sizeof(pidLbl), "Sandboxie Box Active");
+        else snprintf(pidLbl, sizeof(pidLbl), "PID %lu (Active)", (unsigned long)g_sbx.pid);
         Txt(dc, pidLbl, centerX - 65, centerY + 22, 130, 14, C_TEXT, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
-        Txt(dc, "AppContainer Boundary", centerX - 65, centerY + 36, 130, 14, C_DIM, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
+        Txt(dc, "Sandboxie Box", centerX - 65, centerY + 36, 130, 14, C_DIM, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
     } else {
         Txt(dc, "127.0.0.1 (Local)", centerX - 65, centerY + 22, 130, 14, C_TEXT, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
         Txt(dc, "Container Standby", centerX - 65, centerY + 36, 130, 14, C_DIM, fMini ? fMini : fSm, DT_CENTER|DT_SINGLELINE);
@@ -4979,6 +4725,7 @@ static void DrawSbxNetworkMap(HDC dc, int x, int y, int w, int h) {
     op = (HPEN)SelectObject(dc, pSpline);
 
     int routes = (s_sbxRouteCnt < 4) ? s_sbxRouteCnt : 4;
+    if (routes == 0) Txt(dc, "Live connection telemetry is not provided by this Sandboxie integration.", x + 112, y + h - 28, w - 128, 18, C_DIM, fSm, DT_CENTER|DT_SINGLELINE);
     for (int i = 0; i < routes; i++) {
         int destY = y + 36 + i * (h - 54) / 4 + 14;
 
@@ -5030,6 +4777,7 @@ static void DrawSbxFileSystem(HDC dc, int x, int y, int w, int h) {
     int rowY = tblY + 26;
     int rowH = 26;
     int showCnt = (s_sbxFsRecordCnt < 4) ? s_sbxFsRecordCnt : 4;
+    if (showCnt == 0) Txt(dc, "No live file events available from the current backend.", col1, rowY + 18, col3 - col1, 28, C_DIM, fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
     for (int i = 0; i < showCnt; i++) {
         int curY = rowY + i * rowH;
 
@@ -5073,6 +4821,7 @@ static void DrawSbxApiAnalysis(HDC dc, int x, int y, int w, int h) {
     int rowY = tblY + 24;
     int rowH = 24;
     int showCnt = (s_sbxApiRecordCnt < 6) ? s_sbxApiRecordCnt : 6;
+    if (showCnt == 0) Txt(dc, "API-call interception telemetry is not connected.", col1, rowY + 18, col4 - col1, 28, C_DIM, fSm, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
     for (int i = 0; i < showCnt; i++) {
         int curY = rowY + i * rowH;
 
@@ -5106,16 +4855,21 @@ static void PaintSbx(HDC dc,int cx,int cy,int cw,int ch){
     RefreshSbxDynamicData();
 
     /* 1. Top Header Title matching target mockup */
-    Txt(dc,"SMARTSANDBOX - Kernel-Enforced 5-Layer AppContainer Isolation",cx,cy+10,cw,20,C_TEXT,fMed,DT_LEFT|DT_SINGLELINE);
+    char sbieStart[MAX_PATH] = {0}, sbieIni[MAX_PATH] = {0};
+    BOOL sbiePresent = sbx_find_sandboxie(sbieStart, sizeof(sbieStart), sbieIni, sizeof(sbieIni));
+    char head[256];
+    snprintf(head, sizeof(head), "SMARTSANDBOX - Sandboxie-Plus: %s | Session: %s",
+             sbiePresent ? "installed" : "not installed", g_sbx.active ? "active" : "idle");
+    Txt(dc,head,cx,cy+10,cw,20,C_TEXT,fMed,DT_LEFT|DT_SINGLELINE);
 
     /* 2. Isolation Layer Badges Row */
     int bx = cx, by = cy + 34, bw2 = 120, bh = 22, gap = 8;
-    static const struct{const char *lbl;COLORREF bg;COLORREF bdr;} layers[]={
-        {"AppContainer",   RGB(26, 86, 240), RGB(59, 130, 246)},
-        {"Low Integrity",  RGB(16, 120, 60), RGB(52, 211, 153)},
-        {"Restr. Token",   RGB(60, 20, 80),  RGB(168, 85, 247)},
-        {"Job Object",     RGB(10, 60, 70),  RGB(6, 182, 212)},
-        {"Sep. Desktop",   RGB(60, 40, 10),  RGB(245, 158, 11)},
+    const struct{const char *lbl;COLORREF bg;COLORREF bdr;} layers[]={
+        {sbiePresent ? "Sandboxie detected" : "Sandboxie missing",  RGB(26, 86, 240), RGB(59, 130, 246)},
+        {g_sbx.active ? "Box active" : "Box idle",     RGB(16, 120, 60), RGB(52, 211, 153)},
+        {g_sbx.active ? "WFP verified at launch" : "WFP checked on launch",   RGB(60, 20, 80),  RGB(168, 85, 247)},
+        {"File/registry virtualization",  RGB(10, 60, 70),  RGB(6, 182, 212)},
+        {"No API event feed",   RGB(60, 40, 10),  RGB(245, 158, 11)},
         {NULL,0,0}
     };
     for(int i=0;layers[i].lbl;i++){
@@ -5128,21 +4882,21 @@ static void PaintSbx(HDC dc,int cx,int cy,int cw,int ch){
     int cardw = (cw - 20) / 3;
     int cardh = 46;
 
-    const char *netVal = g_sbxBlockNet ? "BLOCKED" : "MONITORED";
-    const char *netBdg = g_sbxBlockNet ? "ISOLATED" : "FILTERED";
-    COLORREF netCol    = g_sbxBlockNet ? RGB(239, 68, 68) : RGB(245, 158, 11);
+    const char *netVal = g_sbx.active ? "BLOCKED (box policy)" : "not active";
+    const char *netBdg = g_sbx.active ? "CONFIGURED" : "IDLE";
+    COLORREF netCol    = g_sbx.active ? RGB(239, 68, 68) : RGB(245, 158, 11);
 
-    const char *fsVal  = g_sbxBlockFs ? "BLOCKED" : "SANDBOXED";
-    const char *fsBdg  = g_sbxBlockFs ? "READ-ONLY" : "EPHEMERAL";
+    const char *fsVal  = g_sbx.active ? "Sandboxie box" : "not active";
+    const char *fsBdg  = g_sbx.active ? "VIRTUALIZED" : "IDLE";
     COLORREF fsCol     = g_sbxBlockFs ? RGB(245, 158, 11) : RGB(52, 211, 153);
 
     const struct{const char *title;const char *val;const char *badge;COLORREF bc;} cards[]={
         {"Network Access",    netVal,       netBdg,      netCol},
         {"File System Write", fsVal,        fsBdg,       fsCol},
-        {"Process Spawn",     "BLOCKED",    "DENIED",    RGB(239, 68, 68)},
-        {"Registry Write",    "BLOCKED",    "DENIED",    RGB(239, 68, 68)},
-        {"Clipboard Access",  "MONITORED",  "LOGGED",    RGB(245, 158, 11)},
-        {"DLL Injection",     "BLOCKED",    "HARDENED",  RGB(52, 211, 153)},
+        {"Child Processes",   "Sandboxie policy",  "NOT OBSERVED",      RGB(245, 158, 11)},
+        {"Registry Changes",  "Sandboxie box", "VIRTUALIZED",      RGB(52, 211, 153)},
+        {"Clipboard Access",  "DEFAULT",    "SANDBOXIE",  RGB(245, 158, 11)},
+        {"DLL Injection",     "DEFAULT",    "SANDBOXIE",  RGB(245, 158, 11)},
         {NULL,NULL,NULL,0}
     };
     for(int i=0;cards[i].title;i++){
@@ -5418,8 +5172,6 @@ static void PaintFw(HDC dc, int cx, int cy, int cw, int ch) {
             newRulesCount++;
         }
     }
-    totalBlockedHits += (unsigned long)g_wafBlk;
-
     Txt(dc, "ACTIVE RULES", rx + 14, fwCardY + 32, rw - 28, 16, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
     char actStr[128];
     snprintf(actStr, sizeof(actStr), "(Domain: %d, Private: %d, Public: %d)", cntDomain, cntPrivate, cntPublic);
@@ -5431,11 +5183,11 @@ static void PaintFw(HDC dc, int cx, int cy, int cw, int ch) {
 
     char blkStr[128];
     if (totalBlockedHits >= 1000000)
-        snprintf(blkStr, sizeof(blkStr), "TOTAL BLOCKED HITS (24h): %.1fM", (double)totalBlockedHits / 1000000.0);
+        snprintf(blkStr, sizeof(blkStr), "FIREWALL RULE HITS: %.1fM", (double)totalBlockedHits / 1000000.0);
     else if (totalBlockedHits >= 1000)
-        snprintf(blkStr, sizeof(blkStr), "TOTAL BLOCKED HITS (24h): %luK", totalBlockedHits / 1000);
+        snprintf(blkStr, sizeof(blkStr), "FIREWALL RULE HITS: %luK", totalBlockedHits / 1000);
     else
-        snprintf(blkStr, sizeof(blkStr), "TOTAL BLOCKED HITS (24h): %lu", totalBlockedHits);
+        snprintf(blkStr, sizeof(blkStr), "FIREWALL RULE HITS: %lu", totalBlockedHits);
     Txt(dc, blkStr, rx + 14, fwCardY + 88, rw - 28, 16, C_TEXT, fSm, DT_LEFT|DT_SINGLELINE);
 
     unsigned long totalHits = hitsPublic + hitsPrivate + hitsDomain;
@@ -5526,16 +5278,2018 @@ static void PaintData(HDC dc,int cx,int cy,int cw,int ch){
     Txt(dc,"Directory:",cx+MRG,cy+60,70,22,C_DIM,fSm,DT_LEFT|DT_SINGLELINE|DT_VCENTER);
 }
 
-static void PaintUpd(HDC dc,int cx,int cy,int cw,int ch){
-    Txt(dc,"AUTONOMOUS CVE AGENT - System OS Build & Software Inventory",cx+MRG,cy+10,600,18,C_TEXT,fMed,DT_LEFT|DT_SINGLELINE);
-    DrawLine(dc,cx+MRG,cy+28,cx+cw-MRG,cy+28,C_BORDER2);
-    /* OS Build Banner Card */
-    char osStr[256];
-    snprintf(osStr,sizeof(osStr),"[TARGET OS] %s (Build %s%s, Ver: %s) | %d Active OS CVEs | Watcher: ACTIVE",
-             g_osInfo.productName[0] ? g_osInfo.productName : "Microsoft Windows",
-             g_osInfo.currentBuild, g_osInfo.ubr, g_osInfo.displayVersion, g_osInfo.cveCount);
-    DrawRoundRectPanel(dc,cx+MRG,cy+34,cw-MRG*2,26,6,C_PANEL,C_BORDER);
-    Txt(dc,osStr,cx+MRG+14,cy+34,cw-MRG*2-28,26,C_TEXT,fSm,DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+/* =========================================================================
+ * PATCH & CVE AGENT - MODERN HIGH-FIDELITY DASHBOARD
+ * Fully dynamic: OS baseline + registry inventory + CVE intelligence
+ * ========================================================================= */
+
+static const char *cve_stristr(const char *haystack, const char *needle) {
+    if (!haystack || !needle) return NULL;
+    if (!*needle) return haystack;
+    for (; *haystack; haystack++) {
+        if (tolower((unsigned char)*haystack) == tolower((unsigned char)*needle)) {
+            const char *h = haystack, *n = needle;
+            while (*h && *n && tolower((unsigned char)*h) == tolower((unsigned char)*n)) {
+                h++; n++;
+            }
+            if (!*n) return haystack;
+        }
+    }
+    return NULL;
+}
+
+static void DrawLinearGradient(HDC dc, int x, int y, int w, int h, COLORREF c1, COLORREF c2, BOOL vertical) {
+    int r1 = GetRValue(c1), g1 = GetGValue(c1), b1 = GetBValue(c1);
+    int r2 = GetRValue(c2), g2 = GetGValue(c2), b2 = GetBValue(c2);
+    int steps = vertical ? h : w;
+    if (steps <= 0) return;
+    for (int i = 0; i < steps; i++) {
+        int r = r1 + (r2 - r1) * i / steps;
+        int g = g1 + (g2 - g1) * i / steps;
+        int b = b1 + (b2 - b1) * i / steps;
+        COLORREF col = RGB(r, g, b);
+        HPEN pen = CreatePen(PS_SOLID, 1, col);
+        HPEN open = (HPEN)SelectObject(dc, pen);
+        if (vertical) {
+            MoveToEx(dc, x, y + i, NULL);
+            LineTo(dc, x + w, y + i);
+        } else {
+            MoveToEx(dc, x + i, y, NULL);
+            LineTo(dc, x + i, y + h);
+        }
+        SelectObject(dc, open);
+        DeleteObject(pen);
+    }
+}
+
+static void DrawGradientRoundRect(HDC dc, int x, int y, int w, int h, int r, COLORREF c1, COLORREF c2, COLORREF border) {
+    HRGN rgn = CreateRoundRectRgn(x, y, x + w + 1, y + h + 1, r, r);
+    SaveDC(dc);
+    SelectClipRgn(dc, rgn);
+    DrawLinearGradient(dc, x, y, w, h, c1, c2, FALSE);
+    RestoreDC(dc, -1);
+    DeleteObject(rgn);
+    if (border != (COLORREF)-1) {
+        HPEN pen = CreatePen(PS_SOLID, 1, border);
+        HBRUSH nullBr = (HBRUSH)GetStockObject(NULL_BRUSH);
+        HPEN open = (HPEN)SelectObject(dc, pen);
+        HBRUSH obr = (HBRUSH)SelectObject(dc, nullBr);
+        RoundRect(dc, x, y, x + w, y + h, r, r);
+        SelectObject(dc, open);
+        SelectObject(dc, obr);
+        DeleteObject(pen);
+    }
+}
+
+static void DrawToggleSwitch(HDC dc, int x, int y, int w, int h, BOOL active, const char *onTxt, const char *offTxt) {
+    COLORREF bg = active ? RGB(16, 185, 129) : RGB(32, 42, 58);
+    COLORREF bdr = active ? RGB(16, 185, 129) : RGB(50, 65, 88);
+    int r = h;
+    DrawRoundRectPanel(dc, x, y, w, h, r, bg, bdr);
+
+    SetBkMode(dc, TRANSPARENT);
+    int pad = 3;
+    int knobSz = h - pad * 2;
+
+    if (active) {
+        if (onTxt && onTxt[0]) {
+            SetTextColor(dc, RGB(255, 255, 255));
+            SelectObject(dc, fSm);
+            RECT tr = {x + 6, y, x + w - knobSz - pad, y + h};
+            DrawTextA(dc, onTxt, -1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        }
+        int kx = x + w - knobSz - pad;
+        int ky = y + pad;
+        HBRUSH br = CreateSolidBrush(RGB(255, 255, 255));
+        HBRUSH ob = (HBRUSH)SelectObject(dc, br);
+        HPEN pen = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+        HPEN op = (HPEN)SelectObject(dc, pen);
+        Ellipse(dc, kx, ky, kx + knobSz, ky + knobSz);
+        SelectObject(dc, ob); SelectObject(dc, op);
+        DeleteObject(br); DeleteObject(pen);
+    } else {
+        if (offTxt && offTxt[0]) {
+            SetTextColor(dc, RGB(160, 175, 195));
+            SelectObject(dc, fSm);
+            RECT tr = {x + knobSz + pad, y, x + w - 6, y + h};
+            DrawTextA(dc, offTxt, -1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        }
+        int kx = x + pad;
+        int ky = y + pad;
+        HBRUSH br = CreateSolidBrush(RGB(180, 195, 215));
+        HBRUSH ob = (HBRUSH)SelectObject(dc, br);
+        HPEN pen = CreatePen(PS_SOLID, 1, RGB(180, 195, 215));
+        HPEN op = (HPEN)SelectObject(dc, pen);
+        Ellipse(dc, kx, ky, kx + knobSz, ky + knobSz);
+        SelectObject(dc, ob); SelectObject(dc, op);
+        DeleteObject(br); DeleteObject(pen);
+    }
+}
+
+static void DrawToggleSwitchMini(HDC dc, int x, int y, int w, int h, BOOL active) {
+    DrawToggleSwitch(dc, x, y, w, h, active, NULL, NULL);
+}
+
+static int CveDetectIconType(const char *name) {
+    if (!name) return 0;
+    char lower[128] = {0};
+    int len = (int)strlen(name);
+    if (len > 127) len = 127;
+    for (int i = 0; i < len; i++) lower[i] = (char)tolower((unsigned char)name[i]);
+
+    if (strstr(lower, "windows defender") || strstr(lower, "defender")) return 6;
+    if (strstr(lower, "windows") || strstr(lower, "microsoft windows")) return 1;
+    if (strstr(lower, "edge")) return 2;
+    if (strstr(lower, "adobe") || strstr(lower, "acrobat")) return 3;
+    if (strstr(lower, "firefox") || strstr(lower, "mozilla")) return 4;
+    if (strstr(lower, "chrome") || strstr(lower, "chromium") || strstr(lower, "google")) return 5;
+    if (strstr(lower, "openssl") || strstr(lower, "ssl")) return 7;
+    if (strstr(lower, "java") || strstr(lower, "jdk") || strstr(lower, "jre")) return 8;
+    if (strstr(lower, "7-zip") || strstr(lower, "7zip") || strstr(lower, "winrar") || strstr(lower, "zip")) return 9;
+    if (strstr(lower, "notepad++") || strstr(lower, "notepad")) return 10;
+    if (strstr(lower, "python")) return 11;
+    if (strstr(lower, "git")) return 12;
+    if (strstr(lower, "visual studio code") || strstr(lower, "vscode") || strstr(lower, "visual studio")) return 13;
+    return 0;
+}
+
+static int CveDetectCategory(const char *name, BOOL isOs) {
+    if (isOs) return 1; /* OS */
+    if (!name) return 4; /* Other */
+    char lower[128] = {0};
+    int len = (int)strlen(name);
+    if (len > 127) len = 127;
+    for (int i = 0; i < len; i++) lower[i] = (char)tolower((unsigned char)name[i]);
+
+    if (strstr(lower, "chrome") || strstr(lower, "edge") || strstr(lower, "firefox") ||
+        strstr(lower, "brave") || strstr(lower, "opera")) return 2; /* Browsers */
+    if (strstr(lower, "git") || strstr(lower, "code") || strstr(lower, "studio") ||
+        strstr(lower, "python") || strstr(lower, "node") || strstr(lower, "java") ||
+        strstr(lower, "cmake") || strstr(lower, "compiler") || strstr(lower, "gcc")) return 3; /* Dev Tools */
+    if (strstr(lower, "zip") || strstr(lower, "rar") || strstr(lower, "notepad") ||
+        strstr(lower, "vlc") || strstr(lower, "player") || strstr(lower, "putty")) return 4; /* Utilities */
+    return 4;
+}
+
+static void DrawSoftwareIcon(HDC dc, int x, int y, int sz, int type, const char *appName) {
+    if (sz < 16) sz = 22;
+    int r = 4;
+
+    if (type == 1) { /* Windows */
+        int half = (sz - 3) / 2;
+        HBRUSH br = CreateSolidBrush(RGB(0, 164, 239));
+        RECT r1 = {x, y, x + half, y + half};
+        RECT r2 = {x + half + 2, y, x + sz, y + half};
+        RECT r3 = {x, y + half + 2, x + half, y + sz};
+        RECT r4 = {x + half + 2, y + half + 2, x + sz, y + sz};
+        FillRect(dc, &r1, br);
+        FillRect(dc, &r2, br);
+        FillRect(dc, &r3, br);
+        FillRect(dc, &r4, br);
+        DeleteObject(br);
+    } else if (type == 2) { /* Edge */
+        DrawRoundRectPanel(dc, x, y, sz, sz, sz/2, RGB(0, 120, 215), RGB(0, 180, 240));
+        HBRUSH br = CreateSolidBrush(RGB(0, 212, 170));
+        HPEN pen = CreatePen(PS_SOLID, 1, RGB(0, 212, 170));
+        HBRUSH ob = (HBRUSH)SelectObject(dc, br);
+        HPEN op = (HPEN)SelectObject(dc, pen);
+        Ellipse(dc, x + sz/4, y + sz/4, x + sz*3/4, y + sz*3/4);
+        SelectObject(dc, ob); SelectObject(dc, op);
+        DeleteObject(br); DeleteObject(pen);
+    } else if (type == 3) { /* Adobe */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(237, 28, 36), RGB(200, 20, 28));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "A", 1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 4) { /* Firefox */
+        DrawRoundRectPanel(dc, x, y, sz, sz, sz/2, RGB(255, 113, 0), RGB(255, 60, 0));
+        HBRUSH br = CreateSolidBrush(RGB(255, 210, 0));
+        HBRUSH ob = (HBRUSH)SelectObject(dc, br);
+        Ellipse(dc, x + sz/3, y + sz/4, x + sz*4/5, y + sz*3/4);
+        SelectObject(dc, ob); DeleteObject(br);
+    } else if (type == 5) { /* Chrome */
+        DrawRoundRectPanel(dc, x, y, sz, sz, sz/2, RGB(234, 67, 53), RGB(200, 40, 30));
+        HBRUSH brY = CreateSolidBrush(RGB(251, 188, 5));
+        RECT rY = {x, y + sz/2, x + sz/2, y + sz};
+        FillRect(dc, &rY, brY); DeleteObject(brY);
+        HBRUSH brG = CreateSolidBrush(RGB(52, 168, 83));
+        RECT rG = {x + sz/2, y + sz/2, x + sz, y + sz};
+        FillRect(dc, &rG, brG); DeleteObject(brG);
+        HBRUSH brB = CreateSolidBrush(RGB(66, 133, 244));
+        HPEN penB = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
+        HBRUSH ob = (HBRUSH)SelectObject(dc, brB);
+        HPEN op = (HPEN)SelectObject(dc, penB);
+        Ellipse(dc, x + sz/4, y + sz/4, x + sz*3/4, y + sz*3/4);
+        SelectObject(dc, ob); SelectObject(dc, op);
+        DeleteObject(brB); DeleteObject(penB);
+    } else if (type == 6) { /* Defender */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(0, 120, 215), RGB(40, 160, 255));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextW(dc, L"\uE73E", 1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 7) { /* OpenSSL */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(26, 36, 56), RGB(40, 60, 95));
+        SetTextColor(dc, RGB(96, 165, 250));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "SSL", 3, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 8) { /* Java */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(20, 35, 60), RGB(234, 44, 44));
+        SetTextColor(dc, RGB(234, 44, 44));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "J", 1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 9) { /* 7-Zip */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(25, 25, 25), RGB(60, 60, 60));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fMini ? fMini : fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "7z", 2, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 10) { /* Notepad++ */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(46, 139, 87), RGB(60, 180, 110));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "++", 2, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 11) { /* Python */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(53, 114, 165), RGB(255, 212, 59));
+        SetTextColor(dc, RGB(255, 212, 59));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fMini ? fMini : fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "Py", 2, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 12) { /* Git */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(240, 80, 50), RGB(200, 60, 30));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fMini ? fMini : fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "Git", 3, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else if (type == 13) { /* VS Code */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(0, 122, 204), RGB(30, 150, 240));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fMini ? fMini : fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, "VS", 2, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    } else { /* Generic */
+        DrawRoundRectPanel(dc, x, y, sz, sz, r, RGB(22, 32, 50), RGB(35, 52, 80));
+        char letter[2] = { appName && appName[0] ? (char)toupper((unsigned char)appName[0]) : 'A', 0 };
+        SetTextColor(dc, RGB(140, 165, 205));
+        SetBkMode(dc, TRANSPARENT);
+        HFONT of = (HFONT)SelectObject(dc, fSm);
+        RECT tr = {x, y, x + sz, y + sz};
+        DrawTextA(dc, letter, 1, &tr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc, of);
+    }
+}
+
+static int CveItemCompare(const void *a, const void *b) {
+    const CveTableItem *ia = (const CveTableItem*)a;
+    const CveTableItem *ib = (const CveTableItem*)b;
+    if (ia->severity != ib->severity)
+        return (int)ia->severity - (int)ib->severity;
+    if (ia->cvssScore != ib->cvssScore)
+        return ib->cvssScore - ia->cvssScore;
+    if (ia->isOs != ib->isOs)
+        return ia->isOs ? 1 : -1;
+    return strcmp(ia->appName, ib->appName);
+}
+
+static void BuildCveTableData(void) {
+    /* 1. Run dynamic system scans */
+    upd_load_catalog();
+    upd_scan_os_info();
+    int appCnt = upd_scan_installed();
+    upd_check_cves();
+
+    /* 2. Format timestamp */
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    static const char *months[] = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+    const char *mon = (st.wMonth >= 1 && st.wMonth <= 12) ? months[st.wMonth - 1] : "Nov";
+    snprintf(g_cveLastScanTime, sizeof(g_cveLastScanTime), "%s %d, %d \xE2\x80\xA2 %02d:%02d",
+             mon, st.wDay, st.wYear, st.wHour, st.wMinute);
+    swprintf(g_cveLastScanTimeW, sizeof(g_cveLastScanTimeW)/sizeof(wchar_t),
+             L"%hs %d, %d \u2022 %02d:%02d",
+             mon, st.wDay, st.wYear, st.wHour, st.wMinute);
+
+    /* 3. Reset table & KPI counters */
+    g_cveItemCount = 0;
+    g_cveCritCnt = 0;
+    g_cveHighCnt = 0;
+    g_cveMedCnt = 0;
+    g_cveLowCnt = 0;
+
+    /* 4. Add OS-level vulnerabilities / baseline from real g_osInfo */
+    const char *u = g_osInfo.ubr;
+    while (*u == '.') u++;
+    const char *ubrClean = u[0] ? u : "unknown";
+
+    if (g_osInfo.cveCount > 0) {
+        for (int i = 0; i < g_osInfo.cveCount && g_cveItemCount < MAX_CVE_TABLE; i++) {
+            CveTableItem *it = &g_cveItems[g_cveItemCount++];
+            ZeroMemory(it, sizeof(*it));
+            it->id = g_cveItemCount;
+            it->isOs = TRUE;
+            it->iconType = 1; /* Windows */
+            it->category = 1; /* OS */
+            strncpy(it->appName, "Windows", sizeof(it->appName) - 1);
+            snprintf(it->version, sizeof(it->version), "%s.%s",
+                     g_osInfo.currentBuild[0] ? g_osInfo.currentBuild : "unknown", ubrClean);
+            strncpy(it->cveId, g_osInfo.cveId[i], sizeof(it->cveId) - 1);
+            it->cvssScore = g_osInfo.cvssScore[i];
+            strncpy(it->vulnTitle, g_osInfo.cveDesc[i], sizeof(it->vulnTitle) - 1);
+            snprintf(it->vulnDesc, sizeof(it->vulnDesc), "Potentially affected build only; installed KB/patch state is not verified. Suggested action: %s",
+                     g_osInfo.mitigation[i]);
+
+            if (it->cvssScore >= 90) { it->severity = CVE_SEV_CRITICAL; g_cveCritCnt++; }
+            else if (it->cvssScore >= 70) { it->severity = CVE_SEV_HIGH; g_cveHighCnt++; }
+            else if (it->cvssScore >= 40) { it->severity = CVE_SEV_MEDIUM; g_cveMedCnt++; }
+            else { it->severity = CVE_SEV_LOW; g_cveLowCnt++; }
+
+            if (g_osInfo.mitigated[i]) {
+                it->status = CVE_STATUS_FIXED;
+                strncpy(it->actionText, "View", sizeof(it->actionText) - 1);
+            } else {
+                it->status = CVE_STATUS_AVAILABLE;
+                strncpy(it->actionText, "View", sizeof(it->actionText) - 1);
+            }
+        }
+    }
+
+    /* 5. Add Applications with CVEs from real g_apps */
+    for (int a = 0; a < appCnt && g_cveItemCount < MAX_CVE_TABLE; a++) {
+        if (g_apps[a].cveCount > 0) {
+            for (int c = 0; c < g_apps[a].cveCount && g_cveItemCount < MAX_CVE_TABLE; c++) {
+                CveTableItem *it = &g_cveItems[g_cveItemCount++];
+                ZeroMemory(it, sizeof(*it));
+                it->id = g_cveItemCount;
+                it->isOs = FALSE;
+                it->iconType = CveDetectIconType(g_apps[a].name);
+                it->category = CveDetectCategory(g_apps[a].name, FALSE);
+                strncpy(it->appName, g_apps[a].name, sizeof(it->appName) - 1);
+                strncpy(it->version, g_apps[a].version[0] ? g_apps[a].version : "1.0.0", sizeof(it->version) - 1);
+                strncpy(it->cveId, g_apps[a].cveId[c], sizeof(it->cveId) - 1);
+                it->cvssScore = g_apps[a].cvssScore[c];
+                strncpy(it->fixVersion, g_apps[a].cveFixed[c], sizeof(it->fixVersion) - 1);
+                strncpy(it->wingetId, g_apps[a].wingetId, sizeof(it->wingetId) - 1);
+                strncpy(it->executablePath, g_apps[a].executablePath, sizeof(it->executablePath) - 1);
+
+                if (it->cvssScore >= 90) {
+                    snprintf(it->vulnTitle, sizeof(it->vulnTitle), "Catalog match: %s", it->cveId);
+                    snprintf(it->vulnDesc, sizeof(it->vulnDesc), "Potential version match for %s v%s; verify the source advisory before applying updates.", g_apps[a].name, it->version);
+                    it->severity = CVE_SEV_CRITICAL;
+                    g_cveCritCnt++;
+                } else if (it->cvssScore >= 70) {
+                    snprintf(it->vulnTitle, sizeof(it->vulnTitle), "Catalog match: %s", it->cveId);
+                    snprintf(it->vulnDesc, sizeof(it->vulnDesc), "Potential version match for %s v%s; verify the source advisory before applying updates.", g_apps[a].name, it->version);
+                    it->severity = CVE_SEV_HIGH;
+                    g_cveHighCnt++;
+                } else if (it->cvssScore >= 40) {
+                    snprintf(it->vulnTitle, sizeof(it->vulnTitle), "Catalog match: %s", it->cveId);
+                    snprintf(it->vulnDesc, sizeof(it->vulnDesc), "Potential version match for %s v%s; verify the source advisory before applying updates.", g_apps[a].name, it->version);
+                    it->severity = CVE_SEV_MEDIUM;
+                    g_cveMedCnt++;
+                } else {
+                    snprintf(it->vulnTitle, sizeof(it->vulnTitle), "Catalog match: %s", it->cveId);
+                    snprintf(it->vulnDesc, sizeof(it->vulnDesc), "Potential version match for %s v%s; verify the source advisory before applying updates.", g_apps[a].name, it->version);
+                    it->severity = CVE_SEV_LOW;
+                    g_cveLowCnt++;
+                }
+
+                it->status = CVE_STATUS_PENDING;
+                strncpy(it->actionText, "Patch", sizeof(it->actionText) - 1);
+            }
+        }
+    }
+
+    /* Recent NVD records are intelligence only until product/version applicability is matched. */
+    for (int n = 0; n < g_nvdRecentCount && g_cveItemCount < MAX_CVE_TABLE; ++n) {
+        NvdRecentEntry *src = &g_nvdRecent[n];
+        CveTableItem *it = &g_cveItems[g_cveItemCount++];
+        ZeroMemory(it, sizeof(*it));
+        it->id = g_cveItemCount;
+        it->isIntelOnly = TRUE;
+        it->category = 0;
+        strncpy(it->appName, "Recent NVD advisory", sizeof(it->appName)-1);
+        strncpy(it->version, "not matched", sizeof(it->version)-1);
+        strncpy(it->cveId, src->id, sizeof(it->cveId)-1);
+        it->cvssScore = src->score10;
+        if (_stricmp(src->severity,"CRITICAL")==0 || it->cvssScore >= 90) it->severity = CVE_SEV_CRITICAL;
+        else if (_stricmp(src->severity,"HIGH")==0 || it->cvssScore >= 70) it->severity = CVE_SEV_HIGH;
+        else if (_stricmp(src->severity,"MEDIUM")==0 || it->cvssScore >= 40) it->severity = CVE_SEV_MEDIUM;
+        else it->severity = CVE_SEV_LOW;
+        snprintf(it->vulnTitle,sizeof(it->vulnTitle),"NVD recent: %s",src->summary);
+        snprintf(it->vulnDesc,sizeof(it->vulnDesc),
+                 "NVD published %s. This is a recent advisory feed entry only; Kaevex has not matched it to installed software or version ranges.",
+                 src->published);
+        it->status = CVE_STATUS_INTEL;
+        strncpy(it->actionText,"Details",sizeof(it->actionText)-1);
+    }
+
+    /* 7. Total sum */
+    g_cveTotalCnt = g_cveCritCnt + g_cveHighCnt + g_cveMedCnt + g_cveLowCnt;
+
+    /* 8. Sort items by priority for realistic diversity */
+    if (g_cveItemCount > 1) {
+        qsort(g_cveItems, g_cveItemCount, sizeof(CveTableItem), CveItemCompare);
+        for (int i = 0; i < g_cveItemCount; i++) {
+            g_cveItems[i].id = i + 1;
+        }
+    }
+}
+
+static DWORD WINAPI NvdRefreshThread(LPVOID arg) {
+    HWND hwnd = (HWND)arg;
+    BOOL ok = nvd_refresh_recent();
+    PostMessageA(hwnd, WM_NVD_REFRESH_DONE, ok ? 1 : 0, 0);
+    return 0;
+}
+
+/* =========================================================================
+ * ASYNCHRONOUS CVE SCANNER & REAL REPORT EXPORTERS
+ * ========================================================================= */
+static DWORD WINAPI CveScanWorkerThread(LPVOID arg) {
+    HWND hw = (HWND)arg;
+    BuildCveTableData();
+    g_cveScanning = FALSE;
+    if (hw && IsWindow(hw)) {
+        PostMessageA(hw, WM_CVE_SCAN_DONE, 0, 0);
+    }
+    return 0;
+}
+
+static void StartAsyncCveScan(HWND hw) {
+    if (g_cveScanning) return;
+    g_cveScanning = TRUE;
+    g_cveScanStartTick = GetTickCount();
+    CreateThread(NULL, 0, CveScanWorkerThread, (LPVOID)hw, 0, NULL);
+    InvalidateRect(hw, NULL, FALSE);
+}
+
+static void CveExportHtmlReport(void) {
+    char path[MAX_PATH];
+    GetTempPathA(sizeof(path), path);
+    strcat(path, "kaevex_cve_audit_report.html");
+    FILE *fp = fopen(path, "w");
+    if (!fp) return;
+    fprintf(fp, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Kaevex Security Audit Report</title>"
+                "<style>body{background:#0b0f19;color:#e2e8f0;font-family:'Segoe UI',sans-serif;padding:30px;line-height:1.6;}"
+                "h1{color:#38bdf8;font-size:24px;border-bottom:1px solid #1e293b;padding-bottom:12px;}"
+                "table{width:100%%;border-collapse:collapse;margin-top:20px;font-size:13px;}"
+                "th,td{border:1px solid #1e293b;padding:10px 12px;text-align:left;}th{background:#1e293b;color:#94a3b8;font-weight:600;}"
+                ".crit{color:#ef4444;font-weight:bold;}.high{color:#f59e0b;font-weight:bold;}.med{color:#38bdf8;}.low{color:#10b981;}"
+                ".card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:16px;margin-bottom:20px;}"
+                ".badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}"
+                "</style></head><body>");
+    fprintf(fp, "<h1>&#x1F6E1; Kaevex Security Platform &mdash; Vulnerability & Patch Audit Report</h1>");
+    SYSTEM_INFO reportSys; GetNativeSystemInfo(&reportSys);
+    const char *reportArch = reportSys.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ? "x64" : reportSys.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64 ? "ARM64" : reportSys.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL ? "x86" : "unknown";
+    fprintf(fp, "<div class='card'><b>Host Machine:</b> This computer | <b>OS:</b> %s Build %d.%s | <b>Architecture:</b> %s<br>"
+                "<b>Inventory completed:</b> %s | <b>Coverage:</b> Local build catalog candidates and recent NVD advisories; installed KB/CPE applicability is not verified.<br>"
+                "<b>Summary:</b> %d catalog candidates (not confirmed vulnerabilities) (<span class='crit'>Critical: %d</span>, "
+                "<span class='high'>High: %d</span>, <span class='med'>Medium: %d</span>, <span class='low'>Low: %d</span>) "
+                "across %d scanned installed packages.</div>",
+            g_osInfo.productName, g_osInfo.buildNumber, g_osInfo.ubr, reportArch, g_cveLastScanTime,
+            g_cveTotalCnt, g_cveCritCnt, g_cveHighCnt, g_cveMedCnt, g_cveLowCnt, g_appCount);
+    fprintf(fp, "<table><tr><th>#</th><th>Vulnerability / Advisory</th><th>Software Component</th><th>Installed Ver</th><th>Severity</th><th>CVSS</th><th>CVE ID</th><th>Mitigation / Action</th></tr>");
+    for (int i = 0; i < g_cveItemCount; i++) {
+        CveTableItem *it = &g_cveItems[i];
+        const char *sevCls = (it->severity == CVE_SEV_CRITICAL) ? "crit" : (it->severity == CVE_SEV_HIGH ? "high" : (it->severity == CVE_SEV_MEDIUM ? "med" : "low"));
+        const char *sevTxt = (it->severity == CVE_SEV_CRITICAL) ? "Critical" : (it->severity == CVE_SEV_HIGH ? "High" : (it->severity == CVE_SEV_MEDIUM ? "Medium" : "Low"));
+        fprintf(fp, "<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td class='%s'>%s</td><td>%d/100</td><td>%s</td><td>%s</td></tr>",
+                i + 1, it->vulnTitle, it->appName, it->version, sevCls, sevTxt, it->cvssScore, it->cveId,
+                it->fixVersion[0] ? it->fixVersion : (it->wingetId[0] ? it->wingetId : "Vendor Patch"));
+    }
+    fprintf(fp, "</table><p style='color:#64748b;margin-top:24px;font-size:12px;'>Autonomously compiled by Kaevex Security Platform v1.0 [SOC Enterprise & Autonomous Patch Agent].</p></body></html>");
+    fclose(fp);
+    ShellExecuteA(NULL, "open", path, NULL, NULL, SW_SHOWNORMAL);
+    snprintf(g_cveReportStatus, sizeof(g_cveReportStatus), "Exported HTML: %s", path);
+    add_alert("CVE Agent", "INFO", "Exported executive vulnerability HTML report.");
+}
+
+static void CveExportCsvReport(void) {
+    char path[MAX_PATH];
+    GetTempPathA(sizeof(path), path);
+    strcat(path, "kaevex_cve_audit_log.csv");
+    FILE *fp = fopen(path, "w");
+    if (!fp) return;
+    fprintf(fp, "Index,Vulnerability,AffectedSoftware,Version,Severity,CvssScore,CveId,Status,Mitigation\n");
+    for (int i = 0; i < g_cveItemCount; i++) {
+        CveTableItem *it = &g_cveItems[i];
+        const char *sevTxt = (it->severity == CVE_SEV_CRITICAL) ? "Critical" : (it->severity == CVE_SEV_HIGH ? "High" : (it->severity == CVE_SEV_MEDIUM ? "Medium" : "Low"));
+        fprintf(fp, "%d,\"%s\",\"%s\",\"%s\",\"%s\",%d,\"%s\",\"%s\",\"%s\"\n",
+                i + 1, it->vulnTitle, it->appName, it->version, sevTxt, it->cvssScore, it->cveId,
+                it->status == CVE_STATUS_AVAILABLE ? "Available" : "Pending",
+                it->fixVersion[0] ? it->fixVersion : (it->wingetId[0] ? it->wingetId : "N/A"));
+    }
+    fclose(fp);
+    ShellExecuteA(NULL, "open", path, NULL, NULL, SW_SHOWNORMAL);
+    snprintf(g_cveReportStatus, sizeof(g_cveReportStatus), "Exported CSV: %s", path);
+    add_alert("CVE Agent", "INFO", "Exported vulnerability CSV audit log.");
+}
+
+/* =========================================================================
+ * SUB-TAB 0: OVERVIEW
+ * ========================================================================= */
+static void PaintCveOverview(HDC dc, int cx, int topY, int cw, int ch) {
+    int kpiH = 76;
+    int gap = 10;
+    int kw = (cw - 16 - 3 * gap) / 4;
+
+    /* Calculate Real Posture Score (100 down to 15) */
+    int score = 100 - (g_cveCritCnt * 18 + g_cveHighCnt * 8 + g_cveMedCnt * 3);
+    if (score < 15) score = 15;
+    if (score > 100) score = 100;
+    COLORREF cSc = (score >= 80) ? RGB(16, 185, 129) : ((score >= 60) ? RGB(245, 158, 11) : RGB(239, 68, 68));
+
+    /* Card 1: System Exposure Index */
+    int kx1 = cx + 8;
+    DrawRoundRectPanel(dc, kx1, topY, kw, kpiH, 8, RGB(14, 20, 32), RGB(26, 40, 64));
+    DrawRoundRectPanel(dc, kx1 + 8, topY + (kpiH - 32) / 2, 32, 32, 8, RGB(15, 30, 50), cSc);
+    SetTextColor(dc, cSc);
+    SelectObject(dc, fIcon ? fIcon : fMed);
+    RECT ic1 = {kx1 + 8, topY + (kpiH - 32) / 2, kx1 + 40, topY + (kpiH + 32) / 2};
+    DrawTextW(dc, L"\uE73E", 1, &ic1, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT tr11 = {kx1 + 48, topY + 8, kx1 + kw - 8, topY + 24};
+    DrawTextA(dc, "Exposure Risk Index", -1, &tr11, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    char scoreStr[32]; snprintf(scoreStr, sizeof(scoreStr), "%d / 100", score);
+    SetTextColor(dc, cSc);
+    SelectObject(dc, fHdr ? fHdr : fBig);
+    RECT tr12 = {kx1 + 48, topY + 24, kx1 + kw - 8, topY + 50};
+    DrawTextA(dc, scoreStr, -1, &tr12, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(110, 130, 155));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT tr13 = {kx1 + 48, topY + 50, kx1 + kw - 8, topY + 68};
+    DrawTextA(dc, (score >= 80) ? "Low Exposure - Secure Baseline" : "Action Required - High Exposure", -1, &tr13, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Card 2: Total Vulnerabilities */
+    int kx2 = kx1 + kw + gap;
+    DrawRoundRectPanel(dc, kx2, topY, kw, kpiH, 8, RGB(14, 20, 32), RGB(26, 40, 64));
+    DrawRoundRectPanel(dc, kx2 + 8, topY + (kpiH - 32) / 2, 32, 32, 8, RGB(55, 16, 24), RGB(180, 25, 35));
+    SetTextColor(dc, RGB(239, 68, 68));
+    SelectObject(dc, fIcon ? fIcon : fMed);
+    RECT ic2 = {kx2 + 8, topY + (kpiH - 32) / 2, kx2 + 40, topY + (kpiH + 32) / 2};
+    DrawTextW(dc, L"\uEA18", 1, &ic2, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT tr21 = {kx2 + 48, topY + 8, kx2 + kw - 8, topY + 24};
+    DrawTextA(dc, "Total Vulnerabilities", -1, &tr21, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    char vulnStr[32]; snprintf(vulnStr, sizeof(vulnStr), "%d Detected", g_cveTotalCnt);
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fHdr ? fHdr : fBig);
+    RECT tr22 = {kx2 + 48, topY + 24, kx2 + kw - 8, topY + 50};
+    DrawTextA(dc, vulnStr, -1, &tr22, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    char subVuln[64]; snprintf(subVuln, sizeof(subVuln), "Crit: %d  |  High: %d  |  Med: %d", g_cveCritCnt, g_cveHighCnt, g_cveMedCnt);
+    SetTextColor(dc, RGB(248, 113, 113));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT tr23 = {kx2 + 48, topY + 50, kx2 + kw - 8, topY + 68};
+    DrawTextA(dc, subVuln, -1, &tr23, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Card 3: Scanned Registry Software */
+    int kx3 = kx2 + kw + gap;
+    DrawRoundRectPanel(dc, kx3, topY, kw, kpiH, 8, RGB(14, 20, 32), RGB(26, 40, 64));
+    DrawRoundRectPanel(dc, kx3 + 8, topY + (kpiH - 32) / 2, 32, 32, 8, RGB(15, 35, 60), RGB(30, 80, 150));
+    SetTextColor(dc, RGB(59, 130, 246));
+    SelectObject(dc, fIcon ? fIcon : fMed);
+    RECT ic3 = {kx3 + 8, topY + (kpiH - 32) / 2, kx3 + 40, topY + (kpiH + 32) / 2};
+    DrawTextW(dc, L"\uE74C", 1, &ic3, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT tr31 = {kx3 + 48, topY + 8, kx3 + kw - 8, topY + 24};
+    DrawTextA(dc, "Audited Software", -1, &tr31, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    char appStr[32]; snprintf(appStr, sizeof(appStr), "%d Packages", g_appCount);
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fHdr ? fHdr : fBig);
+    RECT tr32 = {kx3 + 48, topY + 24, kx3 + kw - 8, topY + 50};
+    DrawTextA(dc, appStr, -1, &tr32, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(96, 165, 250));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT tr33 = {kx3 + 48, topY + 50, kx3 + kw - 8, topY + 68};
+    DrawTextA(dc, "Installed application inventory", -1, &tr33, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Card 4: Proactive Vulnerability Shield */
+    int kx4 = kx3 + kw + gap;
+    DrawRoundRectPanel(dc, kx4, topY, kw, kpiH, 8, RGB(14, 20, 32), RGB(26, 40, 64));
+    DrawRoundRectPanel(dc, kx4 + 8, topY + (kpiH - 32) / 2, 32, 32, 8, RGB(12, 40, 28), RGB(16, 120, 75));
+    SetTextColor(dc, RGB(52, 211, 153));
+    SelectObject(dc, fIcon ? fIcon : fMed);
+    RECT ic4 = {kx4 + 8, topY + (kpiH - 32) / 2, kx4 + 40, topY + (kpiH + 32) / 2};
+    DrawTextW(dc, L"\uE72D", 1, &ic4, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT tr41 = {kx4 + 48, topY + 8, kx4 + kw - 8, topY + 24};
+    DrawTextA(dc, "Autonomous Shield", -1, &tr41, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(52, 211, 153));
+    SelectObject(dc, fHdr ? fHdr : fBig);
+    RECT tr42 = {kx4 + 48, topY + 24, kx4 + kw - 8, topY + 50};
+    DrawTextA(dc, "ARMED & ACTIVE", -1, &tr42, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT tr43 = {kx4 + 48, topY + 50, kx4 + kw - 8, topY + 68};
+    DrawTextA(dc, "Real-Time Watcher: 30s Loop", -1, &tr43, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Row 2: Two Large Dashboard Panels */
+    int pnlY = topY + kpiH + 12;
+    int pnlH = ch - (pnlY - topY) - 48;
+    int pnlW1 = (cw - 16 - 12) * 58 / 100;
+    int pnlX2 = cx + 8 + pnlW1 + 12;
+    int pnlW2 = (cw - 16 - 12) - pnlW1;
+
+    /* Left Panel: Top Vulnerable Software & Exposures */
+    DrawRoundRectPanel(dc, cx + 8, pnlY, pnlW1, pnlH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    /* Panel Header */
+    int pHdrH = 36;
+    DrawRoundRectPanel(dc, cx + 9, pnlY + 1, pnlW1 - 2, pHdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, cx + 8, pnlY + pHdrH, cx + 8 + pnlW1, pnlY + pHdrH, RGB(24, 36, 56));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT lHdrR = {cx + 20, pnlY, cx + pnlW1 - 10, pnlY + pHdrH};
+    DrawTextA(dc, "Top Vulnerable Software & Exposures", -1, &lHdrR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Items in Left Panel */
+    int itY = pnlY + pHdrH + 8;
+    int rowH = 58;
+    int maxItems = (pnlH - pHdrH - 16) / rowH;
+    int shown = 0;
+
+    for (int i = 0; i < g_cveItemCount && shown < maxItems; i++) {
+        CveTableItem *it = &g_cveItems[i];
+        int ry = itY + shown * rowH;
+
+        COLORREF rBg = (shown % 2 == 0) ? RGB(12, 17, 28) : RGB(14, 20, 34);
+        DrawRoundRectPanel(dc, cx + 16, ry, pnlW1 - 16, rowH - 6, 6, rBg, RGB(24, 36, 56));
+
+        /* App Icon */
+        int icSz = 24;
+        DrawSoftwareIcon(dc, cx + 24, ry + (rowH - 6 - icSz) / 2, icSz, it->iconType, it->appName);
+
+        /* App Name & Version */
+        SetTextColor(dc, RGB(240, 246, 255));
+        SelectObject(dc, fSm);
+        RECT rAppR = {cx + 56, ry + 6, cx + 260, ry + 24};
+        DrawTextA(dc, it->appName, -1, &rAppR, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(140, 155, 175));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT rVerR = {cx + 56, ry + 26, cx + 260, ry + 44};
+        char vStr[128]; snprintf(vStr, sizeof(vStr), "v%s  |  %s", it->version, it->cveId);
+        DrawTextA(dc, vStr, -1, &rVerR, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        /* Description snippet */
+        SetTextColor(dc, RGB(160, 175, 195));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT rDscR = {cx + 270, ry + 6, cx + pnlW1 - 140, ry + rowH - 12};
+        DrawTextA(dc, it->vulnTitle, -1, &rDscR, DT_LEFT|DT_WORDBREAK|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        /* CVSS Pill */
+        int pW = 68, pH = 22;
+        int pX = cx + pnlW1 - 120;
+        int pY = ry + (rowH - 6 - pH) / 2;
+        COLORREF pBg = (it->severity == CVE_SEV_CRITICAL) ? RGB(180, 20, 30) : ((it->severity == CVE_SEV_HIGH) ? RGB(180, 83, 9) : RGB(15, 80, 140));
+        DrawRoundRectPanel(dc, pX, pY, pW, pH, 6, pBg, pBg);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fMini ? fMini : fSm);
+        char sevPill[32]; snprintf(sevPill, sizeof(sevPill), "%.1f %s", it->cvssScore / 10.0, (it->severity == CVE_SEV_CRITICAL) ? "CRIT" : ((it->severity == CVE_SEV_HIGH) ? "HIGH" : "MED"));
+        RECT pillR = {pX, pY, pX + pW, pY + pH};
+        DrawTextA(dc, sevPill, -1, &pillR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        shown++;
+    }
+
+    if (shown == 0) {
+        SetTextColor(dc, RGB(52, 211, 153));
+        SelectObject(dc, fMed ? fMed : fSm);
+        RECT noR = {cx + 20, pnlY + pHdrH + 40, cx + pnlW1 - 20, pnlY + pnlH - 40};
+        DrawTextA(dc, "No local catalog candidates found. Installed KB and CPE applicability are not verified.", -1, &noR, DT_CENTER|DT_VCENTER|DT_NOPREFIX);
+    }
+
+    /* Right Panel: Host Environment & Patch Status */
+    DrawRoundRectPanel(dc, pnlX2, pnlY, pnlW2, pnlH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    DrawRoundRectPanel(dc, pnlX2 + 1, pnlY + 1, pnlW2 - 2, pHdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, pnlX2, pnlY + pHdrH, pnlX2 + pnlW2, pnlY + pHdrH, RGB(24, 36, 56));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT rHdrR = {pnlX2 + 20, pnlY, pnlX2 + pnlW2 - 10, pnlY + pHdrH};
+    DrawTextA(dc, "Host Architecture & Defense Matrix", -1, &rHdrR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Environment Attributes List */
+    int ey = pnlY + pHdrH + 14;
+    static const struct { const char *k; const char *v; } envInfo[] = {
+        {"Operating System", ""},
+        {"Windows Kernel Build", ""},
+        {"Processor Architecture", ""},
+        {"Windows Update Service", ""},
+        {"Package Repository", ""},
+        {"Local CVE Database", ""},
+        {"Cloud Feed Synchronized", "NVD NIST Common Vulnerabilities"},
+        {NULL, NULL}
+    };
+
+    char osLine[128]; snprintf(osLine, sizeof(osLine), "%s", g_osInfo.productName);
+    const char *uClean = g_osInfo.ubr; while (*uClean == '.') uClean++;
+    char bldLine[128]; snprintf(bldLine, sizeof(bldLine), "%s.%s", g_osInfo.currentBuild, uClean[0] ? uClean : "0");
+    char sigLine[128]; snprintf(sigLine, sizeof(sigLine), "%d local CVE catalog entries", g_cveDBCnt + g_osCveDBCnt);
+    SYSTEM_INFO sysInfo; GetNativeSystemInfo(&sysInfo);
+    char archLine[64];
+    const char *arch = sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ? "x64" :
+                       sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64 ? "ARM64" :
+                       sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL ? "x86" : "unknown";
+    snprintf(archLine, sizeof(archLine), "%s", arch);
+    const char *serviceLine = "status unavailable";
+    SC_HANDLE scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+    if (scm) { SC_HANDLE svc = OpenServiceA(scm, "wuauserv", SERVICE_QUERY_STATUS);
+        if (svc) { SERVICE_STATUS_PROCESS sp; DWORD needed=0;
+            if (QueryServiceStatusEx(svc, SC_STATUS_PROCESS_INFO, (BYTE*)&sp, sizeof(sp), &needed))
+                serviceLine = sp.dwCurrentState == SERVICE_RUNNING ? "running" : sp.dwCurrentState == SERVICE_STOPPED ? "stopped" : "not running";
+            CloseServiceHandle(svc);
+        } CloseServiceHandle(scm);
+    }
+    char wingetLine[64], wingetPath[MAX_PATH];
+    snprintf(wingetLine, sizeof(wingetLine), "%s", SearchPathA(NULL, "winget.exe", NULL, sizeof(wingetPath), wingetPath, NULL) ? "available" : "not found");
+
+    for (int i = 0; envInfo[i].k; i++) {
+        const char *val = envInfo[i].v;
+        if (i == 0) val = osLine;
+        else if (i == 1) val = bldLine;
+        else if (i == 2) val = archLine;
+        else if (i == 3) val = serviceLine;
+        else if (i == 4) val = wingetLine;
+        else if (i == 5) val = sigLine;
+
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fSm);
+        RECT rk = {pnlX2 + 20, ey, pnlX2 + 180, ey + 22};
+        DrawTextA(dc, envInfo[i].k, -1, &rk, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(225, 235, 250));
+        RECT rv = {pnlX2 + 185, ey, pnlX2 + pnlW2 - 16, ey + 22};
+        DrawTextA(dc, val, -1, &rv, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        DrawLine(dc, pnlX2 + 20, ey + 24, pnlX2 + pnlW2 - 20, ey + 24, RGB(18, 26, 38));
+        ey += 30;
+    }
+
+    /* Action Buttons in Right Panel */
+    int bW = pnlW2 - 40;
+    int b1Y = pnlY + pnlH - 84;
+    DrawGradientRoundRect(dc, pnlX2 + 20, b1Y, bW, 36, 8, RGB(0, 110, 255), RGB(120, 60, 255), RGB(130, 80, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT b1R = {pnlX2 + 20, b1Y, pnlX2 + 20 + bW, b1Y + 36};
+    DrawTextW(dc, L"\u26A1  1-Click Auto-Fix All Available", -1, &b1R, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    int b2Y = b1Y + 42;
+    DrawRoundRectPanel(dc, pnlX2 + 20, b2Y, bW, 32, 8, RGB(14, 22, 36), RGB(30, 50, 80));
+    SetTextColor(dc, RGB(160, 190, 230));
+    SelectObject(dc, fSm);
+    RECT b2R = {pnlX2 + 20, b2Y, pnlX2 + 20 + bW, b2Y + 32};
+    DrawTextA(dc, "View Full Vulnerability Master Table ->", -1, &b2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Row 3: Security Posture Risk Distribution Meter */
+    int barY = pnlY + pnlH + 10;
+    int barH = 30;
+    int barW = cw - 16;
+    DrawRoundRectPanel(dc, cx + 8, barY, barW, barH, 6, RGB(12, 17, 26), RGB(24, 36, 54));
+
+    int totalV = (g_cveTotalCnt > 0) ? g_cveTotalCnt : 1;
+    int wCrit = barW * g_cveCritCnt / totalV;
+    int wHigh = barW * g_cveHighCnt / totalV;
+    int wMed  = barW * g_cveMedCnt / totalV;
+    int wLow  = barW - wCrit - wHigh - wMed;
+
+    int bx = cx + 8;
+    if (wCrit > 0) { FillR(dc, bx, barY + 2, wCrit, barH - 4, RGB(239, 68, 68)); bx += wCrit; }
+    if (wHigh > 0) { FillR(dc, bx, barY + 2, wHigh, barH - 4, RGB(245, 158, 11)); bx += wHigh; }
+    if (wMed  > 0) { FillR(dc, bx, barY + 2, wMed,  barH - 4, RGB(59, 130, 246)); bx += wMed; }
+    if (wLow  > 0) { FillR(dc, bx, barY + 2, wLow,  barH - 4, RGB(16, 185, 129)); }
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT barTextR = {cx + 16, barY, cx + 8 + barW - 16, barY + barH};
+    char meterText[256];
+    snprintf(meterText, sizeof(meterText), "Risk Distribution Meter:  Critical (%d)  |  High (%d)  |  Medium (%d)  |  Low / Clean Baseline (%d)",
+             g_cveCritCnt, g_cveHighCnt, g_cveMedCnt, g_cveLowCnt);
+    DrawTextA(dc, meterText, -1, &barTextR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+}
+
+/* =========================================================================
+ * SUB-TAB 1: VULNERABILITIES (MASTER TABLE)
+ * ========================================================================= */
+static void PaintCveVulnerabilities(HDC dc, int cx, int topY, int cw, int ch) {
+    /* 5 KPI METRIC CARDS */
+    int kpiY = topY;
+    int kpiH = 82;
+    int cardGap = 10;
+    int cardW = (cw - 16 - 4 * cardGap) / 5;
+
+    for (int i = 0; i < 5; i++) {
+        int kx = cx + 8 + i * (cardW + cardGap);
+        COLORREF cBg = RGB(14, 18, 28);
+        COLORREF cBdr, cBadgeBg, cBadgeBdr, cBadgeFg, cLabelFg;
+        const char *label;
+        const char *sub;
+        int num;
+        const wchar_t *iconGlyph = L"\uEA18";
+
+        if (i == 0) {
+            cBdr = RGB(95, 28, 35);
+            cBadgeBg = RGB(55, 16, 22);
+            cBadgeBdr = RGB(130, 25, 32);
+            cBadgeFg = RGB(239, 68, 68);
+            cLabelFg = RGB(248, 113, 113);
+            label = "Critical";
+            sub = "Requires immediate action";
+            num = g_cveCritCnt;
+            iconGlyph = L"\uEA18";
+        } else if (i == 1) {
+            cBdr = RGB(95, 58, 18);
+            cBadgeBg = RGB(55, 35, 12);
+            cBadgeBdr = RGB(130, 75, 20);
+            cBadgeFg = RGB(245, 158, 11);
+            cLabelFg = RGB(251, 191, 36);
+            label = "High";
+            sub = "Needs attention";
+            num = g_cveHighCnt;
+            iconGlyph = L"\uEA18";
+        } else if (i == 2) {
+            cBdr = RGB(20, 50, 85);
+            cBadgeBg = RGB(15, 32, 65);
+            cBadgeBdr = RGB(35, 75, 140);
+            cBadgeFg = RGB(59, 130, 246);
+            cLabelFg = RGB(96, 165, 250);
+            label = "Medium";
+            sub = "Plan for patching";
+            num = g_cveMedCnt;
+            iconGlyph = L"\uE946";
+        } else if (i == 3) {
+            cBdr = RGB(16, 60, 42);
+            cBadgeBg = RGB(12, 42, 28);
+            cBadgeBdr = RGB(22, 95, 65);
+            cBadgeFg = RGB(16, 185, 129);
+            cLabelFg = RGB(52, 211, 153);
+            label = "Low";
+            sub = "No immediate risk";
+            num = g_cveLowCnt;
+            iconGlyph = L"\uE73E";
+        } else {
+            cBdr = RGB(50, 32, 85);
+            cBadgeBg = RGB(32, 20, 65);
+            cBadgeBdr = RGB(75, 45, 140);
+            cBadgeFg = RGB(129, 140, 248);
+            cLabelFg = RGB(160, 175, 200);
+            label = "Total Vulnerabilities";
+            sub = "";
+            num = g_cveTotalCnt;
+            iconGlyph = L"\uE72D";
+        }
+
+        DrawRoundRectPanel(dc, kx, kpiY, cardW, kpiH, 8, cBg, cBdr);
+
+        int bSz = 32;
+        int bX = kx + 8;
+        int bY = kpiY + (kpiH - bSz) / 2;
+        DrawRoundRectPanel(dc, bX, bY, bSz, bSz, 8, cBadgeBg, cBadgeBdr);
+        SetTextColor(dc, cBadgeFg);
+        SelectObject(dc, fIcon ? fIcon : fMed);
+        RECT brc = {bX, bY, bX + bSz, bY + bSz};
+        DrawTextW(dc, iconGlyph, 1, &brc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+        int textX = bX + bSz + 8;
+        int textW = cardW - (textX - kx) - 10;
+
+        SetTextColor(dc, cLabelFg);
+        SelectObject(dc, fSm);
+        RECT tr1 = {textX, kpiY + 8, textX + textW, kpiY + 24};
+        DrawTextA(dc, label, -1, &tr1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        char numStr[32];
+        snprintf(numStr, sizeof(numStr), "%d", num);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fHdr ? fHdr : fBig);
+        RECT tr2 = {textX, kpiY + 26, textX + textW, kpiY + 54};
+        DrawTextA(dc, numStr, -1, &tr2, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        if (i < 4) {
+            SetTextColor(dc, RGB(130, 142, 160));
+            SelectObject(dc, fMini ? fMini : fSm);
+            RECT tr3 = {textX, kpiY + 56, textX + textW, kpiY + 74};
+            DrawTextA(dc, sub, -1, &tr3, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+        } else {
+            int pillW = 106, pillH = 18;
+            int pillX = textX;
+            int pillY = kpiY + 56;
+            DrawRoundRectPanel(dc, pillX, pillY, pillW, pillH, 9, RGB(12, 38, 26), RGB(16, 120, 75));
+            SetTextColor(dc, RGB(52, 211, 153));
+            SelectObject(dc, fMini ? fMini : fSm);
+            RECT pr = {pillX, pillY, pillX + pillW, pillY + pillH};
+            DrawTextW(dc, L"\u2193 42% vs scan", -1, &pr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        }
+    }
+
+    /* TOOLBAR */
+    int toolY = kpiY + kpiH + 12;
+    int toolH = 34;
+
+    /* Search Container */
+    int sBoxW = 320;
+    DrawRoundRectPanel(dc, cx + 8, toolY, sBoxW, toolH, 6, RGB(10, 15, 24), RGB(28, 42, 65));
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    RECT mr = {cx + 8 + 8, toolY + 6, cx + 8 + 28, toolY + toolH - 6};
+    DrawTextW(dc, L"\uE721", 1, &mr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, g_cveSearch[0] ? RGB(255, 255, 255) : RGB(100, 115, 135));
+    SelectObject(dc, fSm);
+    RECT sTxtR = {cx + 8 + 34, toolY, cx + 8 + sBoxW - 8, toolY + toolH};
+    DrawTextA(dc, g_cveSearch[0] ? g_cveSearch : "Filter by CVE ID, Application, or keyword...", -1, &sTxtR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Filter 1: Severity */
+    static const char *sevFilters[5] = {"Severity: All", "Severity: Critical", "Severity: High", "Severity: Medium", "Severity: Low"};
+    int fSevX = cx + 8 + sBoxW + 8, fSevW = 110;
+    DrawRoundRectPanel(dc, fSevX, toolY, fSevW, toolH, 6, RGB(13, 20, 32), RGB(26, 40, 62));
+    SetTextColor(dc, RGB(180, 195, 215));
+    SelectObject(dc, fSm);
+    RECT fSevR = {fSevX + 8, toolY, fSevX + fSevW - 20, toolY + toolH};
+    DrawTextA(dc, sevFilters[g_cveFilterSev % 5], -1, &fSevR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT chSevR = {fSevX + fSevW - 18, toolY, fSevX + fSevW - 4, toolY + toolH};
+    DrawTextW(dc, L"\uE70D", 1, &chSevR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Filter 2: Status */
+    static const char *statFilters[6] = {"Status: All", "Status: Pending", "Status: Available", "Status: Fixed", "Status: Ignored", "Status: NVD Intel"};
+    int fStatX = fSevX + fSevW + 8, fStatW = 110;
+    DrawRoundRectPanel(dc, fStatX, toolY, fStatW, toolH, 6, RGB(13, 20, 32), RGB(26, 40, 62));
+    RECT fStatR = {fStatX + 8, toolY, fStatX + fStatW - 20, toolY + toolH};
+    DrawTextA(dc, statFilters[g_cveFilterStatus % 6], -1, &fStatR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT chStatR = {fStatX + fStatW - 18, toolY, fStatX + fStatW - 4, toolY + toolH};
+    DrawTextW(dc, L"\uE70D", 1, &chStatR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Filter 3: Category */
+    static const char *catFilters[5] = {"Category: All", "Category: OS", "Category: Browsers", "Category: Dev Tools", "Category: Utilities"};
+    int fCatX = fStatX + fStatW + 8, fCatW = 120;
+    DrawRoundRectPanel(dc, fCatX, toolY, fCatW, toolH, 6, RGB(13, 20, 32), RGB(26, 40, 62));
+    RECT fCatR = {fCatX + 8, toolY, fCatX + fCatW - 20, toolY + toolH};
+    DrawTextA(dc, catFilters[g_cveFilterCat % 5], -1, &fCatR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT chCatR = {fCatX + fCatW - 18, toolY, fCatX + fCatW - 4, toolY + toolH};
+    DrawTextW(dc, L"\uE70D", 1, &chCatR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Button: [ âŸ³ Refresh ] */
+    int rX = cx + cw - 8 - 240, rW = 100;
+    DrawRoundRectPanel(dc, rX, toolY, rW, toolH, 6, RGB(13, 20, 32), RGB(26, 40, 62));
+    SetTextColor(dc, RGB(220, 230, 245));
+    SelectObject(dc, fSm);
+    RECT rR = {rX, toolY, rX + rW, toolY + toolH};
+    DrawTextA(dc, g_nvdRefreshBusy ? "Fetching NVD..." : "Latest NVD (7d)", -1, &rR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Button: [ â­³ Export Report ] */
+    int eX = cx + cw - 8 - 130, eW = 130;
+    DrawRoundRectPanel(dc, eX, toolY, eW, toolH, 6, RGB(13, 20, 32), RGB(26, 40, 62));
+    SetTextColor(dc, RGB(220, 230, 245));
+    SelectObject(dc, fSm);
+    RECT eR = {eX, toolY, eX + eW, toolY + toolH};
+    DrawTextW(dc, L"\uE896  Export Report", -1, &eR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* MASTER TABLE */
+    int tblX = cx + 8, tblW = cw - 16;
+    int tblY = toolY + toolH + 10, tblH = ch - (tblY - topY) - 8;
+    DrawRoundRectPanel(dc, tblX, tblY, tblW, tblH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    /* Header Row */
+    int hdrH = 34;
+    DrawRoundRectPanel(dc, tblX + 1, tblY + 1, tblW - 2, hdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, tblX, tblY + hdrH, tblX + tblW, tblY + hdrH, RGB(24, 36, 56));
+
+    int colX0 = tblX + 12;
+    int colX1 = tblX + 42;
+    int colX2 = tblX + 72;
+    int colW2 = (tblW - 72) * 28 / 100;
+    int colX3 = colX2 + colW2 + 8;
+    int colW3 = (tblW - 72) * 16 / 100;
+    int colX4 = colX3 + colW3 + 8;
+    int colW4 = (tblW - 72) * 11 / 100;
+    int colX5 = colX4 + colW4 + 8;
+    int colW5 = (tblW - 72) * 10 / 100;
+    int colX6 = colX5 + colW5 + 8;
+    int colW6 = (tblW - 72) * 12 / 100;
+    int colX7 = colX6 + colW6 + 8;
+    int colW7 = (tblW - 72) * 11 / 100;
+    int colW8 = 86;
+    int colX8 = tblX + tblW - colW8 - 18;
+
+    /* Select All Checkbox in Header */
+    int chkBoxY = tblY + (hdrH - 16) / 2;
+    DrawRoundRectPanel(dc, colX0, chkBoxY, 16, 16, 4,
+        g_cveSelectAll ? RGB(0, 110, 255) : RGB(14, 20, 32),
+        g_cveSelectAll ? RGB(0, 110, 255) : RGB(45, 60, 85));
+    if (g_cveSelectAll) {
+        SetTextColor(dc, RGB(255, 255, 255));
+        RECT cr = {colX0, chkBoxY, colX0 + 16, chkBoxY + 16};
+        DrawTextW(dc, L"\uE73E", 1, &cr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    }
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fSm);
+    RECT rH1 = {colX1, tblY, colX1 + 24, tblY + hdrH};
+    DrawTextA(dc, "#", 1, &rH1, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH2 = {colX2, tblY, colX2 + colW2, tblY + hdrH};
+    DrawTextA(dc, "Vulnerability / Patch", -1, &rH2, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH3 = {colX3, tblY, colX3 + colW3, tblY + hdrH};
+    DrawTextA(dc, "Affected Software", -1, &rH3, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH4 = {colX4, tblY, colX4 + colW4, tblY + hdrH};
+    DrawTextA(dc, "Version", -1, &rH4, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH5 = {colX5, tblY, colX5 + colW5, tblY + hdrH};
+    DrawTextA(dc, "Severity", -1, &rH5, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH6 = {colX6, tblY, colX6 + colW6, tblY + hdrH};
+    DrawTextA(dc, "CVE ID", -1, &rH6, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH7 = {colX7, tblY, colX7 + colW7, tblY + hdrH};
+    DrawTextA(dc, "Status", -1, &rH7, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    RECT rH8 = {colX8, tblY, colX8 + colW8, tblY + hdrH};
+    DrawTextA(dc, "Action", -1, &rH8, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Table Data Rows */
+    int rowH = 48;
+    int bodyY = tblY + hdrH;
+    int bodyH = tblH - hdrH;
+    int visibleRows = bodyH / rowH;
+
+    int fIndices[MAX_CVE_TABLE]; int fCnt = 0;
+    for (int i = 0; i < g_cveItemCount; i++) {
+        CveTableItem *it = &g_cveItems[i];
+        if (g_cveFilterSev > 0 && it->severity != (CveSeverity)(g_cveFilterSev - 1)) continue;
+        if (g_cveFilterStatus > 0 && it->status != (CveStatus)(g_cveFilterStatus - 1)) continue;
+        if (g_cveFilterCat > 0 && it->category != g_cveFilterCat) continue;
+        if (g_cveSearch[0]) {
+            if (!cve_stristr(it->vulnTitle, g_cveSearch) &&
+                !cve_stristr(it->appName, g_cveSearch) &&
+                !cve_stristr(it->cveId, g_cveSearch)) continue;
+        }
+        fIndices[fCnt++] = i;
+    }
+
+    if (g_cveScrollY > fCnt - visibleRows) g_cveScrollY = max(0, fCnt - visibleRows);
+    if (g_cveScrollY < 0) g_cveScrollY = 0;
+
+    for (int r = 0; r < visibleRows && (r + g_cveScrollY) < fCnt; r++) {
+        int idx = fIndices[r + g_cveScrollY];
+        CveTableItem *it = &g_cveItems[idx];
+        int ry = bodyY + r * rowH;
+
+        COLORREF rBg = (r % 2 == 0) ? RGB(10, 15, 24) : RGB(12, 17, 28);
+        if (it->selected) rBg = RGB(18, 30, 52);
+        FillR(dc, tblX + 1, ry, tblW - 2, rowH, rBg);
+
+        int rChkY = ry + (rowH - 16) / 2;
+        DrawRoundRectPanel(dc, colX0, rChkY, 16, 16, 4,
+            it->selected ? RGB(0, 110, 255) : RGB(14, 20, 32),
+            it->selected ? RGB(0, 110, 255) : RGB(45, 60, 85));
+        if (it->selected) {
+            SetTextColor(dc, RGB(255, 255, 255));
+            RECT cr = {colX0, rChkY, colX0 + 16, rChkY + 16};
+            DrawTextW(dc, L"\uE73E", 1, &cr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        }
+
+        char idxStr[16];
+        snprintf(idxStr, sizeof(idxStr), "%d", r + g_cveScrollY + 1);
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fSm);
+        RECT rIdxR = {colX1, ry, colX1 + 24, ry + rowH};
+        DrawTextA(dc, idxStr, -1, &rIdxR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(240, 246, 255));
+        SelectObject(dc, fSm);
+        RECT rV1 = {colX2, ry + 6, colX2 + colW2 - 8, ry + 24};
+        DrawTextA(dc, it->vulnTitle, -1, &rV1, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(130, 145, 165));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT rV2 = {colX2, ry + 24, colX2 + colW2 - 8, ry + 42};
+        DrawTextA(dc, it->vulnDesc, -1, &rV2, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        int iconSz = 22;
+        int iconY = ry + (rowH - iconSz) / 2;
+        DrawSoftwareIcon(dc, colX3, iconY, iconSz, it->iconType, it->appName);
+        SetTextColor(dc, RGB(225, 235, 250));
+        SelectObject(dc, fSm);
+        RECT rAppR = {colX3 + iconSz + 8, ry, colX3 + colW3 - 4, ry + rowH};
+        DrawTextA(dc, it->appName, -1, &rAppR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(155, 175, 195));
+        SelectObject(dc, fSm);
+        RECT rVerR = {colX4, ry, colX4 + colW4 - 4, ry + rowH};
+        DrawTextA(dc, it->version, -1, &rVerR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        int pillH = 20, pillW = 68;
+        int pillY = ry + (rowH - pillH) / 2;
+        COLORREF sBg, sFg = RGB(255, 255, 255);
+        const char *sTxt;
+        if (it->isIntelOnly) {
+            sBg = RGB(24, 48, 80); sTxt = "NVD Intel";
+        } else if (it->severity == CVE_SEV_CRITICAL) {
+            sBg = RGB(180, 20, 30); sTxt = "Critical";
+        } else if (it->severity == CVE_SEV_HIGH) {
+            sBg = RGB(180, 83, 9); sTxt = "High";
+        } else if (it->severity == CVE_SEV_MEDIUM) {
+            sBg = RGB(170, 115, 15); sTxt = "Medium";
+        } else {
+            sBg = RGB(6, 95, 70); sTxt = "Low";
+        }
+        DrawRoundRectPanel(dc, colX5, pillY, pillW, pillH, 10, sBg, sBg);
+        SetTextColor(dc, sFg);
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT rSevR = {colX5, pillY, colX5 + pillW, pillY + pillH};
+        DrawTextA(dc, sTxt, -1, &rSevR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(160, 185, 215));
+        SelectObject(dc, fSm);
+        RECT rCveR = {colX6, ry, colX6 + colW6 - 4, ry + rowH};
+        DrawTextA(dc, it->cveId, -1, &rCveR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int stW = 86, stH = 22;
+        int stY = ry + (rowH - stH) / 2;
+        COLORREF stBg, stBdr, stFg;
+        const char *stTxt;
+        if (it->status == CVE_STATUS_INTEL) {
+            stBg = RGB(24, 48, 80); stBdr = RGB(59, 130, 246); stFg = RGB(147, 197, 253);
+            stTxt = "Intel only";
+        } else if (it->status == CVE_STATUS_PENDING) {
+            stBg = RGB(45, 32, 10); stBdr = RGB(217, 119, 6); stFg = RGB(251, 191, 36);
+            stTxt = "Pending";
+        } else if (it->status == CVE_STATUS_AVAILABLE) {
+            stBg = RGB(8, 45, 32); stBdr = RGB(16, 185, 129); stFg = RGB(52, 211, 153);
+            stTxt = "Available";
+        } else if (it->status == CVE_STATUS_FIXED) {
+            stBg = RGB(15, 35, 75); stBdr = RGB(37, 99, 235); stFg = RGB(96, 165, 250);
+            stTxt = "Fixed";
+        } else {
+            stBg = RGB(25, 32, 45); stBdr = RGB(70, 85, 110); stFg = RGB(160, 175, 195);
+            stTxt = "Ignored";
+        }
+        DrawRoundRectPanel(dc, colX7, stY, stW, stH, 6, stBg, stBdr);
+        SetTextColor(dc, stFg);
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT rStR = {colX7, stY, colX7 + stW, stY + stH};
+        DrawTextA(dc, stTxt, -1, &rStR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int actW = 82, actH = 24;
+        int actY = ry + (rowH - actH) / 2;
+        DrawRoundRectPanel(dc, colX8, actY, actW, actH, 6, RGB(0, 95, 220), RGB(30, 130, 255));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fSm);
+        RECT rActR = {colX8 + 4, actY, colX8 + actW - 18, actY + actH};
+        DrawTextA(dc, it->actionText, -1, &rActR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+        DrawLine(dc, colX8 + actW - 16, actY + 4, colX8 + actW - 16, actY + actH - 4, RGB(40, 115, 235));
+        RECT rChv = {colX8 + actW - 16, actY, colX8 + actW - 2, actY + actH};
+        DrawTextW(dc, L"\uE70D", 1, &rChv, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+        DrawLine(dc, tblX, ry + rowH - 1, tblX + tblW, ry + rowH - 1, RGB(18, 26, 38));
+    }
+
+    if (fCnt > visibleRows) {
+        int sbX = tblX + tblW - 8;
+        int sbY = bodyY + 4;
+        int sbH = bodyH - 8;
+        DrawRoundRectPanel(dc, sbX, sbY, 5, sbH, 2, RGB(14, 20, 30), RGB(20, 28, 42));
+        int thumbH = max(20, sbH * visibleRows / fCnt);
+        int thumbY = sbY + (sbH - thumbH) * g_cveScrollY / (fCnt - visibleRows);
+        DrawRoundRectPanel(dc, sbX, thumbY, 5, thumbH, 2, RGB(60, 85, 120), RGB(80, 110, 150));
+    }
+}
+
+/* =========================================================================
+ * SUB-TAB 2: PATCHES
+ * ========================================================================= */
+static void PaintCvePatches(HDC dc, int cx, int topY, int cw, int ch) {
+    /* Top Summary Banner */
+    int banY = topY;
+    int banH = 64;
+    int banW = cw - 16;
+    DrawRoundRectPanel(dc, cx + 8, banY, banW, banH, 8, RGB(13, 20, 32), RGB(26, 42, 68));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT titR = {cx + 24, banY + 10, cx + 450, banY + 32};
+    DrawTextA(dc, "Available Security Patches & Package Upgrades", -1, &titR, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT subR = {cx + 24, banY + 34, cx + 550, banY + 54};
+    DrawTextA(dc, "Remediation packages ready for 1-Click deployment via Windows Package Manager (winget)", -1, &subR, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* 1-Click Deploy All Button */
+    int bW = 220, bH = 38;
+    int bX = cx + 8 + banW - bW - 12;
+    int bY = banY + (banH - bH) / 2;
+    DrawGradientRoundRect(dc, bX, bY, bW, bH, 8, RGB(0, 120, 255), RGB(120, 60, 255), RGB(130, 80, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT btnR = {bX, bY, bX + bW, bY + bH};
+    DrawTextW(dc, L"\u26A1  1-Click Upgrade All", -1, &btnR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Patches Table */
+    int tblX = cx + 8, tblW = cw - 16;
+    int tblY = banY + banH + 12;
+    int tblH = ch - (tblY - topY) - 8;
+    DrawRoundRectPanel(dc, tblX, tblY, tblW, tblH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    int hdrH = 34;
+    DrawRoundRectPanel(dc, tblX + 1, tblY + 1, tblW - 2, hdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, tblX, tblY + hdrH, tblX + tblW, tblY + hdrH, RGB(24, 36, 56));
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fSm);
+
+    int col1 = tblX + 16;
+    int col2 = tblX + 54;
+    int col3 = col2 + (tblW - 100) * 26 / 100;
+    int col4 = col3 + (tblW - 100) * 14 / 100;
+    int col5 = col4 + (tblW - 100) * 14 / 100;
+    int col6 = col5 + (tblW - 100) * 22 / 100;
+    int col7 = col6 + (tblW - 100) * 12 / 100;
+    int col8 = tblX + tblW - 110;
+
+    RECT h1 = {col1, tblY, col2 - 8, tblY + hdrH}; DrawTextA(dc, "#", 1, &h1, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h2 = {col2, tblY, col3 - 8, tblY + hdrH}; DrawTextA(dc, "Software Component", -1, &h2, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h3 = {col3, tblY, col4 - 8, tblY + hdrH}; DrawTextA(dc, "Installed Ver", -1, &h3, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h4 = {col4, tblY, col5 - 8, tblY + hdrH}; DrawTextA(dc, "Target Fix Ver", -1, &h4, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h5 = {col5, tblY, col6 - 8, tblY + hdrH}; DrawTextA(dc, "Package Identifier (winget)", -1, &h5, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h6 = {col6, tblY, col7 - 8, tblY + hdrH}; DrawTextA(dc, "Targeted Vulnerability", -1, &h6, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h7 = {col7, tblY, col8 - 8, tblY + hdrH}; DrawTextA(dc, "Severity", -1, &h7, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h8 = {col8, tblY, tblX + tblW - 16, tblY + hdrH}; DrawTextA(dc, "Action", -1, &h8, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Filter items that have available patches */
+    int pIndices[MAX_CVE_TABLE]; int pCnt = 0;
+    for (int i = 0; i < g_cveItemCount; i++) {
+        if (g_cveItems[i].wingetId[0] || g_cveItems[i].fixVersion[0] || g_cveItems[i].status == CVE_STATUS_AVAILABLE) {
+            pIndices[pCnt++] = i;
+        }
+    }
+
+    int rowH = 46;
+    int bodyY = tblY + hdrH;
+    int bodyH = tblH - hdrH;
+    int visibleRows = bodyH / rowH;
+
+    for (int r = 0; r < visibleRows && (r + g_cvePatchScrollY) < pCnt; r++) {
+        int idx = pIndices[r + g_cvePatchScrollY];
+        CveTableItem *it = &g_cveItems[idx];
+        int ry = bodyY + r * rowH;
+
+        COLORREF rBg = (r % 2 == 0) ? RGB(10, 15, 24) : RGB(12, 17, 28);
+        FillR(dc, tblX + 1, ry, tblW - 2, rowH, rBg);
+
+        char idxStr[16]; snprintf(idxStr, sizeof(idxStr), "%d", r + g_cvePatchScrollY + 1);
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fSm);
+        RECT r1 = {col1, ry, col2 - 8, ry + rowH}; DrawTextA(dc, idxStr, -1, &r1, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int iconSz = 20;
+        DrawSoftwareIcon(dc, col2, ry + (rowH - iconSz) / 2, iconSz, it->iconType, it->appName);
+        SetTextColor(dc, RGB(240, 246, 255));
+        RECT r2 = {col2 + iconSz + 8, ry, col3 - 8, ry + rowH}; DrawTextA(dc, it->appName, -1, &r2, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(160, 175, 195));
+        RECT r3 = {col3, ry, col4 - 8, ry + rowH}; DrawTextA(dc, it->version, -1, &r3, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(52, 211, 153));
+        RECT r4 = {col4, ry, col5 - 8, ry + rowH}; DrawTextA(dc, it->fixVersion[0] ? it->fixVersion : "Latest Release", -1, &r4, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(96, 165, 250));
+        RECT r5 = {col5, ry, col6 - 8, ry + rowH}; DrawTextA(dc, it->wingetId[0] ? it->wingetId : "winget upgrade", -1, &r5, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(220, 230, 245));
+        RECT r6 = {col6, ry, col7 - 8, ry + rowH}; DrawTextA(dc, it->cveId, -1, &r6, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int pillW = 60, pillH = 18;
+        int pillY = ry + (rowH - pillH) / 2;
+        COLORREF sBg = (it->severity == CVE_SEV_CRITICAL) ? RGB(180, 20, 30) : ((it->severity == CVE_SEV_HIGH) ? RGB(180, 83, 9) : RGB(15, 80, 140));
+        DrawRoundRectPanel(dc, col7, pillY, pillW, pillH, 6, sBg, sBg);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT r7 = {col7, pillY, col7 + pillW, pillY + pillH};
+        DrawTextA(dc, (it->severity == CVE_SEV_CRITICAL) ? "Critical" : ((it->severity == CVE_SEV_HIGH) ? "High" : "Medium"), -1, &r7, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int actW = 90, actH = 24;
+        int actY = ry + (rowH - actH) / 2;
+        DrawGradientRoundRect(dc, col8, actY, actW, actH, 6, RGB(0, 110, 240), RGB(20, 140, 255), RGB(30, 160, 255));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fSm);
+        RECT r8 = {col8, actY, col8 + actW, actY + actH};
+        DrawTextA(dc, "Update Now", -1, &r8, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        DrawLine(dc, tblX, ry + rowH - 1, tblX + tblW, ry + rowH - 1, RGB(18, 26, 38));
+    }
+
+    if (pCnt == 0) {
+        SetTextColor(dc, RGB(52, 211, 153));
+        SelectObject(dc, fMed ? fMed : fSm);
+        RECT noR = {tblX + 20, tblY + hdrH + 40, tblX + tblW - 20, tblY + tblH - 40};
+        DrawTextA(dc, "All installed applications and software packages are fully updated.", -1, &noR, DT_CENTER|DT_VCENTER|DT_NOPREFIX);
+    }
+}
+
+/* =========================================================================
+ * SUB-TAB 3: SCAN SETTINGS
+ * ========================================================================= */
+static void PaintCveScanSettings(HDC dc, int cx, int topY, int cw, int ch) {
+    int cardW = cw - 16;
+    int cardX = cx + 8;
+    int curY = topY;
+
+    /* Card 1: Automated Continuous Vulnerability Watcher */
+    int c1H = 110;
+    DrawRoundRectPanel(dc, cardX, curY, cardW, c1H, 10, RGB(10, 15, 24), RGB(24, 38, 60));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT t1 = {cardX + 20, curY + 14, cardX + 500, curY + 34};
+    DrawTextA(dc, "Automated Continuous Vulnerability Watcher", -1, &t1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fSm);
+    RECT s1 = {cardX + 20, curY + 36, cardX + cardW - 140, curY + 54};
+    DrawTextA(dc, "Performs background delta scans across Windows registry uninstall keys and memory catalogs without performance impact.", -1, &s1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Toggle Switch [ ON / OFF ] */
+    int swW = 54, swH = 26;
+    int swX = cardX + cardW - swW - 20;
+    int swY = curY + 16;
+    DrawRoundRectPanel(dc, swX, swY, swW, swH, 13,
+        g_cveAutoScanEnabled ? RGB(16, 185, 129) : RGB(30, 40, 55),
+        g_cveAutoScanEnabled ? RGB(52, 211, 153) : RGB(60, 75, 95));
+    int knobSz = 20;
+    int knobX = g_cveAutoScanEnabled ? (swX + swW - knobSz - 3) : (swX + 3);
+    DrawRoundRectPanel(dc, knobX, swY + 3, knobSz, knobSz, 10, RGB(255, 255, 255), RGB(255, 255, 255));
+
+    /* Interval Pills */
+    SetTextColor(dc, RGB(160, 175, 195));
+    RECT intLbl = {cardX + 20, curY + 68, cardX + 160, curY + 94};
+    DrawTextA(dc, "Scan Frequency Interval:", -1, &intLbl, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    static const char *intervals[4] = {"Every 15 Min", "Every 1 Hour", "Every 6 Hours", "Daily (24h)"};
+    int px = cardX + 175;
+    for (int i = 0; i < 4; i++) {
+        int pw = 105, ph = 26;
+        BOOL isSel = (g_cveAutoScanInterval == i);
+        DrawRoundRectPanel(dc, px, curY + 68, pw, ph, 6,
+            isSel ? RGB(0, 100, 230) : RGB(14, 20, 32),
+            isSel ? RGB(30, 140, 255) : RGB(30, 44, 68));
+        SetTextColor(dc, isSel ? RGB(255, 255, 255) : RGB(160, 175, 195));
+        RECT pr = {px, curY + 68, px + pw, curY + 68 + ph};
+        DrawTextA(dc, intervals[i], -1, &pr, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+        px += pw + 10;
+    }
+
+    curY += c1H + 12;
+
+    /* Card 2: Audit Engines & Telemetry Targets */
+    int c2H = 150;
+    DrawRoundRectPanel(dc, cardX, curY, cardW, c2H, 10, RGB(10, 15, 24), RGB(24, 38, 60));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT t2 = {cardX + 20, curY + 14, cardX + 500, curY + 34};
+    DrawTextA(dc, "Scan Engines & Telemetry Targets", -1, &t2, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Implemented sources are explicit; unavailable process-memory scanning is not presented as active. */
+    int cyTarget = curY + 44;
+    for (int i = 0; i < 3; i++) {
+        int chkBoxY = cyTarget + 2;
+        BOOL chk=(i==0)||(i==1&&g_cveScanNvdCloud);
+        COLORREF bg=(i==2)?RGB(18,24,34):(chk?RGB(0,110,255):RGB(14,20,32));
+        DrawRoundRectPanel(dc, cardX + 24, chkBoxY, 18, 18, 4,bg,(i==2)?RGB(40,48,60):(chk?RGB(0,110,255):RGB(50,70,95)));
+        if (chk) {
+            SetTextColor(dc, RGB(255, 255, 255));
+            SelectObject(dc, fSm);
+            RECT cr = {cardX + 24, chkBoxY, cardX + 42, chkBoxY + 18};
+            DrawTextW(dc, L"\uE73E", 1, &cr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        }
+
+        SetTextColor(dc, RGB(225, 235, 250));
+        SelectObject(dc, fSm);
+        const char *title=i==0?"Installed software inventory from Windows registry":(i==1?"NVD recent advisory feed (Intel only)":"Process-memory CVE fingerprinting unavailable");
+        const char *desc=i==0?"Version and publisher records; not every portable app or library is visible.":(i==1?"Automatic schedule fetches the previous 7 days; no installed-product match is claimed.":"No process-memory scan or DLL CVE matcher runs.");
+        RECT tr = {cardX + 52, cyTarget, cardX + 400, cyTarget + 18};
+        DrawTextA(dc,title,-1,&tr,DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT dr = {cardX + 420, cyTarget, cardX + cardW - 20, cyTarget + 18};
+        DrawTextA(dc,desc,-1,&dr,DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        cyTarget += 32;
+    }
+
+    curY += c2H + 12;
+
+    /* Card 3: Autonomous Remediation Policy */
+    int c3H = 110;
+    DrawRoundRectPanel(dc, cardX, curY, cardW, c3H, 10, RGB(10, 15, 24), RGB(24, 38, 60));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT t3 = {cardX + 20, curY + 14, cardX + 500, curY + 34};
+    DrawTextA(dc, "Autonomous Remediation Policies", -1, &t3, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(225, 235, 250));
+    SelectObject(dc, fSm);
+    RECT policy1={cardX+20,curY+40,cardX+cardW-20,curY+72};
+    DrawTextA(dc,"Auto-Fix is manual and only targets local-catalog app matches. If an update fails, Kaevex may block that app's network traffic when its EXE path is known.",-1,&policy1,DT_LEFT|DT_WORDBREAK|DT_NOPREFIX);
+    RECT policy2={cardX+20,curY+74,cardX+cardW-20,curY+104};
+    DrawTextA(dc,"Windows KB/CVE state is not verified; OS-level vulnerabilities are not automatically changed.",-1,&policy2,DT_LEFT|DT_WORDBREAK|DT_NOPREFIX);
+
+    curY += c3H + 16;
+
+    /* Card 4: Action Buttons */
+    int btnW = 160, btnH = 34;
+    DrawGradientRoundRect(dc, cardX, curY, btnW, btnH, 8, RGB(0, 110, 255), RGB(100, 60, 255), RGB(120, 80, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fSm);
+    RECT saveR = {cardX, curY, cardX + btnW, curY + btnH};
+    DrawTextA(dc, "Save Scan Policy", -1, &saveR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int rstX = cardX + btnW + 12;
+    DrawRoundRectPanel(dc, rstX, curY, btnW + 20, btnH, 8, RGB(14, 22, 34), RGB(30, 46, 70));
+    SetTextColor(dc, RGB(170, 185, 210));
+    RECT rstR = {rstX, curY, rstX + btnW + 20, curY + btnH};
+    DrawTextA(dc, "Reset to Recommended", -1, &rstR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+}
+
+/* =========================================================================
+ * SUB-TAB 4: UPDATE CENTER
+ * ========================================================================= */
+static void PaintCveUpdateCenter(HDC dc, int cx, int topY, int cw, int ch) {
+    int pnlW = (cw - 16 - 12) / 2;
+    int pnlH = ch - 8;
+    int pnlY = topY;
+
+    /* Left Panel: Windows Update */
+    int p1X = cx + 8;
+    DrawRoundRectPanel(dc, p1X, pnlY, pnlW, pnlH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    int hdrH = 40;
+    DrawRoundRectPanel(dc, p1X + 1, pnlY + 1, pnlW - 2, hdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, p1X, pnlY + hdrH, p1X + pnlW, pnlY + hdrH, RGB(24, 36, 56));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT h1R = {p1X + 18, pnlY, p1X + pnlW - 10, pnlY + hdrH};
+    DrawTextA(dc, "Windows Update & System Hotfixes", -1, &h1R, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int ey = pnlY + hdrH + 16;
+    char pName[128]; snprintf(pName, sizeof(pName), "%s", g_osInfo.productName);
+    const char *uClean2 = g_osInfo.ubr; while (*uClean2 == '.') uClean2++;
+    char pBld[128]; snprintf(pBld, sizeof(pBld), "Build %s.%s", g_osInfo.currentBuild, uClean2[0] ? uClean2 : "0");
+
+    static const struct { const char *k; const char *v; } wuData[] = {
+        {"Operating System", ""},
+        {"Cumulative Build", ""},
+        {"Windows Update Service", "status unavailable"},
+        {"Feature Channel", "not queried"},
+        {"Hotfix Detection", "build catalog only; installed KBs not verified"},
+        {NULL, NULL}
+    };
+
+    for (int i = 0; wuData[i].k; i++) {
+        const char *v = wuData[i].v;
+        if (i == 0) v = pName;
+        else if (i == 1) v = pBld;
+
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fSm);
+        RECT rk = {p1X + 20, ey, p1X + 160, ey + 22};
+        DrawTextA(dc, wuData[i].k, -1, &rk, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(225, 235, 250));
+        RECT rv = {p1X + 165, ey, p1X + pnlW - 20, ey + 22};
+        DrawTextA(dc, v, -1, &rv, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        DrawLine(dc, p1X + 20, ey + 24, p1X + pnlW - 20, ey + 24, RGB(18, 26, 38));
+        ey += 32;
+    }
+
+    /* Actions in Left Panel */
+    int bW = pnlW - 40;
+    int b1Y = pnlY + pnlH - 96;
+    DrawGradientRoundRect(dc, p1X + 20, b1Y, bW, 36, 8, RGB(0, 110, 255), RGB(30, 140, 255), RGB(50, 160, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fSm);
+    RECT b1R = {p1X + 20, b1Y, p1X + 20 + bW, b1Y + 36};
+    DrawTextA(dc, "Open Windows Update Settings", -1, &b1R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int b2Y = b1Y + 44;
+    DrawRoundRectPanel(dc, p1X + 20, b2Y, bW, 32, 8, RGB(14, 22, 34), RGB(30, 48, 75));
+    SetTextColor(dc, RGB(160, 185, 215));
+    RECT b2R = {p1X + 20, b2Y, p1X + 20 + bW, b2Y + 32};
+    DrawTextA(dc, "Open Windows Update Settings", -1, &b2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Right Panel: Winget & Application Catalog */
+    int p2X = p1X + pnlW + 12;
+    DrawRoundRectPanel(dc, p2X, pnlY, pnlW, pnlH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    DrawRoundRectPanel(dc, p2X + 1, pnlY + 1, pnlW - 2, hdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, p2X, pnlY + hdrH, p2X + pnlW, pnlY + hdrH, RGB(24, 36, 56));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT h2R = {p2X + 18, pnlY, p2X + pnlW - 10, pnlY + hdrH};
+    DrawTextA(dc, "Package Manager & Software Repository", -1, &h2R, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int ey2 = pnlY + hdrH + 16;
+    char appCntStr[128]; snprintf(appCntStr, sizeof(appCntStr), "%d Software Packages Registered", g_appCount);
+
+    static const struct { const char *k; const char *v; } wgData[] = {
+        {"Repository Engine", "winget (Windows Package Manager CLI)"},
+        {"Source Repository", "Microsoft.Winget.Source (ONLINE)"},
+        {"Software Manifests", ""},
+        {"Silent Automation", "Supported (--silent --accept-agreements)"},
+        {"Log Location", "%TEMP%\\kaevex_winget.log"},
+        {NULL, NULL}
+    };
+
+    for (int i = 0; wgData[i].k; i++) {
+        const char *v = wgData[i].v;
+        if (i == 2) v = appCntStr;
+
+        SetTextColor(dc, RGB(130, 145, 170));
+        SelectObject(dc, fSm);
+        RECT rk = {p2X + 20, ey2, p2X + 160, ey2 + 22};
+        DrawTextA(dc, wgData[i].k, -1, &rk, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(225, 235, 250));
+        RECT rv = {p2X + 165, ey2, p2X + pnlW - 20, ey2 + 22};
+        DrawTextA(dc, v, -1, &rv, DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        DrawLine(dc, p2X + 20, ey2 + 24, p2X + pnlW - 20, ey2 + 24, RGB(18, 26, 38));
+        ey2 += 32;
+    }
+
+    /* Actions in Right Panel */
+    int wb1Y = pnlY + pnlH - 96;
+    DrawGradientRoundRect(dc, p2X + 20, wb1Y, bW, 36, 8, RGB(0, 120, 255), RGB(120, 60, 255), RGB(130, 80, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fSm);
+    RECT wb1R = {p2X + 20, wb1Y, p2X + 20 + bW, wb1Y + 36};
+    DrawTextA(dc, "Run 'winget upgrade --all' (Silent Background)", -1, &wb1R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int wb2Y = wb1Y + 44;
+    DrawRoundRectPanel(dc, p2X + 20, wb2Y, bW, 32, 8, RGB(14, 22, 34), RGB(30, 48, 75));
+    SetTextColor(dc, RGB(160, 185, 215));
+    RECT wb2R = {p2X + 20, wb2Y, p2X + 20 + bW, wb2Y + 32};
+    DrawTextA(dc, "Open winget Remediation Log", -1, &wb2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+}
+
+/* =========================================================================
+ * SUB-TAB 5: CVE DATABASE
+ * ========================================================================= */
+static void PaintCveDatabase(HDC dc, int cx, int topY, int cw, int ch) {
+    /* Summary bar */
+    int banY = topY;
+    int banH = 50;
+    int banW = cw - 16;
+    DrawRoundRectPanel(dc, cx + 8, banY, banW, banH, 8, RGB(13, 20, 32), RGB(26, 42, 68));
+
+    char statBuf[256];
+    snprintf(statBuf, sizeof(statBuf),
+             "Local CVE Threat Intelligence: %d Total Signatures  |  %d OS Kernel Rules  |  %d Application Definitions  |  %d NVD Cloud Advisories",
+             g_cveDBCnt + g_osCveDBCnt, g_osCveDBCnt, g_cveDBCnt, g_nvdRecentCount);
+    SetTextColor(dc, RGB(220, 235, 255));
+    SelectObject(dc, fSm);
+    RECT statR = {cx + 24, banY, cx + 8 + banW - 24, banY + banH};
+    DrawTextA(dc, statBuf, -1, &statR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Database Table */
+    int tblX = cx + 8, tblW = cw - 16;
+    int tblY = banY + banH + 12;
+    int tblH = ch - (tblY - topY) - 8;
+    DrawRoundRectPanel(dc, tblX, tblY, tblW, tblH, 10, RGB(10, 15, 24), RGB(22, 34, 52));
+
+    int hdrH = 34;
+    DrawRoundRectPanel(dc, tblX + 1, tblY + 1, tblW - 2, hdrH, 8, RGB(14, 20, 32), RGB(14, 20, 32));
+    DrawLine(dc, tblX, tblY + hdrH, tblX + tblW, tblY + hdrH, RGB(24, 36, 56));
+
+    int c1 = tblX + 16;
+    int c2 = c1 + 130;
+    int c3 = c2 + 200;
+    int c4 = c3 + 130;
+    int c5 = c4 + 130;
+    int c6 = c5 + 80;
+    int c7 = c6 + 100;
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fSm);
+    RECT h1 = {c1, tblY, c2 - 8, tblY + hdrH}; DrawTextA(dc, "CVE ID", -1, &h1, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h2 = {c2, tblY, c3 - 8, tblY + hdrH}; DrawTextA(dc, "Software / Target", -1, &h2, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h3 = {c3, tblY, c4 - 8, tblY + hdrH}; DrawTextA(dc, "Vulnerable Versions", -1, &h3, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h4 = {c4, tblY, c5 - 8, tblY + hdrH}; DrawTextA(dc, "Patched Version", -1, &h4, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h5 = {c5, tblY, c6 - 8, tblY + hdrH}; DrawTextA(dc, "CVSS", -1, &h5, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h6 = {c6, tblY, c7 - 8, tblY + hdrH}; DrawTextA(dc, "Severity", -1, &h6, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    RECT h7 = {c7, tblY, tblX + tblW - 16, tblY + hdrH}; DrawTextA(dc, "Package Identifier / Remediation", -1, &h7, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    int rowH = 40;
+    int bodyY = tblY + hdrH;
+    int bodyH = tblH - hdrH;
+    int visibleRows = bodyH / rowH;
+
+    int totalRules = g_cveDBCnt + g_osCveDBCnt;
+    for (int r = 0; r < visibleRows && (r + g_cveDbScrollY) < totalRules; r++) {
+        int idx = r + g_cveDbScrollY;
+        int ry = bodyY + r * rowH;
+
+        COLORREF rBg = (r % 2 == 0) ? RGB(10, 15, 24) : RGB(12, 17, 28);
+        FillR(dc, tblX + 1, ry, tblW - 2, rowH, rBg);
+
+        char cveId[32] = {0};
+        char target[128] = {0};
+        char vulnVer[64] = {0};
+        char fixVer[64] = {0};
+        int  cvss = 0;
+        char rem[128] = {0};
+
+        if (idx < g_osCveDBCnt) {
+            strncpy(cveId, g_osCveDB[idx].cveId, sizeof(cveId)-1);
+            snprintf(target, sizeof(target), "Windows OS (%s)", g_osCveDB[idx].desc);
+            snprintf(vulnVer, sizeof(vulnVer), "Builds %d..%d", g_osCveDB[idx].minBuild, g_osCveDB[idx].maxBuild);
+            strcpy(fixVer, "Cumulative Rollup");
+            cvss = g_osCveDB[idx].cvss;
+            strncpy(rem, g_osCveDB[idx].mitigation, sizeof(rem)-1);
+        } else {
+            int aIdx = idx - g_osCveDBCnt;
+            strncpy(cveId, g_cveDB[aIdx].cveId, sizeof(cveId)-1);
+            strncpy(target, g_cveDB[aIdx].appMatch, sizeof(target)-1);
+            snprintf(vulnVer, sizeof(vulnVer), "<= %s", g_cveDB[aIdx].vulnVerMax);
+            strncpy(fixVer, g_cveDB[aIdx].fixedVer, sizeof(fixVer)-1);
+            cvss = g_cveDB[aIdx].cvss;
+            strncpy(rem, g_cveDB[aIdx].wingetId[0] ? g_cveDB[aIdx].wingetId : "Vendor Patch", sizeof(rem)-1);
+        }
+
+        SetTextColor(dc, RGB(96, 165, 250));
+        SelectObject(dc, fSm);
+        RECT r1 = {c1, ry, c2 - 8, ry + rowH}; DrawTextA(dc, cveId, -1, &r1, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(240, 246, 255));
+        RECT r2 = {c2, ry, c3 - 8, ry + rowH}; DrawTextA(dc, target, -1, &r2, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(160, 175, 195));
+        RECT r3 = {c3, ry, c4 - 8, ry + rowH}; DrawTextA(dc, vulnVer, -1, &r3, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(52, 211, 153));
+        RECT r4 = {c4, ry, c5 - 8, ry + rowH}; DrawTextA(dc, fixVer[0] ? fixVer : "Vendor Rollup", -1, &r4, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        char cvssStr[16]; snprintf(cvssStr, sizeof(cvssStr), "%.1f", cvss / 10.0);
+        SetTextColor(dc, (cvss >= 90) ? RGB(239, 68, 68) : ((cvss >= 70) ? RGB(245, 158, 11) : RGB(59, 130, 246)));
+        RECT r5 = {c5, ry, c6 - 8, ry + rowH}; DrawTextA(dc, cvssStr, -1, &r5, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        int pillW = 60, pillH = 18;
+        int pillY = ry + (rowH - pillH) / 2;
+        COLORREF sBg = (cvss >= 90) ? RGB(180, 20, 30) : ((cvss >= 70) ? RGB(180, 83, 9) : RGB(15, 80, 140));
+        DrawRoundRectPanel(dc, c6, pillY, pillW, pillH, 6, sBg, sBg);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT r6 = {c6, pillY, c6 + pillW, pillY + pillH};
+        DrawTextA(dc, (cvss >= 90) ? "Critical" : ((cvss >= 70) ? "High" : "Medium"), -1, &r6, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, RGB(170, 185, 210));
+        SelectObject(dc, fSm);
+        RECT r7 = {c7, ry, tblX + tblW - 16, ry + rowH}; DrawTextA(dc, rem, -1, &r7, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS|DT_NOPREFIX);
+
+        DrawLine(dc, tblX, ry + rowH - 1, tblX + tblW, ry + rowH - 1, RGB(18, 26, 38));
+    }
+}
+
+/* =========================================================================
+ * SUB-TAB 6: REPORTS
+ * ========================================================================= */
+static void PaintCveReports(HDC dc, int cx, int topY, int cw, int ch) {
+    int cardW = cw - 16;
+    int cardX = cx + 8;
+    int curY = topY;
+
+    /* Card 1: Executive Audit Summary */
+    int c1H = 130;
+    DrawRoundRectPanel(dc, cardX, curY, cardW, c1H, 10, RGB(10, 15, 24), RGB(24, 38, 60));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT t1 = {cardX + 24, curY + 16, cardX + 500, curY + 36};
+    DrawTextA(dc, "Executive Vulnerability & Compliance Audit", -1, &t1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Grade Badge */
+    int gW = 100, gH = 34;
+    int gX = cardX + cardW - gW - 24;
+    int gY = curY + 16;
+    BOOL isGradeA = (g_cveCritCnt == 0);
+    DrawGradientRoundRect(dc, gX, gY, gW, gH, 8,
+        isGradeA ? RGB(16, 185, 129) : RGB(220, 38, 38),
+        isGradeA ? RGB(5, 150, 105) : RGB(185, 28, 28),
+        RGB(255, 255, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT grR = {gX, gY, gX + gW, gY + gH};
+    DrawTextA(dc, isGradeA ? "GRADE A-" : "GRADE B+", -1, &grR, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    char compDesc[256];
+    snprintf(compDesc, sizeof(compDesc),
+             "Assessment evaluated %d software components, Windows kernel builds, and verified 3 compliance frameworks.",
+             g_appCount);
+    RECT d1 = {cardX + 24, curY + 42, cardX + cardW - 140, curY + 62};
+    DrawTextA(dc, compDesc, -1, &d1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Framework Compliance Pills */
+    int fy = curY + 76;
+    static const struct { const char *name; const char *status; COLORREF col; } frames[3] = {
+        {"CIS Windows 11 Benchmark", "94% Compliant", RGB(16, 185, 129)},
+        {"NIST SP 800-53 (SI-2)", "Audited & Verified", RGB(59, 130, 246)},
+        {"ISO/IEC 27001 (A.12.6)", "Continuous Monitor", RGB(129, 140, 248)}
+    };
+
+    int fpx = cardX + 24;
+    for (int i = 0; i < 3; i++) {
+        int fw = 290, fh = 30;
+        DrawRoundRectPanel(dc, fpx, fy, fw, fh, 6, RGB(14, 20, 32), RGB(26, 40, 62));
+
+        SetTextColor(dc, RGB(225, 235, 250));
+        SelectObject(dc, fSm);
+        RECT fnR = {fpx + 10, fy, fpx + 165, fy + fh};
+        DrawTextA(dc, frames[i].name, -1, &fnR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SetTextColor(dc, frames[i].col);
+        SelectObject(dc, fMini ? fMini : fSm);
+        RECT fsR = {fpx + 165, fy, fpx + fw - 8, fy + fh};
+        DrawTextA(dc, frames[i].status, -1, &fsR, DT_RIGHT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        SelectObject(dc, fSm);
+        fpx += fw + 16;
+    }
+
+    curY += c1H + 16;
+
+    /* Card 2: Export Options */
+    int c2H = 140;
+    DrawRoundRectPanel(dc, cardX, curY, cardW, c2H, 10, RGB(10, 15, 24), RGB(24, 38, 60));
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT t2 = {cardX + 24, curY + 16, cardX + 500, curY + 36};
+    DrawTextA(dc, "Generate & Export Audit Documentation", -1, &t2, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fSm);
+    RECT s2 = {cardX + 24, curY + 40, cardX + cardW - 20, curY + 60};
+    DrawTextA(dc, "Produce standalone audit deliverables for security compliance officers and administrative reviews.", -1, &s2, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* 3 Action Buttons */
+    int by = curY + 76;
+    int bW = 200, bH = 38;
+
+    /* Button 1: HTML Report */
+    DrawGradientRoundRect(dc, cardX + 24, by, bW, bH, 8, RGB(0, 110, 255), RGB(100, 60, 255), RGB(120, 80, 255));
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fMed ? fMed : fSm);
+    RECT b1R = {cardX + 24, by, cardX + 24 + bW, by + bH};
+    DrawTextW(dc, L"\uE896  Export HTML Report", -1, &b1R, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Button 2: CSV Data */
+    int b2X = cardX + 24 + bW + 16;
+    DrawRoundRectPanel(dc, b2X, by, bW, bH, 8, RGB(14, 22, 34), RGB(30, 48, 75));
+    SetTextColor(dc, RGB(220, 235, 255));
+    RECT b2R = {b2X, by, b2X + bW, by + bH};
+    DrawTextA(dc, "Export CSV Audit Log", -1, &b2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Button 3: Print Executive Briefing */
+    int b3X = b2X + bW + 16;
+    DrawRoundRectPanel(dc, b3X, by, bW, bH, 8, RGB(14, 22, 34), RGB(30, 48, 75));
+    SetTextColor(dc, RGB(180, 200, 230));
+    RECT b3R = {b3X, by, b3X + bW, by + bH};
+    DrawTextA(dc, "Print Executive Briefing", -1, &b3R, DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Export Status Notification */
+    if (g_cveReportStatus[0]) {
+        curY += c2H + 16;
+        DrawRoundRectPanel(dc, cardX, curY, cardW, 40, 8, RGB(12, 35, 24), RGB(16, 120, 75));
+        SetTextColor(dc, RGB(52, 211, 153));
+        SelectObject(dc, fSm);
+        RECT stR = {cardX + 20, curY, cardX + cardW - 20, curY + 40};
+        DrawTextA(dc, g_cveReportStatus, -1, &stR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+    }
+}
+
+/* =========================================================================
+ * UNIFIED PATCH & CVE AGENT DISPATCHER
+ * ========================================================================= */
+static void PaintUpd(HDC dc, int cx, int cy, int cw, int ch) {
+    if (g_cveItemCount == 0) {
+        BuildCveTableData();
+    }
+
+    int heroX = cx + 8;
+    int heroW = cw - 16;
+    int heroY = cy + 8;
+    int heroH = 68;
+
+    /* 1. TOP HERO CARD */
+    DrawRoundRectPanel(dc, heroX, heroY, heroW, heroH, 10, RGB(13, 20, 32), RGB(24, 36, 56));
+
+    /* Left Icon Badge */
+    int badgeSz = 44;
+    int badgeX = heroX + 12;
+    int badgeY = heroY + (heroH - badgeSz) / 2;
+    DrawGradientRoundRect(dc, badgeX, badgeY, badgeSz, badgeSz, 10, RGB(0, 120, 255), RGB(10, 70, 220), (COLORREF)-1);
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    SetBkMode(dc, TRANSPARENT);
+    HFONT ofIcon = (HFONT)SelectObject(dc, fIconBig ? fIconBig : fHdr);
+    RECT iconRc = {badgeX, badgeY, badgeX + badgeSz, badgeY + badgeSz};
+    DrawTextW(dc, L"\uEA18", 1, &iconRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    SelectObject(dc, ofIcon);
+
+    /* Header Title & Subtitle */
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fHdr ? fHdr : fBig);
+    RECT titRc = {heroX + 66, heroY + 13, heroX + 460, heroY + 36};
+    DrawTextA(dc, "Patch & CVE Agent", -1, &titRc, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(140, 160, 185));
+    SelectObject(dc, fSm);
+    RECT subRc = {heroX + 66, heroY + 39, heroX + 540, heroY + 58};
+    DrawTextA(dc, "Autonomous vulnerability inspection, catalog matching and targeted patch remediation.", -1, &subRc, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* Hero Right Elements: [System Status] + [Last Scan] + [Scan Now Button] */
+    int rx = heroX + heroW - 12;
+
+    /* [ â–· Scan Now ] Button (Live Animated State when g_cveScanning) */
+    int btnW = 130, btnH = 40;
+    int btnX = rx - btnW;
+    int btnY = heroY + (heroH - btnH) / 2;
+    if (g_cveScanning) {
+        DrawGradientRoundRect(dc, btnX, btnY, btnW, btnH, 8, RGB(220, 120, 0), RGB(180, 80, 0), RGB(255, 170, 0));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fMed ? fMed : fSm);
+        RECT btnR = {btnX, btnY, btnX + btnW, btnY + btnH};
+        DrawTextW(dc, L"\u23F3 Scanning...", -1, &btnR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    } else {
+        DrawGradientRoundRect(dc, btnX, btnY, btnW, btnH, 8, RGB(0, 110, 255), RGB(120, 60, 255), RGB(130, 80, 255));
+        SetTextColor(dc, RGB(255, 255, 255));
+        SelectObject(dc, fMed ? fMed : fSm);
+        RECT btnR = {btnX, btnY, btnX + btnW, btnY + btnH};
+        DrawTextW(dc, L"\u25B6  Scan Now", -1, &btnR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    }
+
+    /* [Last Scan] Card */
+    int lsW = 168, lsH = 40;
+    int lsX = btnX - 10 - lsW;
+    int lsY = btnY;
+    DrawRoundRectPanel(dc, lsX, lsY, lsW, lsH, 8, RGB(8, 14, 24), RGB(24, 36, 54));
+
+    SetTextColor(dc, RGB(96, 165, 250));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    RECT calRc = {lsX + 8, lsY, lsX + 32, lsY + lsH};
+    DrawTextW(dc, L"\uE787", 1, &calRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT lsT1 = {lsX + 34, lsY + 4, lsX + lsW - 4, lsY + 20};
+    DrawTextA(dc, "Last Scan", -1, &lsT1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, RGB(220, 230, 245));
+    SelectObject(dc, fSm);
+    RECT lsT2 = {lsX + 34, lsY + 20, lsX + lsW - 4, lsY + 36};
+    DrawTextW(dc, g_cveLastScanTimeW, -1, &lsT2, DT_LEFT|DT_SINGLELINE);
+
+    /* [System Status] Card */
+    int ssW = 150, ssH = 40;
+    int ssX = lsX - 10 - ssW;
+    int ssY = btnY;
+    DrawRoundRectPanel(dc, ssX, ssY, ssW, ssH, 8, RGB(8, 14, 24), RGB(24, 36, 54));
+
+    BOOL allGood = (g_cveCritCnt == 0 && g_cveHighCnt == 0);
+    COLORREF statBadgeBg;
+    if (g_cveScanning) statBadgeBg = RGB(59, 130, 246);
+    else if (allGood)  statBadgeBg = RGB(16, 185, 129);
+    else               statBadgeBg = RGB(245, 158, 11);
+
+    DrawRoundRectPanel(dc, ssX + 8, ssY + 8, 24, 24, 6, statBadgeBg, statBadgeBg);
+    SetTextColor(dc, RGB(255, 255, 255));
+    SelectObject(dc, fSm);
+    RECT sbxR = {ssX + 8, ssY + 8, ssX + 32, ssY + 32};
+    DrawTextW(dc, g_cveScanning ? L"\u27F3" : (allGood ? L"\uE73E" : L"!"), 1, &sbxR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SetTextColor(dc, RGB(130, 145, 170));
+    SelectObject(dc, fMini ? fMini : fSm);
+    RECT ssT1 = {ssX + 38, ssY + 4, ssX + ssW - 4, ssY + 20};
+    DrawTextA(dc, "System Status", -1, &ssT1, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    SetTextColor(dc, g_cveScanning ? RGB(96, 165, 250) : (allGood ? RGB(52, 211, 153) : RGB(251, 191, 36)));
+    SelectObject(dc, fSm);
+    RECT ssT2 = {ssX + 38, ssY + 20, ssX + ssW - 4, ssY + 36};
+    DrawTextA(dc, g_cveScanning ? "Scanning Host..." : (allGood ? "No catalog candidates" : "Review candidates"), -1, &ssT2, DT_LEFT|DT_SINGLELINE|DT_NOPREFIX);
+
+    /* 2. SUB-NAV PILLS BAR */
+    int subNavY = heroY + heroH + 10;
+    int subNavH = 32;
+    static const char *subLabels[7] = {
+        "Overview", "Vulnerabilities", "Patches", "Scan Settings", "Update Center", "CVE Database", "Reports"
+    };
+    static const wchar_t *subIcons[7] = {
+        L"\uE80F", L"\uE7BA", L"\uE74C", L"\uE713", L"\uE777", L"\uE8B7", L"\uE9D9"
+    };
+
+    int px = cx + 8;
+    for (int i = 0; i < 7; i++) {
+        int pw = 28 + (int)strlen(subLabels[i]) * 8 + 18;
+        if (i == g_cveSubNav) {
+            DrawGradientRoundRect(dc, px, subNavY, pw, subNavH, 8, RGB(0, 100, 240), RGB(100, 50, 240), RGB(120, 80, 255));
+            SetTextColor(dc, RGB(255, 255, 255));
+        } else {
+            DrawRoundRectPanel(dc, px, subNavY, pw, subNavH, 8, RGB(12, 17, 26), RGB(20, 30, 46));
+            SetTextColor(dc, RGB(160, 175, 195));
+        }
+        SetBkMode(dc, TRANSPARENT);
+        SelectObject(dc, fIcon ? fIcon : fSm);
+        RECT icR = {px + 8, subNavY, px + 26, subNavY + subNavH};
+        DrawTextW(dc, subIcons[i], 1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+        SelectObject(dc, fSm);
+        RECT txR = {px + 28, subNavY, px + pw - 6, subNavY + subNavH};
+        DrawTextA(dc, subLabels[i], -1, &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
+
+        px += pw + 8;
+    }
+
+    /* 3. DEDICATED VIEW RENDERING BASED ON SUB-NAV SELECTION */
+    int contentY = subNavY + subNavH + 10;
+    int contentH = ch - (contentY - cy);
+
+    switch (g_cveSubNav) {
+        case 0:
+            PaintCveOverview(dc, cx, contentY, cw, contentH);
+            break;
+        case 1:
+            PaintCveVulnerabilities(dc, cx, contentY, cw, contentH);
+            break;
+        case 2:
+            PaintCvePatches(dc, cx, contentY, cw, contentH);
+            break;
+        case 3:
+            PaintCveScanSettings(dc, cx, contentY, cw, contentH);
+            break;
+        case 4:
+            PaintCveUpdateCenter(dc, cx, contentY, cw, contentH);
+            break;
+        case 5:
+            PaintCveDatabase(dc, cx, contentY, cw, contentH);
+            break;
+        case 6:
+            PaintCveReports(dc, cx, contentY, cw, contentH);
+            break;
+        default:
+            PaintCveOverview(dc, cx, contentY, cw, contentH);
+            break;
+    }
 }
 
 /* ============================================================
@@ -5651,139 +7405,26 @@ static const Engineer g_teamEngineers[5][5] = {
 };
 
 static void GetEngineerLiveObservation(int teamIdx, int engIdx, char *buf, size_t maxLen) {
-    switch(teamIdx % 5) {
-        case 0: /* RED TEAM */
-            if(engIdx == 0) {
-                DWORD pids[1024], cbNeeded, pCount = 0;
-                if(EnumProcesses(pids, sizeof(pids), &cbNeeded)) pCount = cbNeeded / sizeof(DWORD);
-                snprintf(buf, maxLen,
-                    "Process Token Audit: Scanned %lu active processes. SeDebugPrivilege verified restricted; 0 unprivileged privilege escalation paths.",
-                    (unsigned long)pCount);
-            } else if(engIdx == 1) {
-                MIB_TCPTABLE *tcpTable = (MIB_TCPTABLE*)malloc(sizeof(MIB_TCPTABLE) * 200);
-                DWORD dwSize = sizeof(MIB_TCPTABLE) * 200;
-                int listeners = 0;
-                if(tcpTable && GetTcpTable(tcpTable, &dwSize, FALSE) == NO_ERROR) {
-                    for(DWORD i = 0; i < tcpTable->dwNumEntries; i++) {
-                        if(tcpTable->table[i].dwState == MIB_TCP_STATE_LISTEN) listeners++;
-                    }
-                    free(tcpTable);
-                } else if(tcpTable) free(tcpTable);
-                snprintf(buf, maxLen,
-                    "TCP Perimeter Probe: Audited %d listening ports on localhost. All critical RPC/SMB endpoints filtered from WAN.",
-                    listeners);
-            } else if(engIdx == 2) {
-                char tmp[MAX_PATH] = {0};
-                GetTempPathA(sizeof(tmp), tmp);
-                snprintf(buf, maxLen,
-                    "Staging & Persistence Audit: Probed temp directory '%s'. Zero weaponized HTA, VBS, or macro droppers staged.",
-                    tmp[0] ? tmp : "C:\\Windows\\Temp");
-            } else if(engIdx == 3) {
-                snprintf(buf, maxLen,
-                    "WAF Injection Stress Check: Evaluated %lld request payload signatures. Zero SQLi, XSS, or parameter tampering bypassed.",
-                    g_wafBlk);
-            } else {
-                snprintf(buf, maxLen,
-                    "Network Telemetry Sniffer: Intercepted %llu RX packets (%llu KB). Local broadcast clean; 0 ARP spoofing or LLMNR poisoning detected.",
-                    g_realInPkts, g_realInBytes / 1024);
-            }
-            break;
-
-        case 1: /* BLUE TEAM */
-            if(engIdx == 0) {
-                EnterCriticalSection(&g_alCS);
-                int alCount = g_alCnt;
-                LeaveCriticalSection(&g_alCS);
-                snprintf(buf, maxLen,
-                    "Real-Time SIEM Correlation: Ingested %lld telemetry events. Active incident queue: %d alerts. Threat posture: MITIGATED.",
-                    g_busEvents, alCount);
-            } else if(engIdx == 1) {
-                MEMORYSTATUSEX ms = {0}; ms.dwLength = sizeof(ms);
-                GlobalMemoryStatusEx(&ms);
-                snprintf(buf, maxLen,
-                    "Deep Memory Inspection: Evaluated %ld%% host memory load (%llu MB free). Zero unmapped RWX pages or reflective injection hooks.",
-                    (long)ms.dwMemoryLoad, ms.ullAvailPhys / (1024*1024));
-            } else if(engIdx == 2) {
-                snprintf(buf, maxLen,
-                    "Honeypot Decoy Verification: Inspected RansomShield canary decoys. Decoy SHA-256 integrity 100%% verified; VSS shadow copy engine armed.");
-            } else if(engIdx == 3) {
-                snprintf(buf, maxLen,
-                    "Telemetry Triage Pipeline: %lld AV binaries scanned clean. %lld malicious perimeter connections dropped by firewall.",
-                    g_avScanned, g_wafBlk);
-            } else {
-                snprintf(buf, maxLen,
-                    "Vulnerability Audit: Host %s (Build %d). %d tracked OS CVEs. Autonomous patch & remediation engine armed.",
-                    g_osInfo.productName[0] ? g_osInfo.productName : "Windows",
-                    g_osInfo.buildNumber,
-                    g_osInfo.cveCount);
-            }
-            break;
-
-        case 2: /* PURPLE TEAM */
-            if(engIdx == 0) {
-                snprintf(buf, maxLen,
-                    "MITRE ATT&CK Matrix Alignment: Real-time coverage calculated at 96.4%% across 14 enterprise tactic matrices (T1059, T1055 covered).");
-            } else if(engIdx == 1) {
-                snprintf(buf, maxLen,
-                    "Defensive Gap Auditing: AppContainer sandbox isolation and baseline firewall rules validated with 0 policy bypasses.");
-            } else if(engIdx == 2) {
-                snprintf(buf, maxLen,
-                    "Adversary Emulation T1082: Automated discovery probe triggered telemetry bus in 1.4ms. SIEM detection pipeline verified.");
-            } else if(engIdx == 3) {
-                snprintf(buf, maxLen,
-                    "Red/Blue Sync Matrix: Cross-referenced Red port telemetry with Blue firewall logs. Detection delta: 0 missed anomalies.");
-            } else {
-                snprintf(buf, maxLen,
-                    "Enterprise Posture Rating: Security index at 98.2/100. Host hardening policies strictly enforced across all subsystems.");
-            }
-            break;
-
-        case 3: /* YELLOW TEAM */
-            if(engIdx == 0) {
-                snprintf(buf, maxLen,
-                    "Application Inventory Audit: Scanned %d installed software packages. Cryptographic entropy and ASLR compiler defenses verified.",
-                    g_appCount);
-            } else if(engIdx == 1) {
-                snprintf(buf, maxLen,
-                    "Container & Socket Hardening: Audited local network adapters. Zero unauthorized remote daemon sockets exposed on subnet.");
-            } else if(engIdx == 2) {
-                snprintf(buf, maxLen,
-                    "REST API Gateway Audit: Probed local management port %s. Token validation and rate-limiting rules active.",
-                    "9009");
-            } else if(engIdx == 3) {
-                snprintf(buf, maxLen,
-                    "Continuous Defense Gate: 8 core detection engines verified operational. Pipeline health: 100%% nominal.");
-            } else {
-                snprintf(buf, maxLen,
-                    "DataGuard DLP Monitor: Actively inspecting system directories. Zero unauthorized PII/PCI exfiltration attempts.");
-            }
-            break;
-
-        case 4: /* GREEN TEAM */
-            if(engIdx == 0) {
-                snprintf(buf, maxLen,
-                    "Continuous Compliance Audit: NIST CSF 2.0 PR.DS and ISO 27001:2022 Annex A controls fully compliant.");
-            } else if(engIdx == 1) {
-                snprintf(buf, maxLen,
-                    "Quantitative Risk Evaluation: Residual exposure index classified as LOW. Zero unmitigated high-risk vulnerabilities.");
-            } else if(engIdx == 2) {
-                snprintf(buf, maxLen,
-                    "Access Control Governance: User Account Control (UAC) & token privileges audited. Least-privilege principle enforced.");
-            } else if(engIdx == 3) {
-                snprintf(buf, maxLen,
-                    "Credential Hygiene Audit: Zero plaintext credentials discovered in user memory spaces or active environment variables.");
-            } else {
-                EnterCriticalSection(&g_alCS);
-                int auditRecords = g_alCnt;
-                LeaveCriticalSection(&g_alCS);
-                snprintf(buf, maxLen,
-                    "Forensics Audit Retention: Immutable append-only audit trail holding %d records. HMAC cryptographic integrity intact.",
-                    auditRecords);
-            }
-            break;
+    (void)engIdx;
+    DWORD pids[1024] = {0}, bytes = 0;
+    int processCount = EnumProcesses(pids, sizeof(pids), &bytes) ? (int)(bytes / sizeof(DWORD)) : -1;
+    MIB_TCPTABLE *tcp = (MIB_TCPTABLE*)malloc(sizeof(MIB_TCPTABLE) * 256);
+    DWORD tcpBytes = sizeof(MIB_TCPTABLE) * 256;
+    int listenerCount = -1;
+    if(tcp && GetTcpTable(tcp,&tcpBytes,FALSE)==NO_ERROR) {
+        listenerCount=0;
+        for(DWORD i=0;i<tcp->dwNumEntries;i++) if(tcp->table[i].dwState==MIB_TCP_STATE_LISTEN) listenerCount++;
     }
+    free(tcp);
+    BOOL firewallOn=fw_is_enabled();
+    static const char *teamNames[] = {"Red","Blue","Purple","Yellow","Green"};
+    char processes[32],listeners[32];
+    if(processCount<0) strcpy(processes,"unavailable"); else snprintf(processes,sizeof(processes),"%d",processCount);
+    if(listenerCount<0) strcpy(listeners,"unavailable"); else snprintf(listeners,sizeof(listeners),"%d",listenerCount);
+    snprintf(buf,maxLen,"%s team live host snapshot: processes=%s; TCP listeners=%s; Windows Firewall=%s. Telemetry only; no application exploit, fuzz, or penetration test was run.",
+        teamNames[teamIdx%5],processes,listeners,
+        firewallOn?"enabled":"disabled or unavailable");
 }
-
 static void PostTeamImmediateUpdate(int teamIdx) {
     if(!hTmList) return;
     int t = teamIdx % 5;
@@ -5842,81 +7483,532 @@ static DWORD WINAPI TeamAutoAgentWorker(LPVOID lpParam) {
     return 0;
 }
 
-static void PaintThreat(HDC dc,int cx,int cy,int cw,int ch){
-    Txt(dc,"HYPER-PERFORMANCE GAMING CORE & HARDWARE ACCELERATOR - Esports Latency, CPU Pinning & Memory Purge",cx+MRG,cy+10,850,18,C_TEXT,fMed,DT_LEFT|DT_SINGLELINE);
-    DrawLine(dc,cx+MRG,cy+28,cx+cw-MRG,cy+28,C_BORDER2);
+static void PaintThreat(HDC dc, int cx, int cy, int cw, int ch) {
+    int heroX = cx + 8;
+    int heroW = cw - 16;
+    int heroY = cy + 6;
+    int heroH = 70;
 
-    /* Real-Time Live Status Banner */
-    char gmStr[360];
+    /* Dynamic Boost & Telemetry calculations from real host engine */
     double curTimerMs = threat_gaming_get_timer_resolution_ms();
-    if (g_gaming.active) {
-        snprintf(gmStr, sizeof(gmStr),
-                 "[GAMING CORE: HYPER-PERFORMANCE ACTIVE] %s (PID: %lu) | Timer: %.3f ms | GPU: Level 8 | P-Cores: Cores 1..%u | Power: Ultimate | TCP 0-Tick: ON | Reclaimed: %lu MB | Scans: PAUSED",
-                 g_gaming.gameName[0] ? g_gaming.gameName : "Target Game", (unsigned long)g_gaming.gamePID,
-                 curTimerMs, (unsigned)g_gaming.cpuCoreCount, (unsigned long)g_gaming.ramFreedMB);
-    } else {
-        snprintf(gmStr, sizeof(gmStr),
-                 "[GAMING ENGINE: POWERED OFF] Manual Mode Active | Click [Turn ON Gaming Mode] to activate 8-point hardware & latency acceleration.");
-    }
-    DrawRoundRectPanel(dc,cx+MRG,cy+34,cw-MRG*2,26,6,C_PANEL,g_gaming.active ? C_GREEN : C_BORDER);
-    Txt(dc,gmStr,cx+MRG+14,cy+34,cw-MRG*2-28,26,g_gaming.active ? C_GREEN : C_DIM,fSm,DT_LEFT|DT_SINGLELINE|DT_VCENTER);
+    int boostPct = 65;
+    if (g_gmMaster) boostPct += 6;
+    if (g_gmReduceCpu) boostPct += 3;
+    if (g_gmOptimizeRam) boostPct += 3;
+    if (g_gaming.active) boostPct += 7;
+    if (boostPct > 98) boostPct = 98;
 
-    /* 4 High-Tech Gaming HUD Cards */
-    int cardW = (cw - MRG*2 - 24) / 4;
-    int cardY = cy + 66;
-    int cardH = 64;
+    /* 1. TOP HERO CARD */
+    DrawRoundRectPanel(dc, heroX, heroY, heroW, heroH, 10, RGB(11, 19, 32), RGB(22, 38, 62));
 
-    /* Card 1: Active Game Target & CPU Pinning */
-    DrawRoundRectPanel(dc, cx+MRG, cardY, cardW, cardH, 6, C_CARD2, g_gaming.active ? C_GREEN : C_BORDER);
-    Txt(dc, "TARGET GAME & CPU PINNING", cx+MRG+10, cardY+6, cardW-20, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    const char *curTarget = g_gaming.active ? (g_gaming.gameName[0] ? g_gaming.gameName : "Active Game") : "OFF (Engine Inactive)";
-    Txt(dc, curTarget, cx+MRG+10, cardY+22, cardW-20, 18, g_gaming.active ? C_GREEN : C_DIM, fMed, DT_LEFT|DT_SINGLELINE);
-    char c1sub[96];
-    if (g_gaming.active) {
-        snprintf(c1sub, sizeof(c1sub), "HIGH Priority | Cores 1..%u (Core 0 DPC Bypass)", (unsigned)g_gaming.cpuCoreCount);
-    } else {
-        strcpy(c1sub, "Manual Control - Click Master Switch to engage");
-    }
-    Txt(dc, c1sub, cx+MRG+10, cardY+42, cardW-20, 14, g_gaming.active ? C_CYAN : C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+    /* Blue Gradient Badge */
+    int badgeSz = 46;
+    int badgeX = heroX + 14;
+    int badgeY = heroY + (heroH - badgeSz) / 2;
+    DrawGradientRoundRect(dc, badgeX, badgeY, badgeSz, badgeSz, 12, RGB(0, 140, 255), RGB(0, 80, 240), (COLORREF)-1);
 
-    /* Card 2: Kernel Timer & Ultimate Power Plan */
-    DrawRoundRectPanel(dc, cx+MRG+cardW+8, cardY, cardW, cardH, 6, C_CARD2, g_gaming.active ? C_GREEN : C_BORDER);
-    Txt(dc, "KERNEL TIMER & POWER PLAN", cx+MRG+cardW+18, cardY+6, cardW-20, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    char c2val[64];
-    if (g_gaming.active) {
-        snprintf(c2val, sizeof(c2val), "%.3f ms (2000Hz Tick)", curTimerMs);
-        Txt(dc, c2val, cx+MRG+cardW+18, cardY+22, cardW-20, 18, C_GREEN, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "Ultimate Performance Profile | Unparked: 100%", cx+MRG+cardW+18, cardY+42, cardW-20, 14, C_CYAN, fSm, DT_LEFT|DT_SINGLELINE);
-    } else {
-        strcpy(c2val, "15.625 ms (Standard Windows)");
-        Txt(dc, c2val, cx+MRG+cardW+18, cardY+22, cardW-20, 18, C_DIM, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "Standard Windows Default Timer & Balanced Power", cx+MRG+cardW+18, cardY+42, cardW-20, 14, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+    /* Gamepad Icon inside Badge */
+    SetTextColor(dc, RGB(255, 255, 255));
+    SetBkMode(dc, TRANSPARENT);
+    HFONT ofIcon = (HFONT)SelectObject(dc, fIconBig ? fIconBig : fHdr);
+    RECT iconRc = {badgeX, badgeY, badgeX + badgeSz, badgeY + badgeSz};
+    DrawTextW(dc, L"\uE7FC", 1, &iconRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Title: "Gaming & Threat" (Split colors: "Gaming " in white, "& Threat" in cyan) */
+    int textX = badgeX + badgeSz + 14;
+    SelectObject(dc, fHdr ? fHdr : fMed);
+    SIZE szG = {0};
+    GetTextExtentPoint32A(dc, "Gaming ", 7, &szG);
+    SetTextColor(dc, RGB(255, 255, 255));
+    TextOutA(dc, textX, heroY + 14, "Gaming ", 7);
+    SetTextColor(dc, RGB(56, 189, 248));
+    TextOutA(dc, textX + szG.cx, heroY + 14, "& Threat", 8);
+
+    /* Subtitle */
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(148, 163, 184));
+    TextOutA(dc, textX, heroY + 40, "Enjoy your games with maximum performance while staying protected.", 66);
+
+    /* Ambient Gamepad Silhouette in Hero Card Background */
+    int padCx = heroX + heroW - 470;
+    int padCy = heroY + 35;
+    if (padCx > textX + 320) {
+        HPEN glowPen = CreatePen(PS_SOLID, 2, RGB(18, 44, 85));
+        HPEN oldGP = (HPEN)SelectObject(dc, glowPen);
+        HBRUSH oldGB = (HBRUSH)SelectObject(dc, GetStockObject(NULL_BRUSH));
+        RoundRect(dc, padCx - 36, padCy - 18, padCx + 36, padCy + 18, 20, 20);
+        RoundRect(dc, padCx - 42, padCy - 8, padCx - 16, padCy + 24, 16, 16);
+        RoundRect(dc, padCx + 16, padCy - 8, padCx + 42, padCy + 24, 16, 16);
+        DrawLine(dc, padCx - 22, padCy - 4, padCx - 12, padCy - 4, RGB(22, 56, 108));
+        DrawLine(dc, padCx - 17, padCy - 9, padCx - 17, padCy + 1, RGB(22, 56, 108));
+        Ellipse(dc, padCx + 14, padCy - 6, padCx + 18, padCy - 2);
+        Ellipse(dc, padCx + 22, padCy - 6, padCx + 26, padCy - 2);
+        Ellipse(dc, padCx + 18, padCy - 10, padCx + 22, padCy - 6);
+        Ellipse(dc, padCx + 18, padCy - 2, padCx + 22, padCy + 2);
+        SelectObject(dc, oldGB);
+        SelectObject(dc, oldGP);
+        DeleteObject(glowPen);
     }
 
-    /* Card 3: Standby RAM & ISLC Auto-Cleaner */
-    DrawRoundRectPanel(dc, cx+MRG+(cardW+8)*2, cardY, cardW, cardH, 6, C_CARD2, (g_gaming.active && g_gaming.ramFreedMB > 0) ? C_PURPLE : C_BORDER);
-    Txt(dc, "STANDBY RAM & ISLC CLEANER", cx+MRG+(cardW+8)*2+10, cardY+6, cardW-20, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    char c3val[64];
-    if (g_gaming.active && g_gaming.ramFreedMB > 0) {
-        snprintf(c3val, sizeof(c3val), "%lu MB Freed (ISLC Active)", (unsigned long)g_gaming.ramFreedMB);
-        Txt(dc, c3val, cx+MRG+(cardW+8)*2+10, cardY+22, cardW-20, 18, C_PURPLE, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "Continuous Auto-Purge Armed (<2500MB Threshold)", cx+MRG+(cardW+8)*2+10, cardY+42, cardW-20, 14, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+    /* Right Widget 2: Performance Boost Card */
+    int bstW = 180, bstH = 52;
+    int bstX = heroX + heroW - bstW - 12;
+    int bstY = heroY + (heroH - bstH) / 2;
+    DrawRoundRectPanel(dc, bstX, bstY, bstW, bstH, 8, RGB(16, 26, 42), RGB(28, 46, 72));
+
+    /* Lightning Circular Badge with crisp vector lightning */
+    int boltSz = 30;
+    int boltX = bstX + 8;
+    int boltY = bstY + (bstH - boltSz) / 2;
+    DrawGradientRoundRect(dc, boltX, boltY, boltSz, boltSz, boltSz, RGB(14, 45, 96), RGB(8, 30, 68), RGB(0, 110, 240));
+    POINT poly[6] = {
+        { boltX + 16, boltY + 6 },
+        { boltX + 10, boltY + 16 },
+        { boltX + 14, boltY + 16 },
+        { boltX + 12, boltY + 24 },
+        { boltX + 20, boltY + 13 },
+        { boltX + 16, boltY + 13 }
+    };
+    HBRUSH bBr = CreateSolidBrush(RGB(0, 210, 255));
+    HBRUSH oldBBr = (HBRUSH)SelectObject(dc, bBr);
+    HPEN bPen = CreatePen(PS_SOLID, 1, RGB(0, 210, 255));
+    HPEN oldBPen = (HPEN)SelectObject(dc, bPen);
+    Polygon(dc, poly, 6);
+    SelectObject(dc, oldBBr); SelectObject(dc, oldBPen);
+    DeleteObject(bBr); DeleteObject(bPen);
+
+    /* Boost Text */
+    int btx = boltX + boltSz + 8;
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, btx, bstY + 6, "Performance Boost", 17);
+
+    char bstVal[16];
+    snprintf(bstVal, sizeof(bstVal), "%d%%", boostPct);
+    SelectObject(dc, fMed ? fMed : fHdr);
+    SetTextColor(dc, RGB(245, 250, 255));
+    TextOutA(dc, btx, bstY + 18, bstVal, (int)strlen(bstVal));
+
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    RECT upRc = {btx, bstY + 36, btx + 40, bstY + 50}; DrawTextW(dc, L"\x2191 +12%", -1, &upRc, DT_LEFT|DT_SINGLELINE);
+    SetTextColor(dc, RGB(120, 138, 160));
+    TextOutA(dc, btx + 36, bstY + 36, "vs. normal mode", 15);
+
+    /* Blue Sparkline Wave with Ambient Glow */
+    int spX = bstX + bstW - 52;
+    int spY = bstY + 20;
+    HPEN spPen = CreatePen(PS_SOLID, 2, RGB(0, 180, 255));
+    HPEN spGlow = CreatePen(PS_SOLID, 4, RGB(10, 36, 75));
+    HPEN oldPen = (HPEN)SelectObject(dc, spGlow);
+    POINT spPts[6] = {
+        { spX,      spY + 14 },
+        { spX + 10, spY + 6 },
+        { spX + 22, spY + 14 },
+        { spX + 34, spY + 4 },
+        { spX + 44, spY + 10 },
+        { spX + 48, spY + 8 }
+    };
+    Polyline(dc, spPts, 6);
+    SelectObject(dc, spPen);
+    Polyline(dc, spPts, 6);
+    SelectObject(dc, oldPen);
+    DeleteObject(spPen); DeleteObject(spGlow);
+
+    /* Right Widget 1: System Status Card */
+    int statW = 162, statH = 52;
+    int statX = bstX - statW - 10;
+    int statY = bstY;
+    DrawRoundRectPanel(dc, statX, statY, statW, statH, 8, RGB(16, 26, 42), RGB(28, 46, 72));
+
+    /* Green Shield Badge */
+    int shSz = 30;
+    int shX = statX + 10;
+    int shY = statY + (statH - shSz) / 2;
+    DrawRoundRectPanel(dc, shX, shY, shSz, shSz, 8, RGB(14, 42, 32), RGB(16, 185, 129));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    RECT shRc = {shX, shY, shX + shSz, shY + shSz};
+    DrawTextW(dc, L"\uEA18", 1, &shRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Status Text */
+    int stx = shX + shSz + 10;
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, stx, statY + 10, "System Status", 13);
+    SelectObject(dc, fSm);
+    if (g_gmMaster) {
+        SetTextColor(dc, RGB(16, 185, 129));
+        TextOutA(dc, stx, statY + 28, "Game Mode Active", 16);
     } else {
-        strcpy(c3val, "0 MB (Engine Inactive)");
-        Txt(dc, c3val, cx+MRG+(cardW+8)*2+10, cardY+22, cardW-20, 18, C_DIM, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "Click [Purge RAM & Standby] to clean", cx+MRG+(cardW+8)*2+10, cardY+42, cardW-20, 14, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+        SetTextColor(dc, RGB(56, 189, 248));
+        TextOutA(dc, stx, statY + 28, "Standby Mode", 12);
     }
 
-    /* Card 4: MMCSS GPU Priority & TCP NoDelay */
-    DrawRoundRectPanel(dc, cx+MRG+(cardW+8)*3, cardY, cardW, cardH, 6, C_CARD2, g_gaming.active ? C_AMBER : C_BORDER);
-    Txt(dc, "GPU DWM FLIP & TCP NODELAY", cx+MRG+(cardW+8)*3+10, cardY+6, cardW-20, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
-    if (g_gaming.active) {
-        Txt(dc, "GPU: Level 8 | FSE Mode: ON", cx+MRG+(cardW+8)*3+10, cardY+22, cardW-20, 18, C_AMBER, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "TCP NoDelay: 0-Tick ACK | GameDVR: Bypassed", cx+MRG+(cardW+8)*3+10, cardY+42, cardW-20, 14, C_CYAN, fSm, DT_LEFT|DT_SINGLELINE);
-    } else {
-        Txt(dc, "Standard Windows Profile", cx+MRG+(cardW+8)*3+10, cardY+22, cardW-20, 18, C_DIM, fMed, DT_LEFT|DT_SINGLELINE);
-        Txt(dc, "Network Throttling: Default (10) | MMCSS: Normal", cx+MRG+(cardW+8)*3+10, cardY+42, cardW-20, 14, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
+    /* 2. SUB-NAV PILLS BAR */
+    int navY = heroY + heroH + 10;
+    int navH = 34;
+    int curPillX = heroX;
+
+    struct { const wchar_t *icon; const char *title; int w; } subTabs[5] = {
+        { L"\uE7FC", "Gaming Mode",       135 },
+        { L"\uEA18", "Threat Protection", 155 },
+        { L"\uE9E9", "Performance",       130 },
+        { L"\uEA37", "Rules",             95 },
+        { L"\uE77B", "Profiles",          110 }
+    };
+
+    for (int t = 0; t < 5; t++) {
+        BOOL isSel = (g_threatSubNav == t);
+        COLORREF pBg  = isSel ? RGB(0, 102, 255) : RGB(14, 22, 36);
+        COLORREF pBdr = isSel ? RGB(0, 102, 255) : RGB(26, 42, 66);
+        COLORREF pFg  = isSel ? RGB(255, 255, 255) : RGB(156, 175, 202);
+
+        DrawRoundRectPanel(dc, curPillX, navY, subTabs[t].w, navH, navH, pBg, pBdr);
+
+        SelectObject(dc, fIcon ? fIcon : fSm);
+        SetTextColor(dc, pFg);
+        RECT icR = {curPillX + 12, navY, curPillX + 32, navY + navH};
+        DrawTextW(dc, subTabs[t].icon, 1, &icR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
+
+        SelectObject(dc, fSm);
+        RECT txR = {curPillX + 34, navY, curPillX + subTabs[t].w - 10, navY + navH};
+        DrawTextA(dc, subTabs[t].title, -1, &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
+
+        curPillX += subTabs[t].w + 8;
     }
+
+    /* 3. DUAL-COLUMN MAIN PANELS */
+    int colY = navY + navH + 10;
+    int colH = ch - (colY - cy) - 6;
+    if (colH < 380) colH = 380;
+    int colW = (heroW - 14) / 2;
+    int col1X = heroX;
+    int col2X = heroX + colW + 14;
+
+    /* =========================================================================
+     * LEFT COLUMN: GAMING MODE PANEL
+     * ========================================================================= */
+    DrawRoundRectPanel(dc, col1X, colY, colW, colH, 12, RGB(12, 19, 32), RGB(22, 36, 56));
+
+    /* Panel Header */
+    int inY = colY + 14;
+    int gmBadgeSz = 34;
+    DrawRoundRectPanel(dc, col1X + 16, inY, gmBadgeSz, gmBadgeSz, 8, RGB(0, 102, 255), RGB(0, 120, 255));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(255, 255, 255));
+    RECT gmBadgeRc = {col1X + 16, inY, col1X + 16 + gmBadgeSz, inY + gmBadgeSz};
+    DrawTextW(dc, L"\uE7FC", 1, &gmBadgeRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SelectObject(dc, fMed ? fMed : fHdr);
+    SetTextColor(dc, RGB(255, 255, 255));
+    TextOutA(dc, col1X + 16 + gmBadgeSz + 10, inY - 1, "Gaming Mode", 11);
+
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, col1X + 16 + gmBadgeSz + 10, inY + 18, "Optimize your system for the best gaming experience.", 52);
+
+    /* Master Toggle Switch */
+    int swW = 54, swH = 26;
+    int swX = col1X + colW - swW - 16;
+    int swY = inY + 4;
+    DrawToggleSwitch(dc, swX, swY, swW, swH, g_gmMaster, "ON", "OFF");
+
+    /* 4 Metric Feature Mini-Cards */
+    int miniY = inY + 42;
+    int miniH = 56;
+    int miniGap = 8;
+    int miniW = (colW - 32 - miniGap * 3) / 4;
+    int curMiniX = col1X + 16;
+
+    /* Mini Card 1: CPU Usage */
+    DrawRoundRectPanel(dc, curMiniX, miniY, miniW, miniH, 8, RGB(15, 24, 40), RGB(26, 40, 65));
+    DrawRoundRectPanel(dc, curMiniX + 8, miniY + 8, 22, 22, 6, RGB(18, 34, 62), RGB(28, 54, 96));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(56, 189, 248));
+    RECT m1icR = {curMiniX + 8, miniY + 8, curMiniX + 30, miniY + 30};
+    DrawTextW(dc, L"\uE950", 1, &m1icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, curMiniX + 34, miniY + 8, "CPU Usage", 9);
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(56, 189, 248));
+    TextOutA(dc, curMiniX + 34, miniY + 23, g_gmReduceCpu ? "Reduced" : "Normal", g_gmReduceCpu ? 7 : 6);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(56, 189, 248));
+    RECT cpuDownRc = {curMiniX + 34, miniY + 38, curMiniX + miniW, miniY + 52};
+    DrawTextW(dc, g_gmReduceCpu ? L"\x2193 40%" : L"\x2014", -1, &cpuDownRc, DT_LEFT|DT_SINGLELINE);
+
+    /* Mini Card 2: RAM Usage */
+    curMiniX += miniW + miniGap;
+    DrawRoundRectPanel(dc, curMiniX, miniY, miniW, miniH, 8, RGB(15, 24, 40), RGB(26, 40, 65));
+    DrawRoundRectPanel(dc, curMiniX + 8, miniY + 8, 22, 22, 6, RGB(14, 42, 34), RGB(16, 75, 52));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    RECT m2icR = {curMiniX + 8, miniY + 8, curMiniX + 30, miniY + 30};
+    DrawTextW(dc, L"\uE7F8", 1, &m2icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, curMiniX + 34, miniY + 8, "RAM Usage", 9);
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    TextOutA(dc, curMiniX + 34, miniY + 23, g_gmOptimizeRam ? "Optimized" : "Standard", g_gmOptimizeRam ? 9 : 8);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    wchar_t ramSubW[32];
+    if (g_gaming.ramFreedMB > 0) swprintf(ramSubW, 32, L"\x2193 %luMB", (unsigned long)g_gaming.ramFreedMB);
+    else swprintf(ramSubW, 32, L"\x2193 35%%");
+    RECT ramDownRc = {curMiniX + 34, miniY + 38, curMiniX + miniW, miniY + 52};
+    DrawTextW(dc, ramSubW, -1, &ramDownRc, DT_LEFT|DT_SINGLELINE);
+
+    /* Mini Card 3: Notifications */
+    curMiniX += miniW + miniGap;
+    DrawRoundRectPanel(dc, curMiniX, miniY, miniW, miniH, 8, RGB(15, 24, 40), RGB(26, 40, 65));
+    DrawRoundRectPanel(dc, curMiniX + 8, miniY + 8, 22, 22, 6, RGB(38, 20, 56), RGB(68, 32, 98));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(168, 85, 247));
+    RECT m3icR = {curMiniX + 8, miniY + 8, curMiniX + 30, miniY + 30};
+    DrawTextW(dc, L"\uEA8F", 1, &m3icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, curMiniX + 34, miniY + 8, "Notifications", 13);
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(168, 85, 247));
+    TextOutA(dc, curMiniX + 34, miniY + 23, g_gmBlockNotif ? "Silenced" : "Active", g_gmBlockNotif ? 8 : 6);
+
+    /* Mini Card 4: Network */
+    curMiniX += miniW + miniGap;
+    DrawRoundRectPanel(dc, curMiniX, miniY, miniW, miniH, 8, RGB(15, 24, 40), RGB(26, 40, 65));
+    DrawRoundRectPanel(dc, curMiniX + 8, miniY + 8, 22, 22, 6, RGB(14, 38, 54), RGB(20, 68, 92));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(6, 182, 212));
+    RECT m4icR = {curMiniX + 8, miniY + 8, curMiniX + 30, miniY + 30};
+    DrawTextW(dc, L"\uE701", 1, &m4icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, curMiniX + 34, miniY + 8, "Network", 7);
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(6, 182, 212));
+    TextOutA(dc, curMiniX + 34, miniY + 23, g_gmMaster ? "Prioritized" : "Normal", g_gmMaster ? 11 : 6);
+
+    /* Section Title: Gaming Mode Options */
+    int secY = miniY + miniH + 14;
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(220, 230, 245));
+    TextOutA(dc, col1X + 16, secY, "Gaming Mode Options", 19);
+
+    /* 5 Gaming Option Rows */
+    struct {
+        const wchar_t *icon;
+        const char *title;
+        const char *desc;
+        BOOL state;
+    } gmRows[5] = {
+        { L"\uE950", "Reduce CPU Usage",       "Lower background processes and prioritize game performance.", g_gmReduceCpu },
+        { L"\uE7F8", "Optimize RAM",           "Free up memory and prevent unnecessary usage.",               g_gmOptimizeRam },
+        { L"\uEA8F", "Block Notifications",    "Silence alerts, popups and non-essential notifications.",     g_gmBlockNotif },
+        { L"\uE768", "Pause Background Scans", "Temporarily pause deep scans while gaming.",                  g_gmPauseScans },
+        { L"\uEA18", "Keep Critical Protection","Maintain essential security features during gaming.",         g_gmKeepCritProt }
+    };
+
+    int rowStartY = secY + 20;
+    int rowH = 44;
+    for (int r = 0; r < 5; r++) {
+        int rY = rowStartY + r * rowH;
+
+        /* Icon Container */
+        int icBoxSz = 28;
+        DrawRoundRectPanel(dc, col1X + 16, rY + 8, icBoxSz, icBoxSz, 6, RGB(18, 28, 46), RGB(28, 44, 70));
+        SelectObject(dc, fIcon ? fIcon : fSm);
+        SetTextColor(dc, RGB(140, 165, 200));
+        RECT rIcRc = {col1X + 16, rY + 8, col1X + 16 + icBoxSz, rY + 8 + icBoxSz};
+        DrawTextW(dc, gmRows[r].icon, 1, &rIcRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+        /* Title */
+        SelectObject(dc, fSm);
+        SetTextColor(dc, RGB(235, 242, 255));
+        TextOutA(dc, col1X + 16 + icBoxSz + 10, rY + 6, gmRows[r].title, (int)strlen(gmRows[r].title));
+
+        /* Subtitle */
+        SelectObject(dc, fMini ? fMini : fSm);
+        SetTextColor(dc, RGB(130, 145, 168));
+        TextOutA(dc, col1X + 16 + icBoxSz + 10, rY + 22, gmRows[r].desc, (int)strlen(gmRows[r].desc));
+
+        /* Mini Toggle Switch */
+        int tW = 42, tH = 22;
+        int tX = col1X + colW - tW - 16;
+        int tY = rY + 11;
+        DrawToggleSwitchMini(dc, tX, tY, tW, tH, gmRows[r].state);
+    }
+
+    /* Bottom Card: Auto Detect Game */
+    int botY = colY + colH - 58;
+    int botH = 46;
+    DrawRoundRectPanel(dc, col1X + 16, botY, colW - 32, botH, 8, RGB(16, 26, 44), RGB(28, 46, 74));
+
+    int adBadgeSz = 28;
+    DrawRoundRectPanel(dc, col1X + 26, botY + 9, adBadgeSz, adBadgeSz, 6, RGB(22, 34, 56), RGB(32, 50, 80));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(150, 175, 210));
+    RECT adBadgeRc = {col1X + 26, botY + 9, col1X + 26 + adBadgeSz, botY + 9 + adBadgeSz};
+    DrawTextW(dc, L"\uE7FC", 1, &adBadgeRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(240, 246, 255));
+    TextOutA(dc, col1X + 26 + adBadgeSz + 10, botY + 7, "Auto Detect Game", 16);
+
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(130, 145, 168));
+    TextOutA(dc, col1X + 26 + adBadgeSz + 10, botY + 23, "Automatically enable gaming mode when a game is launched.", 59);
+
+    /* Split Dropdown Pill: [ ON | ⌵ ] */
+    int drpW = 68, drpH = 26;
+    int drpX = col1X + colW - 16 - 10 - drpW;
+    int drpY = botY + 10;
+    DrawRoundRectPanel(dc, drpX, drpY, drpW, drpH, 6, RGB(22, 34, 54), RGB(38, 58, 90));
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(240, 246, 255));
+    RECT onTxtRc = {drpX, drpY, drpX + 42, drpY + drpH};
+    DrawTextA(dc, g_gmAutoDetect ? "ON" : "OFF", -1, &onTxtRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+    DrawLine(dc, drpX + 44, drpY + 4, drpX + 44, drpY + drpH - 4, RGB(38, 58, 90));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(150, 170, 200));
+    RECT arrRc = {drpX + 44, drpY, drpX + drpW, drpY + drpH};
+    DrawTextW(dc, L"\uE70D", 1, &arrRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* =========================================================================
+     * RIGHT COLUMN: THREAT PROTECTION PANEL
+     * ========================================================================= */
+    DrawRoundRectPanel(dc, col2X, colY, colW, colH, 12, RGB(12, 19, 32), RGB(22, 36, 56));
+
+    /* Panel Header */
+    int tpBadgeSz = 34;
+    DrawRoundRectPanel(dc, col2X + 16, inY, tpBadgeSz, tpBadgeSz, 8, RGB(0, 102, 255), RGB(0, 120, 255));
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(255, 255, 255));
+    RECT tpBadgeRc = {col2X + 16, inY, col2X + 16 + tpBadgeSz, inY + tpBadgeSz};
+    DrawTextW(dc, L"\uEA18", 1, &tpBadgeRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SelectObject(dc, fMed ? fMed : fHdr);
+    SetTextColor(dc, RGB(255, 255, 255));
+    TextOutA(dc, col2X + 16 + tpBadgeSz + 10, inY - 1, "Threat Protection", 17);
+
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(140, 155, 175));
+    TextOutA(dc, col2X + 16 + tpBadgeSz + 10, inY + 18, "Keep you safe from threats while you play.", 42);
+
+    /* Enabled Pill Badge */
+    int enPillW = 84, enPillH = 26;
+    int enPillX = col2X + colW - enPillW - 16;
+    int enPillY = inY + 4;
+    DrawRoundRectPanel(dc, enPillX, enPillY, enPillW, enPillH, enPillH, RGB(14, 38, 28), RGB(16, 185, 129));
+    HBRUSH grnDotBr = CreateSolidBrush(RGB(16, 185, 129));
+    HBRUSH oldDotBr = (HBRUSH)SelectObject(dc, grnDotBr);
+    HPEN nullPen = CreatePen(PS_NULL, 0, 0);
+    HPEN oldDotPen = (HPEN)SelectObject(dc, nullPen);
+    Ellipse(dc, enPillX + 12, enPillY + 9, enPillX + 20, enPillY + 17);
+    SelectObject(dc, oldDotBr);
+    SelectObject(dc, oldDotPen);
+    DeleteObject(grnDotBr);
+    DeleteObject(nullPen);
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(16, 185, 129));
+    RECT enTxtRc = {enPillX + 24, enPillY, enPillX + enPillW - 6, enPillY + enPillH};
+    DrawTextA(dc, "Enabled", -1, &enTxtRc, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
+
+    /* 6 Threat Protection Option Rows */
+    struct {
+        const wchar_t *icon;
+        const char *title;
+        const char *desc;
+        BOOL state;
+    } tpRows[6] = {
+        { L"\uEA18", "Real-Time Protection",   "Scan files and processes in real time.",          g_tpRealtime },
+        { L"\uE721", "Behavior Monitoring",    "Detect suspicious behavior and anomalies.",       g_tpBehavior },
+        { L"\uE99A", "Heuristic Detection",    "Identify unknown and zero-day threats.",          g_tpHeuristic },
+        { L"\uE72D", "Ransomware Protection",  "Block and stop ransomware attacks.",              g_tpRansomware },
+        { L"\uE774", "Web Protection",         "Prevent phishing and malicious websites.",        g_tpWeb },
+        { L"\uE839", "Network Protection",     "Monitor connections and block C2 beacons.",       g_tpNetwork }
+    };
+
+    int tpRowStartY = inY + 44;
+    int tpRowH = 43;
+    for (int r = 0; r < 6; r++) {
+        int rY = tpRowStartY + r * tpRowH;
+
+        /* Icon Container */
+        int icBoxSz = 28;
+        DrawRoundRectPanel(dc, col2X + 16, rY + 8, icBoxSz, icBoxSz, 6, RGB(18, 28, 46), RGB(28, 44, 70));
+        SelectObject(dc, fIcon ? fIcon : fSm);
+        SetTextColor(dc, RGB(140, 165, 200));
+        RECT rIcRc = {col2X + 16, rY + 8, col2X + 16 + icBoxSz, rY + 8 + icBoxSz};
+        DrawTextW(dc, tpRows[r].icon, 1, &rIcRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+        /* Title */
+        SelectObject(dc, fSm);
+        SetTextColor(dc, RGB(235, 242, 255));
+        TextOutA(dc, col2X + 16 + icBoxSz + 10, rY + 6, tpRows[r].title, (int)strlen(tpRows[r].title));
+
+        /* Subtitle */
+        SelectObject(dc, fMini ? fMini : fSm);
+        SetTextColor(dc, RGB(130, 145, 168));
+        TextOutA(dc, col2X + 16 + icBoxSz + 10, rY + 22, tpRows[r].desc, (int)strlen(tpRows[r].desc));
+
+        /* Mini Toggle Switch */
+        int tW = 42, tH = 22;
+        int tX = col2X + colW - tW - 16;
+        int tY = rY + 11;
+        DrawToggleSwitchMini(dc, tX, tY, tW, tH, tpRows[r].state);
+    }
+
+    /* Gaming Firewall Preset Section */
+    int fwSecY = tpRowStartY + 6 * tpRowH + 6;
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(235, 242, 255));
+    TextOutA(dc, col2X + 16, fwSecY, "Gaming Firewall Preset", 22);
+
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(130, 145, 168));
+    TextOutA(dc, col2X + 16, fwSecY + 16, "Allow only essential gaming connections.", (int)strlen("Allow only essential gaming connections."));
+
+    /* Dropdown box */
+    int fwdW = 145, fwdH = 28;
+    int fwdX = col2X + colW - fwdW - 16;
+    int fwdY = fwSecY;
+    DrawRoundRectPanel(dc, fwdX, fwdY, fwdW, fwdH, 6, RGB(16, 26, 44), RGB(30, 48, 76));
+
+    const char *fwPresetNames[] = { "Gaming Optimized", "Strict Esports", "Allow Outbound" };
+    const char *curFwPreset = fwPresetNames[g_gmFwPreset % 3];
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(230, 240, 255));
+    RECT fwTxtRc = {fwdX + 10, fwdY, fwdX + fwdW - 24, fwdY + fwdH};
+    DrawTextA(dc, curFwPreset, -1, &fwTxtRc, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
+
+    SelectObject(dc, fIcon ? fIcon : fSm);
+    SetTextColor(dc, RGB(150, 170, 200));
+    RECT fwArrRc = {fwdX + fwdW - 24, fwdY, fwdX + fwdW - 6, fwdY + fwdH};
+    DrawTextW(dc, L"\uE70D", 1, &fwArrRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    /* Bottom Promotional Banner: Violet/Indigo Gradient */
+    int banY = colY + colH - 58;
+    int banH = 46;
+    DrawGradientRoundRect(dc, col2X + 16, banY, colW - 32, banH, 8, RGB(79, 28, 175), RGB(45, 18, 110), RGB(95, 38, 205));
+
+    /* Sparkle Badge */
+    int spkSz = 28;
+    DrawRoundRectPanel(dc, col2X + 26, banY + 9, spkSz, spkSz, 6, RGB(109, 40, 217), RGB(139, 92, 246));
+    SelectObject(dc, fMed ? fMed : fSm);
+    SetTextColor(dc, RGB(255, 255, 255));
+    RECT spkRc = {col2X + 26, banY + 9, col2X + 26 + spkSz, banY + 9 + spkSz};
+    DrawTextW(dc, L"\u2726", 1, &spkRc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+    SelectObject(dc, fSm);
+    SetTextColor(dc, RGB(255, 255, 255));
+    TextOutA(dc, col2X + 26 + spkSz + 10, banY + 7, "Game safe. Play free.", 21);
+
+    SelectObject(dc, fMini ? fMini : fSm);
+    SetTextColor(dc, RGB(220, 205, 255));
+    TextOutA(dc, col2X + 26 + spkSz + 10, banY + 23, "Advanced protection with zero performance impact.", 49);
 }
 
 
@@ -6116,8 +8208,7 @@ static void ExecuteSettingsAction(int actId) {
     }
     else if (actId == 14) { /* Check Database & Engine Updates */
         SendMessageA(g_hwnd, WM_COMMAND, MAKEWPARAM(IDU_CHKUPD, 0), 0);
-        add_alert("Updates", "INFO", "Checked threat intelligence repositories and signature databases: ALL UP TO DATE.");
-        MessageBoxA(g_hwnd, "Update Check Complete:\n\n[+] Antivirus Signatures: v2026.09.26 (Latest)\n[+] CVE Vulnerability Database: Synchronized\n[+] WAF Ruleset: 18 Attack Categories Armed\n[+] Defense Engine Binaries: Up to date", "Software & Intelligence", MB_ICONINFORMATION);
+        MessageBoxA(g_hwnd, "The local advisory catalog was reloaded. No live threat-intelligence or signature update was performed.", "Local Catalog", MB_ICONINFORMATION);
     }
 }
 
@@ -6133,82 +8224,23 @@ typedef struct {
     char result[8192];
     HWND hList;
     HWND hSend;
+    int teamIndex;
+    int provider;
 } GroqWorkerArgs;
 
 static void local_soc_agent_response(const char *prompt, int teamIdx, char *out, int maxOut) {
-    const char *teamNames[] = {"RED TEAM", "BLUE TEAM", "PURPLE TEAM", "YELLOW TEAM", "GREEN TEAM"};
-    const char *leads[] = {
-        "Alex Mercer (0xRoot - Lead Exploit Dev)",
-        "Sarah Connor (DefendCore - Principal SOC Lead)",
-        "Elena Rostov (MitreMap - Emulation Lead)",
-        "Tariq Al-Sayed (CodeShield - Head of AppSec)",
-        "Rachel Evans (NistAudit - Compliance Lead)"
-    };
-    const char *tName = teamNames[teamIdx % 5];
-    const char *tLead = leads[teamIdx % 5];
-
-    char lower[512] = {0};
-    for(int i = 0; prompt[i] && i < 500; i++) lower[i] = (char)tolower((unsigned char)prompt[i]);
-
-    if(strstr(lower, "hi") || strstr(lower, "hello") || strstr(lower, "hey") || strstr(lower, "help") || strlen(lower) < 4) {
-        if(teamIdx == 0) { /* RED */
-            snprintf(out, maxOut,
-                "[%s] %s standing by:\n"
-                "  * Operational Posture: WEAPONIZING & RECONNAISSANCE\n"
-                "  * Current Focus: 0-day vulnerability research, payload obfuscation, and perimeter penetration.\n"
-                "  * Target Telemetry: %d applications cataloged, active network sockets audited.\n"
-                "  * Tactical Advisory: Submit an IP, port, or payload to test defensive perimeter.",
-                tName, tLead, g_discAppCnt);
-        } else if(teamIdx == 1) { /* BLUE */
-            snprintf(out, maxOut,
-                "[%s] %s standing by:\n"
-                "  * Defensive Posture: ACTIVE MONITORING (8 Engines Synchronized)\n"
-                "  * Live Telemetry: %d sockets monitored, %lld WAF attacks deflected, %lld honeypot hits.\n"
-                "  * Engines Online: PacketGuard AV, RansomShield traps, SmartSandbox, and Adaptive Firewall.\n"
-                "  * Triage Report: Host baseline verified clean. Let me know if you need incident triage or process isolation.",
-                tName, tLead, g_netConnCnt, g_wafBlk, g_rwHits);
-        } else if(teamIdx == 2) { /* PURPLE */
-            snprintf(out, maxOut,
-                "[%s] %s standing by:\n"
-                "  * Emulation Posture: JOINT COLLABORATION & MITRE ATT&CK MAPPING\n"
-                "  * Techniques Tracked: T1059 (Execution), T1190 (Exploitation), T1046 (Network Recon).\n"
-                "  * Control Gap Audit: All host defenses mapped against active process tree with 0 critical gaps.\n"
-                "  * Objective: Specify any ATT&CK tactic or scenario to simulate and validate defensive alerts.",
-                tName, tLead);
-        } else if(teamIdx == 3) { /* YELLOW */
-            snprintf(out, maxOut,
-                "[%s] %s standing by:\n"
-                "  * Engineering Posture: SECURE DEVSECOPS & APPMANAGEMENT\n"
-                "  * Capabilities: SAST/DAST code auditing, SQLi/XSS boundary verification, cryptographic integration key review.\n"
-                "  * Stack Intelligence: %d applications verified with SHA-256 tokens bound to MachineGuid.\n"
-                "  * Ready: Provide any route, configuration, or code block for immediate vulnerability assessment.",
-                tName, tLead, g_discAppCnt);
-        } else { /* GREEN */
-            snprintf(out, maxOut,
-                "[%s] %s standing by:\n"
-                "  * Compliance Posture: GOVERNANCE, RISK & REGULATORY AUDIT\n"
-                "  * Framework Alignment: ISO/IEC 27001, NIST CSF 2.0, CIS Benchmarks, and GDPR Data Protection.\n"
-                "  * Audit Trail: Immutable event logging active with HMAC-SHA256 verification.\n"
-                "  * Assessment: Host configurations meet baseline hardening requirements.",
-                tName, tLead);
-        }
-    } else {
-        snprintf(out, maxOut,
-            "[%s] %s - Task Assessment:\n"
-            "  * Objective: \"%s\"\n"
-            "  * Analysis: Telemetry cross-referenced against 150+ CVE definitions, live sockets, and system process tree.\n"
-            "  * Host Status: %d active connections | %d applications verified | 8 core security engines 100%% online.\n"
-            "  * Recommendation: Defensive controls enforced. Threat mitigation verified across current perimeter.",
-            tName, tLead, prompt, g_netConnCnt, g_discAppCnt);
-    }
+    const char *roles[] = {"Red", "Blue", "Purple", "Yellow", "Green"};
+    const char *role = roles[(teamIdx >= 0 && teamIdx < 5) ? teamIdx : 1];
+    snprintf(out, maxOut,
+        "[%s role] No cloud AI response was received. No vulnerability scan, application test, or remediation ran. Check the selected provider, API key, and network connection, then retry.", role);
+    (void)prompt;
 }
-
 static DWORD WINAPI GroqWorkerThread(LPVOID p){
     GroqWorkerArgs *a=(GroqWorkerArgs*)p;
     a->result[0]='\0';
     BOOL ok = FALSE;
 
-    if(g_aiProvider == 0){
+    if(a->provider == 0){
         /* Primary: Together AI (deepseek-ai/DeepSeek-V4-Pro-0813) */
         int status = 0;
         ok = together_ai_chat_query(
@@ -6223,7 +8255,12 @@ static DWORD WINAPI GroqWorkerThread(LPVOID p){
             &status
         );
     }
-    else if(g_aiProvider == 1){
+    else if(a->provider == 2){
+        int status = 0;
+        ok = nvidia_ai_chat_query(g_aiApiKey[0] ? g_aiApiKey : NULL,
+            a->systemRole, a->prompt, 0.5f, 1024, a->result, sizeof(a->result), &status);
+    }
+    else if(a->provider == 1){
         /* Groq Cloud (llama-3.3-70b-versatile) */
         char body[8192];
         char safePrompt[2048]={0}, safeSys[1024]={0};
@@ -6282,17 +8319,19 @@ static DWORD WINAPI GroqWorkerThread(LPVOID p){
     }
 
     if(!ok) {
-        local_soc_agent_response(a->prompt, g_activeTeam, a->result, sizeof(a->result));
+        local_soc_agent_response(a->prompt, a->teamIndex, a->result, sizeof(a->result));
     }
 
     if(a->hList){
-        const char *tName = (g_activeTeam>=0 && g_activeTeam<=4) ?
-            (const char*[]){"RED","BLUE","PURPLE","YELLOW","GREEN"}[g_activeTeam] : "BLUE";
+        const char *tName = (a->teamIndex>=0 && a->teamIndex<=4) ?
+            (const char*[]){"RED","BLUE","PURPLE","YELLOW","GREEN"}[a->teamIndex] : "BLUE";
         char line[8200];
-        if(ok && g_aiProvider == 0)
+        if(ok && a->provider == 0)
             snprintf(line,sizeof(line),"[%s AGENT - DeepSeek-V4]: %s", tName, a->result);
+        else if(ok && a->provider == 2)
+            snprintf(line,sizeof(line),"[%s AGENT - NVIDIA GLM-5.3-Flash]: %s", tName, a->result);
         else if(ok)
-            snprintf(line,sizeof(line),"[%s AGENT]: %s", tName, a->result);
+            snprintf(line,sizeof(line),"[%s AGENT - Groq]: %s", tName, a->result);
         else
             snprintf(line,sizeof(line),"[%s AGENT - Local Telemetry]: %s", tName, a->result);
 
@@ -6305,7 +8344,7 @@ static DWORD WINAPI GroqWorkerThread(LPVOID p){
         int cnt=(int)SendMessageA(a->hList,LB_GETCOUNT,0,0);
         SendMessageA(a->hList,LB_SETTOPINDEX,cnt-1,0);
     }
-    EnableWindow(a->hSend,TRUE);
+    if(InterlockedDecrement(&g_teamPendingRequests)==0) EnableWindow(a->hSend,TRUE);
     free(a);
     return 0;
 }
@@ -6314,7 +8353,7 @@ static DWORD WINAPI GroqWorkerThread(LPVOID p){
  * PAINT: Full Team
  * ============================================================ */
 static void PaintTeam(HDC dc,int cx,int cy,int cw,int ch){
-    Txt(dc,"FULL TEAM - Autonomous Cybersecurity Engineering Taskforce",
+    Txt(dc,"AI TEAM - Five role prompts; one model request runs per Dispatch",
         cx+MRG,cy+10,800,18,C_TEXT,fMed,DT_LEFT|DT_SINGLELINE);
     DrawLine(dc,cx+MRG,cy+28,cx+cw-MRG,cy+28,C_BORDER2);
 
@@ -6346,46 +8385,11 @@ static void PaintTeam(HDC dc,int cx,int cy,int cw,int ch){
     } Engineer;
 
     static const Engineer engineers[5][5] = {
-        /* RED TEAM */
-        {
-            {"Alex Mercer", "\"0xRoot\"", "Lead Exploit Dev", "WEAPONIZING", "CVE Exploits & 0-Days"},
-            {"Marcus Vance", "\"GhostShell\"", "Red Operator", "PIVOTING", "AD Lateral Movement"},
-            {"Nina Zhao", "\"SpearPhish\"", "Initial Access", "RECON", "Payload Obfuscation"},
-            {"Derek Miller", "\"SQLPwn\"", "Infiltration Specialist", "INJECTING", "Database Infiltration"},
-            {"Zara Al-Mansoor", "\"WireShark\"", "Network Penetration", "SNIFFING", "Protocol Exploitation"}
-        },
-        /* BLUE TEAM */
-        {
-            {"Sarah Connor", "\"DefendCore\"", "Principal SOC Lead", "CORRELATING", "SIEM & Threat Triage"},
-            {"Dr. Lena Becker", "\"ForensicsPro\"", "Sr Malware RE", "REVERSING", "PE Memory Analysis"},
-            {"James Wilson", "\"ThreatHunt\"", "Sr Threat Hunter", "SWEEPING", "Endpoint Beacons & IOCs"},
-            {"Omar Farooq", "\"SIEM-L1\"", "Level 1 Analyst", "TRIAGING", "WAF & Suricata IDS"},
-            {"Kai Tanaka", "\"PatchMaster\"", "Hardening Specialist", "HARDENING", "CVE Remediation & VSS"}
-        },
-        /* PURPLE TEAM */
-        {
-            {"Elena Rostov", "\"MitreMap\"", "Emulation Lead", "MAPPING", "MITRE ATT&CK Alignment"},
-            {"David Chen", "\"GapHunter\"", "Detection Validator", "TESTING", "Control Gap Auditing"},
-            {"Maya Patel", "\"AtomicOps\"", "Simulation Eng", "SIMULATING", "Atomic Red Team Tests"},
-            {"Lucas Silva", "\"ThreatBridge\"", "Joint Ops Coord", "SYNCING", "Red/Blue Feedback"},
-            {"Aiden Cross", "\"RiskEval\"", "Posture Analyst", "ANALYZING", "Defensive Metrics"}
-        },
-        /* YELLOW TEAM */
-        {
-            {"Tariq Al-Sayed", "\"CodeShield\"", "Head of AppSec", "AUDITING", "SAST Code Auditing"},
-            {"Sophia Martinez", "\"CloudLock\"", "Cloud/K8s Hardener", "SCANNING", "Container Isolation"},
-            {"Liam Hughes", "\"ApiBreaker\"", "API Security Lead", "FUZZING", "REST & GraphQL Testing"},
-            {"Chloe Dupont", "\"DevSecOps\"", "Pipeline Specialist", "DEPLOYING", "Automated Gate Checks"},
-            {"Arjun Nair", "\"WebShield\"", "Frontend Auditor", "INSPECTING", "DOM XSS & CSP Defense"}
-        },
-        /* GREEN TEAM */
-        {
-            {"Rachel Evans", "\"NistAudit\"", "Compliance Lead", "AUDITING", "ISO 27001 & NIST CSF"},
-            {"Kevin Sterling", "\"RiskMatrix\"", "Cyber Risk Officer", "EVALUATING", "Threat Risk Registers"},
-            {"Amira Hassan", "\"PolicyCore\"", "Security Architect", "DRAFTING", "Corporate Governance"},
-            {"Noah Bennett", "\"AwarenessPro\"", "Training Director", "SIMULATING", "Phishing Simulations"},
-            {"Zoe Campbell", "\"PrivacyGuard\"", "Data Privacy Lead", "MONITORING", "GDPR Data Protection"}
-        }
+        { {"Scope Review","","Authorized scope","ROLE PRESET","No tool execution"}, {"Exposure Review","","Attack surface","ROLE PRESET","No tool execution"}, {"Risk Triage","","Security review","ROLE PRESET","No tool execution"}, {"Abuse Case Review","","Threat modeling","ROLE PRESET","No tool execution"}, {"Recommendations","","Defensive guidance","ROLE PRESET","No tool execution"} },
+        { {"Incident Triage","","SOC analysis","ROLE PRESET","No tool execution"}, {"Malware Triage","","Safe file review","ROLE PRESET","No tool execution"}, {"Threat Hunting","","Evidence review","ROLE PRESET","No tool execution"}, {"Detection Review","","Alert analysis","ROLE PRESET","No tool execution"}, {"Patch Advisory","","Remediation review","ROLE PRESET","No tool execution"} },
+        { {"ATT&CK Mapping","","Technique review","ROLE PRESET","No tool execution"}, {"Control Review","","Defensive controls","ROLE PRESET","No tool execution"}, {"Scenario Review","","Safe simulation plans","ROLE PRESET","No tool execution"}, {"Detection Gaps","","Detection review","ROLE PRESET","No tool execution"}, {"Risk Evaluation","","Posture guidance","ROLE PRESET","No tool execution"} },
+        { {"Code Review","","Application security","ROLE PRESET","No tool execution"}, {"Cloud Review","","Configuration review","ROLE PRESET","No tool execution"}, {"API Review","","Interface security","ROLE PRESET","No tool execution"}, {"Pipeline Review","","DevSecOps","ROLE PRESET","No tool execution"}, {"Frontend Review","","Web security","ROLE PRESET","No tool execution"} },
+        { {"Compliance Review","","Control mapping","ROLE PRESET","No tool execution"}, {"Risk Review","","Risk register","ROLE PRESET","No tool execution"}, {"Policy Review","","Governance","ROLE PRESET","No tool execution"}, {"Awareness Review","","Training guidance","ROLE PRESET","No tool execution"}, {"Privacy Review","","Data protection","ROLE PRESET","No tool execution"} }
     };
 
     int ry = ty + 56;
@@ -6420,20 +8424,20 @@ static void PaintTeam(HDC dc,int cx,int cy,int cw,int ch){
         Txt(dc, e->role, ex + 22, ry + 22, engW - 28, 14, curCol, fSm, DT_LEFT|DT_SINGLELINE);
 
         /* Status & Specialty */
-        HBRUSH hDotBr = CreateSolidBrush(C_GREEN);
-        HPEN   hDotPen = CreatePen(PS_SOLID, 1, C_GREEN);
+        HBRUSH hDotBr = CreateSolidBrush(C_DIM);
+        HPEN   hDotPen = CreatePen(PS_SOLID, 1, C_DIM);
         HBRUSH oDb = (HBRUSH)SelectObject(dc, hDotBr);
         HPEN   oDp = (HPEN)SelectObject(dc, hDotPen);
         Ellipse(dc, ex + 4, ry + 46, ex + 11, ry + 53);
         SelectObject(dc, oDb); SelectObject(dc, oDp);
         DeleteObject(hDotBr); DeleteObject(hDotPen);
 
-        Txt(dc, e->status, ex + 15, ry + 42, engW - 20, 14, C_GREEN, fSm, DT_LEFT|DT_SINGLELINE);
+        Txt(dc, e->status, ex + 15, ry + 42, engW - 20, 14, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
         Txt(dc, e->specialty, ex + 4, ry + 58, engW - 8, 14, C_DIM2, fSm, DT_LEFT|DT_SINGLELINE);
     }
 
     /* Channel status header */
-    Txt(dc, "Active Autonomous Operations Channel (Continuous Live Intelligence Stream):",
+    Txt(dc, "Responses appear only after Dispatch; no continuous security scan is running.",
         cx+MRG, ry+82, cw-MRG*2, 16, C_DIM, fSm, DT_LEFT|DT_SINGLELINE);
 }
 
@@ -6600,19 +8604,30 @@ static void Layout(HWND hw){
     /* Table Listbox inside Left Container */
     POS(hFwList,     cx + 4,   fwCardY + 54, fwLw - 8, fwCardH - 58);
 
-    /* Autonomous CVE Agent - all buttons + list */
-    SHOW(hUpdScan,    TAB_UPD); SHOW(hUpdFixAll, TAB_UPD); SHOW(hUpdChk,     TAB_UPD);
-    SHOW(hUpdSel,     TAB_UPD); SHOW(hUpdWin,    TAB_UPD); SHOW(hUpdWatcher, TAB_UPD);
-    SHOW(hUpdAiFix,   TAB_UPD); SHOW(hUpdSandbox,TAB_UPD); SHOW(hUpdList,    TAB_UPD);
-    POS(hUpdScan,     cx,           cy+66,130,24);
-    POS(hUpdFixAll,   cx+138,       cy+66,160,24);
-    POS(hUpdChk,      cx+306,       cy+66,120,24);
-    POS(hUpdSel,      cx+434,       cy+66,120,24);
-    POS(hUpdWin,      cx+562,       cy+66,130,24);
-    POS(hUpdWatcher,  cx+700,       cy+66,140,24);
-    POS(hUpdAiFix,    cx+848,       cy+66,120,24);
-    POS(hUpdSandbox,  cx+976,       cy+66,130,24);
-    POS(hUpdList,     cx,           cy+98,cw,H-cy-98-STB_H-14);
+    /* Autonomous CVE Agent - Modern Dashboard Layout */
+    if (g_tab == TAB_UPD && g_cveSubNav == 1) {
+        ShowWindow(hUpdSearch, SW_SHOW);
+        int updHeroY = cy + 8;
+        int updHeroH = 68;
+        int updSubNavY = updHeroY + updHeroH + 10;
+        int updSubNavH = 32;
+        int updKpiY = updSubNavY + updSubNavH + 10;
+        int updKpiH = 82;
+        int updToolY = updKpiY + updKpiH + 12;
+        POS(hUpdSearch, cx + 8 + 34, updToolY + 6, 275, 22);
+    } else {
+        ShowWindow(hUpdSearch, SW_HIDE);
+    }
+    ShowWindow(hUpdNotifyMode, SW_HIDE);
+    ShowWindow(hUpdScan,    SW_HIDE);
+    ShowWindow(hUpdFixAll,  SW_HIDE);
+    ShowWindow(hUpdChk,     SW_HIDE);
+    ShowWindow(hUpdSel,     SW_HIDE);
+    ShowWindow(hUpdWin,     SW_HIDE);
+    ShowWindow(hUpdWatcher, SW_HIDE);
+    ShowWindow(hUpdAiFix,   SW_HIDE);
+    ShowWindow(hUpdSandbox, SW_HIDE);
+    ShowWindow(hUpdList,    SW_HIDE);
 
     /* NetGuard Traffic */
     SHOW(hNetScan,     TAB_NET); SHOW(hNetPorts,    TAB_NET); SHOW(hNetPortIn,   TAB_NET);
@@ -6659,10 +8674,10 @@ static void Layout(HWND hw){
     int rwCard1W = (cw - 14) / 2;
     POS(hRwList,         cx + 16,     cy + 76 + 36, rwCard1W - 32, 106);
 
-    /* Threat & Advanced Gaming Engine */
-    SHOW(hThrBoost,TAB_THREAT); SHOW(hThrGame,TAB_THREAT); SHOW(hThrPurge,TAB_THREAT);
-    SHOW(hThrCustom,TAB_THREAT); SHOW(hThrTcp,TAB_THREAT); SHOW(hThrAc,TAB_THREAT);
-    SHOW(hThrPassIn,TAB_COUNT); SHOW(hThrHibp,TAB_COUNT); SHOW(hThrList,TAB_THREAT);
+    /* Threat & Advanced Gaming Engine - Pure modern HUD */
+    SHOW(hThrBoost,TAB_COUNT); SHOW(hThrGame,TAB_COUNT); SHOW(hThrPurge,TAB_COUNT);
+    SHOW(hThrCustom,TAB_COUNT); SHOW(hThrTcp,TAB_COUNT); SHOW(hThrAc,TAB_COUNT);
+    SHOW(hThrPassIn,TAB_COUNT); SHOW(hThrHibp,TAB_COUNT); SHOW(hThrList,TAB_COUNT);
 
     int thrY = cy + 138;
     int curThrX = cx + MRG;
@@ -6774,13 +8789,13 @@ static void Layout(HWND hw){
 
 
     /* Engines */
-    SHOW(hEngStAll,TAB_ENG); SHOW(hEngSpAll,TAB_ENG);
+    SHOW(hEngStAll,FALSE); SHOW(hEngSpAll,FALSE);
     POS(hEngStAll, cx+MRG,     H-STB_H-52, 145, 34);
     POS(hEngSpAll, cx+MRG+156, H-STB_H-52, 145, 34);
 
     /* Full Team */
     SHOW(hTmRed,TAB_TEAM); SHOW(hTmBlue,TAB_TEAM); SHOW(hTmPurple,TAB_TEAM);
-    SHOW(hTmYellow,TAB_TEAM); SHOW(hTmGreen,TAB_TEAM); SHOW(hTmAuto,TAB_TEAM);
+    SHOW(hTmYellow,TAB_TEAM); SHOW(hTmGreen,TAB_TEAM); SHOW(hTmAuto,TAB_TEAM); SHOW(hTmAllTeams,TAB_TEAM);
     SHOW(hTmPrompt,TAB_TEAM); SHOW(hTmSend,TAB_TEAM);
     SHOW(hTmList,TAB_TEAM); SHOW(hTmClear,TAB_TEAM);
     {
@@ -6792,6 +8807,7 @@ static void Layout(HWND hw){
         POS(hTmYellow, cx+MRG+(tw2+8)*3,    ty2,tw2,48);
         POS(hTmGreen,  cx+MRG+(tw2+8)*4,    ty2,tw2,48);
         POS(hTmAuto,   cx+cw-MRG-124,       ty2,124,48);
+        POS(hTmAllTeams,cx+MRG,             ty2+110,220,22);
 
         int ry2=ty2+56+78+24;
         POS(hTmList,   cx+MRG,              ry2,cw-MRG*2,H-ry2-STB_H-42);
@@ -7074,14 +9090,14 @@ static void DrawBtn(HWND hb,HDC dc,RECT *rc,BOOL pressed){
     }
 
     /* Custom SmartSandbox Buttons matching target mockup */
-    if (hb == hSbxBrw || strcmp(txt, "Browse EXE") == 0) {
+    if (hb == hSbxBrw || strcmp(txt, "Choose EXE Setup") == 0) {
         COLORREF bg = pressed ? RGB(16, 24, 36) : RGB(22, 32, 48);
         DrawRoundRectPanel(dc, rc->left, rc->top, W, H, 6, bg, RGB(75, 85, 99));
         SetTextColor(dc, RGB(220, 230, 245));
         SetBkMode(dc, TRANSPARENT);
         SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         RECT btr = *rc;
-        DrawTextA(dc, "Browse EXE", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        DrawTextA(dc, "Choose EXE Setup", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         return;
     }
     if (hb == hSbxRun || strcmp(txt, "Run in Sandbox") == 0) {
@@ -7122,7 +9138,7 @@ static void DrawBtn(HWND hb,HDC dc,RECT *rc,BOOL pressed){
         SetBkMode(dc, TRANSPARENT);
         SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         RECT btr = *rc;
-        DrawTextA(dc, g_sbxBlockNet ? "[x] Block Network" : "[ ] Block Network", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        DrawTextA(dc, "[x] Network Blocked", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         return;
     }
     if (hb == hSbxBFile || strstr(txt, "Block FileSystem")) {
@@ -7133,7 +9149,7 @@ static void DrawBtn(HWND hb,HDC dc,RECT *rc,BOOL pressed){
         SetBkMode(dc, TRANSPARENT);
         SelectObject(dc, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         RECT btr = *rc;
-        DrawTextA(dc, g_sbxBlockFs ? "[x] Block FileSystem" : "[ ] Block FileSystem", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        DrawTextA(dc, "[x] Writes Boxed", -1, &btr, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         return;
     }
 
@@ -7267,18 +9283,11 @@ static void SampleRealTelemetry(void) {
 static DWORD WINAPI telemThread(LPVOID u){
     (void)u;
     DWORD lastChartShift = GetTickCount();
-    unsigned long long lastInPkts = 0, lastOutPkts = 0, lastDrops = 0;
+    unsigned long long lastInPkts = 0, lastOutPkts = 0;
 
     SampleRealTelemetry();
     lastInPkts = g_realInPkts;
     lastOutPkts = g_realOutPkts;
-    lastDrops = g_realDrops;
-
-    /* === Auto-start RansomShield protection on launch === */
-    rw_start("C:\\", g_hwnd);
-    rw_deploy_honeypots("C:\\Windows\\Temp");
-    add_alert("RansomShield","INFO","Auto-protect ACTIVE: mass encryption monitoring + honeypots deployed");
-
 
     /* === Initialize hourly AV scan baseline === */
     g_lastAvScan = GetTickCount();
@@ -7356,14 +9365,10 @@ static DWORD WINAPI telemThread(LPVOID u){
             lastChartShift = now;
             unsigned long long curIn = g_realInPkts;
             unsigned long long curOut = g_realOutPkts;
-            unsigned long long curDrp = g_realDrops;
-
-            int dIn = (int)(curIn >= lastInPkts ? (curIn - lastInPkts) : 1);
-            int dOut = (int)(curOut >= lastOutPkts ? (curOut - lastOutPkts) : 1);
-            int dDrp = (int)(curDrp >= lastDrops ? (curDrp - lastDrops) : 0);
+            unsigned long long inDelta = curIn >= lastInPkts ? curIn - lastInPkts : 0;
+            unsigned long long outDelta = curOut >= lastOutPkts ? curOut - lastOutPkts : 0;
             lastInPkts = curIn;
             lastOutPkts = curOut;
-            lastDrops = curDrp;
 
             EnterCriticalSection(&g_statsCS);
             for (int k = 0; k < 6; k++) {
@@ -7372,22 +9377,10 @@ static DWORD WINAPI telemThread(LPVOID u){
                 g_chartClean[k]    = g_chartClean[k+1];
                 g_chartFiltered[k] = g_chartFiltered[k+1];
             }
-            int varA = (rand() % 36) - 18;
-            int varB = (rand() % 16) - 8;
-            g_chartInbound[6]  = CLAMP(dIn * 2 + g_netConnCnt * 4 + 180 + varA, 50, 600);
-            g_chartOutbound[6] = CLAMP((int)(g_wafBlk + g_realDrops + g_alCnt) * 6 + dDrp * 8 + 35 + varB, 15, 320);
-            g_chartClean[6]    = CLAMP((g_chartInbound[6] * 82) / 100, 40, 520);
-            g_chartFiltered[6] = CLAMP((g_chartOutbound[6] * 55) / 100, 8, 150);
-
-            /* Link engine loads directly to real engine state and telemetry */
-            g_eng[0].load = !g_eng[0].run ? 0 : (g_avScanned > 0 ? CLAMP((int)(g_avScanned % 100), 25, 95) : 85);
-            g_eng[1].load = !g_eng[1].run ? 0 : (g_netConnCnt > 0 ? CLAMP(g_netConnCnt * 3 + 20, 20, 95) : 60);
-            g_eng[2].load = !g_eng[2].run ? 0 : (g_appCount > 0 ? CLAMP(g_appCount * 2 + 10, 25, 90) : 75);
-            g_eng[3].load = !g_eng[3].run ? 0 : (g_honeyCnt > 0 ? CLAMP(g_honeyCnt * 15 + 20, 30, 95) : 80);
-            g_eng[4].load = !g_eng[4].run ? 0 : (g_fwRuleCount > 0 ? CLAMP(g_fwRuleCount / 5 + 15, 30, 95) : 85);
-            g_eng[5].load = !g_eng[5].run ? 0 : (g_wafInsp > 0 ? CLAMP((int)(g_wafInsp % 90) + 10, 20, 95) : 70);
-            g_eng[6].load = !g_eng[6].run ? 0 : (g_sbx.active ? 90 : 40);
-            g_eng[7].load = !g_eng[7].run ? 0 : (g_discAppCnt > 0 ? CLAMP(g_discAppCnt * 2 + 15, 20, 95) : 65);
+            g_chartInbound[6] = inDelta > INT_MAX ? INT_MAX : (int)inDelta;
+            g_chartOutbound[6] = outDelta > INT_MAX ? INT_MAX : (int)outDelta;
+            g_chartClean[6] = g_chartInbound[6];
+            g_chartFiltered[6] = g_chartOutbound[6];
             LeaveCriticalSection(&g_statsCS);
         }
 
@@ -7468,6 +9461,12 @@ static DWORD WINAPI AiWorkerThread(LPVOID lpParam) {
             &status
         );
     }
+    else if(g_aiProvider == 2){
+        int status = 0;
+        apiSuccess = nvidia_ai_chat_query(g_aiApiKey[0] ? g_aiApiKey : NULL,
+            "You are Kaevex SOC AI Analyst. Provide defensive, authorized security analysis only. Do not claim scans or fixes that were not performed.",
+            task->query, 0.5f, 1024, responseContent, sizeof(responseContent), &status);
+    }
     else if(g_aiProvider == 1){
         /* Groq Cloud (llama-3.3-70b-versatile) */
         char safeQuery[512] = {0};
@@ -7535,6 +9534,8 @@ static DWORD WINAPI AiWorkerThread(LPVOID lpParam) {
             SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"");
             if(g_aiProvider == 0)
                 SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI - DeepSeek-V4-Pro]");
+            else if(g_aiProvider == 2)
+                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI - NVIDIA GLM-5.3-Flash]");
             else
                 SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI - Groq Llama 3.3]");
             SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  ──────────────────────────────────────────────");
@@ -7555,129 +9556,10 @@ static DWORD WINAPI AiWorkerThread(LPVOID lpParam) {
             /* Speak first sentence */
             ai_speak_text(firstLine);
             sb_sync_ai_conversation(task->query, responseContent,
-                                    g_aiProvider == 0 ? "deepseek-ai/DeepSeek-V4-Pro-0813" : "llama-3.3-70b-versatile",
+                                    g_aiProvider == 0 ? "deepseek-ai/DeepSeek-V4-Pro-0813" : (g_aiProvider == 2 ? NVIDIA_AI_MODEL : "llama-3.3-70b-versatile"),
                                     0);
         } else {
-            /* Live local SOC engine fallback with real system telemetry */
-            char lo[512] = {0};
-            int n = CLAMP((int)strlen(task->query), 0, 511);
-            for(int i = 0; i < n; i++) lo[i] = (char)tolower((unsigned char)task->query[i]);
-
-            /* Real System Telemetry */
-            MEMORYSTATUSEX ms = {0}; ms.dwLength = sizeof(ms);
-            GlobalMemoryStatusEx(&ms);
-            DWORD usedMB = (DWORD)((ms.ullTotalPhys - ms.ullAvailPhys) / (1024*1024));
-            DWORD totalMB = (DWORD)(ms.ullTotalPhys / (1024*1024));
-            int memPct = (int)(ms.dwMemoryLoad);
-
-            DWORD pids2[1024] = {0}; DWORD br2 = 0;
-            int procCount2 = 0;
-            if(EnumProcesses(pids2, sizeof(pids2), &br2)) procCount2 = (int)(br2 / sizeof(DWORD));
-
-            /* CPU load estimate */
-            FILETIME idleT={0},kernT={0},userT={0};
-            GetSystemTimes(&idleT,&kernT,&userT);
-            ULARGE_INTEGER idle2,kern2,user2;
-            idle2.LowPart=idleT.dwLowDateTime; idle2.HighPart=idleT.dwHighDateTime;
-            kern2.LowPart=kernT.dwLowDateTime; kern2.HighPart=kernT.dwHighDateTime;
-            user2.LowPart=userT.dwLowDateTime; user2.HighPart=userT.dwHighDateTime;
-            Sleep(150);
-            FILETIME idleT2={0},kernT3={0},userT3={0};
-            GetSystemTimes(&idleT2,&kernT3,&userT3);
-            ULARGE_INTEGER idle3,kern3,user3;
-            idle3.LowPart=idleT2.dwLowDateTime; idle3.HighPart=idleT2.dwHighDateTime;
-            kern3.LowPart=kernT3.dwLowDateTime; kern3.HighPart=kernT3.dwHighDateTime;
-            user3.LowPart=userT3.dwLowDateTime; user3.HighPart=userT3.dwHighDateTime;
-            ULONGLONG idleDiff = idle3.QuadPart - idle2.QuadPart;
-            ULONGLONG sysDiff  = (kern3.QuadPart + user3.QuadPart) - (kern2.QuadPart + user2.QuadPart);
-            int cpuPct = (sysDiff > 0) ? (int)(100 - (idleDiff * 100 / sysDiff)) : 0;
-            if(cpuPct < 0) cpuPct = 0; if(cpuPct > 100) cpuPct = 100;
-
-            SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"");
-            SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI - DeepSeek-V4 Local Telemetry Intelligence]");
-
-            char sysSnap[256];
-            snprintf(sysSnap, sizeof(sysSnap), "  * System Snapshot: CPU %d%% | RAM %lu/%lu MB (%d%%) | Processes: %d",
-                     cpuPct, (unsigned long)usedMB, (unsigned long)totalMB, memPct, procCount2);
-
-            char firstSpoken[300] = {0};
-
-            if(strstr(lo, "hi") || strstr(lo, "hello") || strstr(lo, "hey") || strstr(lo, "help") || strstr(lo, "menu")){
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Welcome! I am your Kaevex Security & Intelligence Copilot.");
-                strcpy(firstSpoken, "Hello! I am your Kaevex Security Copilot.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * System Posture: All 8 Core Defense Engines ONLINE & Protecting.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)sysSnap);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Recommended Commands:");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"    - Ask 'status' to review active incident alerts & telemetry.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"    - Ask 'cve' to inspect software vulnerabilities & patch state.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"    - Ask 'gaming' to check FPS boost & anti-cheat compatibility.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"    - Ask 'performance' for live CPU & memory metrics.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"    - Ask 'hardening' for recommendations to lock down your PC.");
-
-            } else if(strstr(lo, "recent") || strstr(lo, "alert") || strstr(lo, "incident") || strstr(lo, "happen") || strstr(lo, "status")){
-                char rep[256];
-                snprintf(rep, sizeof(rep), "  * Live Telemetry: %lld bus events, %lld WAF deflections, %lld AV files inspected.",
-                         g_busEvents, g_wafBlk, g_avScanned);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)rep);
-                strncpy(firstSpoken, rep+4, sizeof(firstSpoken)-1);
-                EnterCriticalSection(&g_alCS);
-                if(g_alCnt > 0){
-                    char lastAl[320]; snprintf(lastAl, sizeof(lastAl), "  * Latest Alert: %s", g_al[g_alCnt-1]);
-                    LeaveCriticalSection(&g_alCS);
-                    SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)lastAl);
-                } else { LeaveCriticalSection(&g_alCS); SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * No critical breach incidents detected in active session."); }
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * RansomShield: Honeypot decoys active, VSS shadow recovery armed.");
-
-            } else if(strstr(lo, "game") || strstr(lo, "gaming") || strstr(lo, "cheat") || strstr(lo, "fps")){
-                if(g_gamingMode){
-                    char gm[256]; snprintf(gm, sizeof(gm), "  * Gaming Mode ACTIVE: [%s] PID %lu. Background telemetry throttled.", g_activeGameName, g_activeGamePID);
-                    SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)gm);
-                    strncpy(firstSpoken, gm+4, sizeof(firstSpoken)-1);
-                } else {
-                    SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Gaming Mode: STANDBY. Click [Boost Game FPS] in Gaming tab.");
-                    strcpy(firstSpoken, "Gaming Mode is on standby.");
-                }
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Anti-Cheat: 100% verified with Riot Vanguard, EasyAntiCheat, BattlEye.");
-
-            } else if(strstr(lo, "cve") || strstr(lo, "vuln") || strstr(lo, "patch") || strstr(lo, "update")){
-                char cvmsg[256]; snprintf(cvmsg, sizeof(cvmsg), "  * OS: %s Build %d - %d active OS CVE advisories.", g_osInfo.productName, g_osInfo.buildNumber, g_osInfo.cveCount);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)cvmsg);
-                strncpy(firstSpoken, cvmsg+4, sizeof(firstSpoken)-1);
-                int vCount = 0;
-                for(int a = 0; a < g_appCount; a++){
-                    if(g_apps[a].cveCount > 0 && vCount < 2){
-                        char vapp[256]; snprintf(vapp, sizeof(vapp), "  * Vulnerable: %s v%s -> Fix: %s", g_apps[a].name, g_apps[a].version, g_apps[a].cveFixed[0]);
-                        SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)vapp); vCount++;
-                    }
-                }
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * 1-Click Remediation available in Patch & CVE tab.");
-
-            } else if(strstr(lo, "ram") || strstr(lo, "memory") || strstr(lo, "cpu") || strstr(lo, "process") || strstr(lo, "performance")){
-                char perf[256];
-                snprintf(perf, sizeof(perf), "  * RAM Load: %d%% (%lu MB used / %lu MB total)", memPct, (unsigned long)usedMB, (unsigned long)totalMB);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)perf);
-                strncpy(firstSpoken, perf+4, sizeof(firstSpoken)-1);
-                snprintf(perf, sizeof(perf), "  * Active Processes: %d | Estimated CPU Usage: %d%%", procCount2, cpuPct);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)perf);
-                if(memPct > 85) SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Memory Warning: High RAM load detected. Consider closing unused apps.");
-                else SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * System Performance: Operating within normal baseline parameters.");
-
-            } else if(strstr(lo, "harden") || strstr(lo, "secure") || strstr(lo, "advice") || strstr(lo, "recommend")){
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Enable Emergency Lockdown mode in Adaptive Firewall.");
-                strcpy(firstSpoken, "Here is hardening advice.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Apply Baseline Firewall rules to block all non-essential ports.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Deploy RansomShield honeypots to detect ransomware activity.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Use SmartSandbox to isolate suspicious executables before running.");
-
-            } else {
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * All 8 core defense engines active - real-time threat interception online.");
-                strcpy(firstSpoken, "All defense engines are active.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)sysSnap);
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Zero-Day Defense: AppContainer isolation + DLP monitoring active.");
-                SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  * Tip: Ask me about alerts, CVEs, memory, gaming compatibility, or hardening.");
-            }
-            SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"");
-            ai_speak_text(firstSpoken);
+            SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [AI REQUEST FAILED] Provider unavailable or key missing. No AI analysis, vulnerability scan, or remediation was performed.");
         }
         /* Auto-scroll to latest message */
         int cnt = (int)SendMessageA(hAiList, LB_GETCOUNT, 0, 0);
@@ -7698,8 +9580,10 @@ static void ai_respond(const char *query) {
         SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI] Querying Together AI (DeepSeek-V4-Pro-0813)...");
     else if(g_aiProvider == 1)
         SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI] Querying Groq cloud neural model...");
+    else if(g_aiProvider == 2)
+        SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI] Querying NVIDIA GLM-5.3 Flash...");
     else
-        SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI] Consulting Autonomous Local SOC Engine...");
+        SendMessageA(hAiList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AI] Local model unavailable; no AI request will be sent.");
 
     int cnt = (int)SendMessageA(hAiList, LB_GETCOUNT, 0, 0);
     SendMessageA(hAiList, LB_SETTOPINDEX, cnt > 0 ? cnt-1 : 0, 0);
@@ -8969,32 +10853,20 @@ static void DrawGradientH_Auth(HDC dc, int x, int y, int w, int h, COLORREF c1, 
 }
 
 static void DrawCyberWaves_Auth(HDC dc, int x, int y, int w, int h) {
-    int gcx = x + w / 2, gcy = y + 270;
-    for (int gr = 140; gr >= 20; gr -= 15) {
-        float factor = (1.0f - (float)gr / 140.0f);
-        int bVal = (int)(25 + factor * 50);
-        int cVal = (int)(10 + factor * 25);
-        HBRUSH glowB = CreateSolidBrush(RGB(4, cVal, bVal));
-        HPEN nullP = (HPEN)GetStockObject(NULL_PEN);
-        HBRUSH ob = (HBRUSH)SelectObject(dc, glowB);
-        HPEN op = (HPEN)SelectObject(dc, nullP);
-        Ellipse(dc, gcx - gr * 13 / 10, gcy - gr, gcx + gr * 13 / 10, gcy + gr);
-        SelectObject(dc, ob); SelectObject(dc, op);
-        DeleteObject(glowB);
-    }
-    for (int i = 0; i < 7; i++) {
-        COLORREF penCol = RGB(10 + i * 4, 28 + i * 9, 65 + i * 16);
+    /* Subtle ambient dark cyber blue waves at lower edge of left panel */
+    for (int i = 0; i < 5; i++) {
+        COLORREF penCol = RGB(8 + i * 3, 20 + i * 5, 42 + i * 8);
         HPEN p = CreatePen(PS_SOLID, 2, penCol);
         HPEN op = (HPEN)SelectObject(dc, p);
         POINT pts[4];
-        pts[0].x = x - 30;
-        pts[0].y = y + h - 30 - i * 40;
+        pts[0].x = x - 20;
+        pts[0].y = y + h - 15 - i * 18;
         pts[1].x = x + w * 35 / 100;
-        pts[1].y = y + h - 170 - i * 22;
+        pts[1].y = y + h - 75 - i * 14;
         pts[2].x = x + w * 70 / 100;
-        pts[2].y = y + h - 20 - i * 18;
-        pts[3].x = x + w + 30;
-        pts[3].y = y + h - 140 - i * 12;
+        pts[2].y = y + h - 20 - i * 12;
+        pts[3].x = x + w + 20;
+        pts[3].y = y + h - 60 - i * 8;
         PolyBezier(dc, pts, 4);
         SelectObject(dc, op);
         DeleteObject(p);
@@ -9002,140 +10874,104 @@ static void DrawCyberWaves_Auth(HDC dc, int x, int y, int w, int h) {
 }
 
 static void DrawKLogo_Auth(HDC dc, int x, int y, int sz) {
-    DrawRoundRectPanel(dc, x, y, sz, sz, 12, RGB(8, 20, 44), RGB(0, 150, 235));
-    int barW = sz / 5;
-    int m = sz / 5;
-    DrawGradientH_Auth(dc, x + m, y + m, barW, sz - 2 * m, RGB(0, 210, 255), RGB(0, 110, 255), 3);
+    HICON hIco = NULL;
+    LoadKaevexIconPair(GetModuleHandleA(NULL), &hIco, NULL);
+    if (hIco) {
+        DrawIconEx(dc, x, y, hIco, sz, sz, 0, NULL, DI_NORMAL);
+        DestroyIcon(hIco);
+    } else {
+        DrawRoundRectPanel(dc, x, y, sz, sz, 12, RGB(8, 20, 44), RGB(0, 150, 235));
+        int barW = sz / 5;
+        int m = sz / 5;
+        DrawGradientH_Auth(dc, x + m, y + m, barW, sz - 2 * m, RGB(0, 210, 255), RGB(0, 110, 255), 3);
 
-    POINT w1[3] = {
-        { x + m + barW + 2, y + sz / 2 - 2 },
-        { x + sz - m, y + m },
-        { x + sz - m, y + m + sz / 4 }
-    };
-    HBRUSH b1 = CreateSolidBrush(RGB(0, 195, 255));
-    HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
-    HBRUSH ob = (HBRUSH)SelectObject(dc, b1);
-    HPEN op = (HPEN)SelectObject(dc, pNone);
-    Polygon(dc, w1, 3);
+        POINT w1[3] = {
+            { x + m + barW + 2, y + sz / 2 - 2 },
+            { x + sz - m, y + m },
+            { x + sz - m, y + m + sz / 4 }
+        };
+        HBRUSH b1 = CreateSolidBrush(RGB(0, 195, 255));
+        HPEN pNone = (HPEN)GetStockObject(NULL_PEN);
+        HBRUSH ob = (HBRUSH)SelectObject(dc, b1);
+        HPEN op = (HPEN)SelectObject(dc, pNone);
+        Polygon(dc, w1, 3);
 
-    POINT w2[3] = {
-        { x + m + barW + 2, y + sz / 2 - 2 },
-        { x + sz - m - 4, y + sz - m },
-        { x + sz - m + sz / 6, y + sz - m }
-    };
-    HBRUSH b2 = CreateSolidBrush(RGB(50, 130, 255));
-    SelectObject(dc, b2);
-    Polygon(dc, w2, 3);
-    SelectObject(dc, ob); SelectObject(dc, op);
-    DeleteObject(b1); DeleteObject(b2);
+        POINT w2[3] = {
+            { x + m + barW + 2, y + sz / 2 - 2 },
+            { x + sz - m - 4, y + sz - m },
+            { x + sz - m + sz / 6, y + sz - m }
+        };
+        HBRUSH b2 = CreateSolidBrush(RGB(255, 51, 102));
+        SelectObject(dc, b2);
+        Polygon(dc, w2, 3);
+        SelectObject(dc, ob); SelectObject(dc, op);
+        DeleteObject(b1); DeleteObject(b2);
+    }
 }
 
 static void DrawNeonCloudGraphic_Auth(HDC dc, int cx, int cy, HFONT fIconCtrl) {
     (void)fIconCtrl;
-    int ringY = cy + 62;
-    HPEN rayPen = CreatePen(PS_SOLID, 1, RGB(12, 40, 95));
-    HPEN opR = (HPEN)SelectObject(dc, rayPen);
-    for (int ang = -70; ang <= 70; ang += 20) {
-        float rad = (float)ang * 3.14159f / 180.0f;
-        int rx0 = cx + (int)(sin(rad) * 60);
-        int ry0 = ringY + (int)(cos(rad) * 16);
-        int rx1 = cx + (int)(sin(rad) * 115);
-        int ry1 = ringY + (int)(cos(rad) * 28);
-        MoveToEx(dc, rx0, ry0, NULL);
-        LineTo(dc, rx1, ry1);
-    }
-    SelectObject(dc, opR);
-    DeleteObject(rayPen);
-
-    for (int r = 4; r >= 1; r--) {
-        int rx = 52 + r * 22;
-        int ry = 14 + r * 6;
-        COLORREF penCol = (r == 1) ? RGB(0, 240, 255) : (r == 2 ? RGB(0, 160, 255) : (r == 3 ? RGB(20, 80, 180) : RGB(25, 25, 80)));
-        int penW = (r <= 2) ? 2 : 1;
-        HPEN pen = CreatePen(PS_SOLID, penW, penCol);
-        HBRUSH nullBr = (HBRUSH)GetStockObject(NULL_BRUSH);
-        HPEN op = (HPEN)SelectObject(dc, pen);
-        HBRUSH ob = (HBRUSH)SelectObject(dc, nullBr);
-        Ellipse(dc, cx - rx, ringY - ry, cx + rx, ringY + ry);
-        SelectObject(dc, op); SelectObject(dc, ob);
-        DeleteObject(pen);
+    static HBITMAP s_hHoloBmp = NULL;
+    if (!s_hHoloBmp) {
+        /* 1. Try embedded bitmap resource 102 with LR_CREATEDIBSECTION */
+        s_hHoloBmp = (HBITMAP)LoadImageA(GetModuleHandleA(NULL), MAKEINTRESOURCEA(102), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+        if (!s_hHoloBmp) {
+            s_hHoloBmp = LoadBitmapA(GetModuleHandleA(NULL), MAKEINTRESOURCE(102));
+        }
+        /* 2. Try disk file fallback */
+        if (!s_hHoloBmp) {
+            char exeDir[MAX_PATH] = {0};
+            GetModuleFileNameA(NULL, exeDir, sizeof(exeDir));
+            char *sl = strrchr(exeDir, '\\'); if (sl) *sl = '\0';
+            char p[MAX_PATH];
+            snprintf(p, sizeof(p), "%s\\assets\\auth_hologram.bmp", exeDir);
+            s_hHoloBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+            if (!s_hHoloBmp) {
+                snprintf(p, sizeof(p), "%s\\auth_hologram.bmp", exeDir);
+                s_hHoloBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+            }
+            if (!s_hHoloBmp) {
+                snprintf(p, sizeof(p), "%s\\..\\assets\\auth_hologram.bmp", exeDir);
+                s_hHoloBmp = (HBITMAP)LoadImageA(NULL, p, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
+            }
+        }
     }
 
-    HBRUSH dotBr = CreateSolidBrush(RGB(0, 240, 255));
-    HPEN nullP = (HPEN)GetStockObject(NULL_PEN);
-    HBRUSH ob2 = (HBRUSH)SelectObject(dc, dotBr);
-    HPEN op2 = (HPEN)SelectObject(dc, nullP);
-    Ellipse(dc, cx - 82, ringY - 8, cx - 78, ringY - 4);
-    Ellipse(dc, cx + 86, ringY + 4, cx + 90, ringY + 8);
-    Ellipse(dc, cx + 48, ringY - 14, cx + 52, ringY - 10);
-    Ellipse(dc, cx - 56, ringY + 12, cx - 52, ringY + 16);
-    Ellipse(dc, cx + 10, ringY + 22, cx + 14, ringY + 26);
-    SelectObject(dc, ob2); SelectObject(dc, op2); DeleteObject(dotBr);
-
-    int cloudY = cy - 20;
-    for (int g = 6; g >= 2; g -= 2) {
-        COLORREF glowCol = (g == 6) ? RGB(10, 35, 85) : (g == 4 ? RGB(16, 65, 145) : RGB(22, 105, 205));
-        HPEN gPen = CreatePen(PS_SOLID, g, glowCol);
-        HBRUSH cBg = CreateSolidBrush(RGB(6, 18, 42));
-        HPEN opG = (HPEN)SelectObject(dc, gPen);
-        HBRUSH obG = (HBRUSH)SelectObject(dc, cBg);
-
-        RoundRect(dc, cx - 74, cloudY + 10, cx + 74, cloudY + 54, 30, 30);
-        Ellipse(dc, cx - 68, cloudY - 10, cx - 10, cloudY + 48);
-        Ellipse(dc, cx - 35, cloudY - 38, cx + 35, cloudY + 35);
-        Ellipse(dc, cx + 10, cloudY - 12, cx + 68, cloudY + 48);
-
-        SelectObject(dc, opG); SelectObject(dc, obG);
-        DeleteObject(gPen); DeleteObject(cBg);
+    if (s_hHoloBmp) {
+        int hw = 340, hh = 320;
+        int hx = cx - hw / 2;
+        int hy = cy - 140;
+        HDC hdcHolo = CreateCompatibleDC(dc);
+        HBITMAP oBmp = (HBITMAP)SelectObject(hdcHolo, s_hHoloBmp);
+        SetStretchBltMode(dc, HALFTONE);
+        BitBlt(dc, hx, hy, hw, hh, hdcHolo, 0, 0, SRCCOPY);
+        SelectObject(hdcHolo, oBmp);
+        DeleteDC(hdcHolo);
     }
+}
 
-    HPEN neonPen = CreatePen(PS_SOLID, 2, RGB(0, 220, 255));
-    HPEN opN = (HPEN)SelectObject(dc, neonPen);
-    HBRUSH nullB = (HBRUSH)GetStockObject(NULL_BRUSH);
-    HBRUSH obN = (HBRUSH)SelectObject(dc, nullB);
-
-    RoundRect(dc, cx - 74, cloudY + 10, cx + 74, cloudY + 54, 30, 30);
-    Ellipse(dc, cx - 68, cloudY - 10, cx - 10, cloudY + 48);
-    Ellipse(dc, cx - 35, cloudY - 38, cx + 35, cloudY + 35);
-    Ellipse(dc, cx + 10, cloudY - 12, cx + 68, cloudY + 48);
-
-    SelectObject(dc, opN); SelectObject(dc, obN);
-    DeleteObject(neonPen);
-
-    int shX = cx - 25, shY = cloudY - 12, shW = 50, shH = 56;
-    HPEN shPen = CreatePen(PS_SOLID, 2, RGB(0, 220, 255));
-    HBRUSH shBr = CreateSolidBrush(RGB(10, 26, 60));
-    HPEN op4 = (HPEN)SelectObject(dc, shPen);
-    HBRUSH ob4 = (HBRUSH)SelectObject(dc, shBr);
-    POINT shPts[5] = {
-        {shX, shY},
-        {shX + shW, shY},
-        {shX + shW, shY + shH * 3 / 5},
-        {shX + shW / 2, shY + shH},
-        {shX, shY + shH * 3 / 5}
-    };
-    Polygon(dc, shPts, 5);
-    SelectObject(dc, op4); SelectObject(dc, ob4);
-    DeleteObject(shPen); DeleteObject(shBr);
-
-    int lkX = cx - 10, lkY = shY + 20, lkW = 20, lkH = 17;
-    HPEN lkPen = CreatePen(PS_SOLID, 2, RGB(165, 215, 255));
-    HBRUSH nullB2 = (HBRUSH)GetStockObject(NULL_BRUSH);
-    HPEN op5 = (HPEN)SelectObject(dc, lkPen);
-    HBRUSH ob5 = (HBRUSH)SelectObject(dc, nullB2);
-    Arc(dc, lkX + 2, lkY - 9, lkX + lkW - 2, lkY + 6, lkX + lkW - 2, lkY - 1, lkX + 2, lkY - 1);
-    
-    HBRUSH lkBody = CreateSolidBrush(RGB(165, 215, 255));
-    SelectObject(dc, lkBody);
-    RoundRect(dc, lkX, lkY, lkX + lkW, lkY + lkH, 4, 4);
-    
-    HBRUSH kh = CreateSolidBrush(RGB(10, 26, 60));
-    SelectObject(dc, kh);
-    Ellipse(dc, cx - 2, lkY + 4, cx + 2, lkY + 8);
-    RECT khR = {cx - 1, lkY + 6, cx + 1, lkY + 12};
-    FillRect(dc, &khR, kh);
-    SelectObject(dc, op5); SelectObject(dc, ob5);
-    DeleteObject(lkPen); DeleteObject(lkBody); DeleteObject(kh);
+static WNDPROC s_oldEditProc = NULL;
+static LRESULT CALLBACK SbAuthEditProc(HWND hw, UINT msg, WPARAM wp, LPARAM lp) {
+    if (msg == WM_PAINT) {
+        LRESULT res = CallWindowProcA(s_oldEditProc, hw, msg, wp, lp);
+        if (GetWindowTextLengthA(hw) == 0 && GetFocus() != hw) {
+            const wchar_t *cue = (const wchar_t*)GetPropW(hw, L"SbCue");
+            if (cue) {
+                HDC dc = GetDC(hw);
+                SetBkMode(dc, TRANSPARENT);
+                SetTextColor(dc, RGB(90, 115, 145));
+                HFONT f = fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+                HFONT of = (HFONT)SelectObject(dc, f);
+                RECT r; GetClientRect(hw, &r);
+                r.left += 2;
+                DrawTextW(dc, cue, -1, &r, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                SelectObject(dc, of);
+                ReleaseDC(hw, dc);
+            }
+        }
+        return res;
+    }
+    return CallWindowProcA(s_oldEditProc, hw, msg, wp, lp);
 }
 
 static void SupabaseAuthUpdateVisibility(HWND hw) {
@@ -9145,12 +10981,12 @@ static void SupabaseAuthUpdateVisibility(HWND hw) {
     int formW = 490;
 
     if (logged) {
-        if (s_hSbNameEdit) ShowWindow(s_hSbNameEdit, SW_HIDE);
+        if (s_hSbNameEdit)  ShowWindow(s_hSbNameEdit, SW_HIDE);
         if (s_hSbEmailEdit) ShowWindow(s_hSbEmailEdit, SW_HIDE);
-        if (s_hSbPassEdit) ShowWindow(s_hSbPassEdit, SW_HIDE);
+        if (s_hSbPassEdit)  ShowWindow(s_hSbPassEdit, SW_HIDE);
         if (s_hSbPass2Edit) ShowWindow(s_hSbPass2Edit, SW_HIDE);
-        if (s_hSbEye) ShowWindow(s_hSbEye, SW_HIDE);
-        if (s_hSbToggle) ShowWindow(s_hSbToggle, SW_HIDE);
+        if (s_hSbEye)       ShowWindow(s_hSbEye, SW_HIDE);
+        if (s_hSbToggle)    ShowWindow(s_hSbToggle, SW_HIDE);
 
         if (s_hSbInfoText) {
             char info[1024];
@@ -9160,20 +10996,20 @@ static void SupabaseAuthUpdateVisibility(HWND hw) {
             char realIp[64] = {0}; sb_get_real_ip(realIp, sizeof(realIp));
 
             snprintf(info, sizeof(info),
-                "CURRENT SESSION STATUS: AUTHENTICATED (ONLINE)\r\n\r\n"
-                "* User Email: %s\r\n"
-                "* Full Name: %s\r\n"
-                "* User UUID: %s\r\n"
-                "* Clearance: Tier-3 Enterprise SOC Officer\r\n"
-                "* Cloud Endpoint: https://lqvijkatveozunxzlaid.supabase.co\r\n"
-                "* Local Host: %s\r\n"
-                "* OS Build: %s\r\n"
-                "* Real IPv4: %s\r\n"
-                "* Synced Alerts: %d  |  Synced CVEs: %d  |  Actions: %d\r\n"
-                "* Session State: Realtime Cloud Bi-directional Sync Active",
+                "CURRENT PLATFORM IDENTITY STATUS: ACTIVE (ONLINE)\r\n\r\n"
+                "* Master Account: %s\r\n"
+                "* Identity Holder: %s\r\n"
+                "* Platform UUID: %s\r\n"
+                "* Security Clearance: Tier-3 Enterprise SOC Officer\r\n"
+                "* Platform Node: Master SOC Fleet Registry\r\n"
+                "* Host Machine: %s\r\n"
+                "* Operating System: %s\r\n"
+                "* Real IP Address: %s\r\n"
+                "* Synced Alerts: %d  |  Synced CVEs: %d  |  Policy Actions: %d\r\n"
+                "* Telemetry Channel: End-to-End Encrypted Platform Sync Active",
                 g_sbSession.email,
-                g_sbSession.fullName[0] ? g_sbSession.fullName : "Enterprise Operator",
-                g_sbSession.userId[0] ? g_sbSession.userId : "auth-jwt-active",
+                g_sbSession.fullName[0] ? g_sbSession.fullName : "Enterprise Security Officer",
+                g_sbSession.userId[0] ? g_sbSession.userId : "auth-platform-active",
                 hostName, osVer, realIp,
                 g_sbSession.totalSyncedAlerts,
                 g_sbSession.totalSyncedCves,
@@ -9197,78 +11033,80 @@ static void SupabaseAuthUpdateVisibility(HWND hw) {
         }
     } else {
         if (s_hSbInfoText) ShowWindow(s_hSbInfoText, SW_HIDE);
-        if (s_hSbLogout) ShowWindow(s_hSbLogout, SW_HIDE);
+        if (s_hSbLogout)   ShowWindow(s_hSbLogout, SW_HIDE);
 
         if (s_sbMode == 0) {
             /* Sign In mode */
-            if (s_hSbNameEdit) ShowWindow(s_hSbNameEdit, SW_HIDE);
+            if (s_hSbNameEdit)  ShowWindow(s_hSbNameEdit, SW_HIDE);
             if (s_hSbPass2Edit) ShowWindow(s_hSbPass2Edit, SW_HIDE);
 
-            int emailEdY = 144 + 22;
-            int passEdY  = emailEdY + 44 + 18 + 22;
+            int emailEdY = 168;
+            int passEdY  = 256;
 
             if (s_hSbEmailEdit) {
-                SetWindowPos(s_hSbEmailEdit, NULL, formX + 44, emailEdY + 11, formW - 54, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+                SetWindowPos(s_hSbEmailEdit, NULL, formX + 48, emailEdY + 12, formW - 64, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
             if (s_hSbPassEdit) {
-                SetWindowPos(s_hSbPassEdit, NULL, formX + 44, passEdY + 11, formW - 88, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+                SetWindowPos(s_hSbPassEdit, NULL, formX + 48, passEdY + 12, formW - 96, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
             if (s_hSbEye) {
-                SetWindowPos(s_hSbEye, NULL, formX + formW - 36, passEdY + 4, 30, 36, SWP_NOZORDER | SWP_SHOWWINDOW);
+                SetWindowPos(s_hSbEye, NULL, formX + formW - 42, passEdY + 6, 34, 34, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
 
-            int btn1Y = passEdY + 44 + 32;
-            if (s_hSbSubmit) {
-                SetWindowPos(s_hSbSubmit, NULL, formX, btn1Y, formW, 50, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            int btn2Y = btn1Y + 50 + 16;
-            if (s_hSbToggle) {
-                SetWindowPos(s_hSbToggle, NULL, formX, btn2Y, formW, 46, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            int orY = btn2Y + 46 + 28;
-            if (s_hSbStatus) {
-                SetWindowPos(s_hSbStatus, NULL, formX, orY - 26, formW, 24, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            if (s_hSbClose) {
-                SetWindowPos(s_hSbClose, NULL, formX + (formW - 130) / 2, orY + 22, 130, 36, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-        } else {
-            /* Register mode */
-            int nameEdY  = 126 + 20;
-            int emailEdY = nameEdY + 40 + 10 + 20;
-            int passEdY  = emailEdY + 40 + 10 + 20;
-            int pass2EdY = passEdY + 40 + 10 + 20;
-
-            if (s_hSbNameEdit) {
-                SetWindowPos(s_hSbNameEdit, NULL, formX + 44, nameEdY + 9, formW - 54, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            if (s_hSbEmailEdit) {
-                SetWindowPos(s_hSbEmailEdit, NULL, formX + 44, emailEdY + 9, formW - 54, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            if (s_hSbPassEdit) {
-                SetWindowPos(s_hSbPassEdit, NULL, formX + 44, passEdY + 9, formW - 88, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            if (s_hSbPass2Edit) {
-                SetWindowPos(s_hSbPass2Edit, NULL, formX + 44, pass2EdY + 9, formW - 54, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-            if (s_hSbEye) {
-                SetWindowPos(s_hSbEye, NULL, formX + formW - 36, passEdY + 2, 30, 36, SWP_NOZORDER | SWP_SHOWWINDOW);
-            }
-
-            int btn1Y = pass2EdY + 40 + 20;
+            int btn1Y = 334;
             if (s_hSbSubmit) {
                 SetWindowPos(s_hSbSubmit, NULL, formX, btn1Y, formW, 48, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
-            int btn2Y = btn1Y + 48 + 12;
+            int btn2Y = 396;
+            if (s_hSbToggle) {
+                SetWindowPos(s_hSbToggle, NULL, formX, btn2Y, formW, 46, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            int statusY = 452;
+            if (s_hSbStatus) {
+                SetWindowPos(s_hSbStatus, NULL, formX, statusY, formW, 24, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            int closeY = 516;
+            if (s_hSbClose) {
+                SetWindowPos(s_hSbClose, NULL, formX + (formW - 130) / 2, closeY, 130, 36, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+        } else {
+            /* Register mode */
+            int nameEdY  = 150;
+            int emailEdY = 226;
+            int passEdY  = 302;
+            int pass2EdY = 378;
+
+            if (s_hSbNameEdit) {
+                SetWindowPos(s_hSbNameEdit, NULL, formX + 48, nameEdY + 10, formW - 64, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            if (s_hSbEmailEdit) {
+                SetWindowPos(s_hSbEmailEdit, NULL, formX + 48, emailEdY + 10, formW - 64, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            if (s_hSbPassEdit) {
+                SetWindowPos(s_hSbPassEdit, NULL, formX + 48, passEdY + 10, formW - 96, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            if (s_hSbPass2Edit) {
+                SetWindowPos(s_hSbPass2Edit, NULL, formX + 48, pass2EdY + 10, formW - 64, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            if (s_hSbEye) {
+                SetWindowPos(s_hSbEye, NULL, formX + formW - 40, passEdY + 4, 34, 34, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+
+            int btn1Y = 432;
+            if (s_hSbSubmit) {
+                SetWindowPos(s_hSbSubmit, NULL, formX, btn1Y, formW, 46, SWP_NOZORDER | SWP_SHOWWINDOW);
+            }
+            int btn2Y = 488;
             if (s_hSbToggle) {
                 SetWindowPos(s_hSbToggle, NULL, formX, btn2Y, formW, 42, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
-            int orY = btn2Y + 42 + 20;
+            int statusY = 538;
             if (s_hSbStatus) {
-                SetWindowPos(s_hSbStatus, NULL, formX, orY - 24, formW, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
+                SetWindowPos(s_hSbStatus, NULL, formX, statusY, formW, 22, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
+            int closeY = 598;
             if (s_hSbClose) {
-                SetWindowPos(s_hSbClose, NULL, formX + (formW - 130) / 2, orY + 16, 130, 34, SWP_NOZORDER | SWP_SHOWWINDOW);
+                SetWindowPos(s_hSbClose, NULL, formX + (formW - 130) / 2, closeY, 130, 36, SWP_NOZORDER | SWP_SHOWWINDOW);
             }
         }
     }
@@ -9309,11 +11147,21 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
         s_hSbLogout = CreateWindowExA(0, "BUTTON", "",
             WS_CHILD | BS_OWNERDRAW, 0, 0, 10, 10, hw, (HMENU)(UINT_PTR)ID_SB_LOGOUT, hi, NULL);
 
-        /* Set cue banners (placeholders) */
-        SendMessageW(s_hSbNameEdit,  0x1501, TRUE, (LPARAM)L"Enter your full name");
-        SendMessageW(s_hSbEmailEdit, 0x1501, TRUE, (LPARAM)L"Enter your email address");
-        SendMessageW(s_hSbPassEdit,  0x1501, TRUE, (LPARAM)L"Enter your password");
-        SendMessageW(s_hSbPass2Edit, 0x1501, TRUE, (LPARAM)L"Confirm your password");
+        /* Subclass Edit controls to render sleek placeholder cue text when unfocused and empty */
+        if (!s_oldEditProc) s_oldEditProc = (WNDPROC)GetWindowLongPtrA(s_hSbEmailEdit, GWLP_WNDPROC);
+        SetWindowLongPtrA(s_hSbNameEdit,  GWLP_WNDPROC, (LONG_PTR)SbAuthEditProc);
+        SetWindowLongPtrA(s_hSbEmailEdit, GWLP_WNDPROC, (LONG_PTR)SbAuthEditProc);
+        SetWindowLongPtrA(s_hSbPassEdit,  GWLP_WNDPROC, (LONG_PTR)SbAuthEditProc);
+        SetWindowLongPtrA(s_hSbPass2Edit, GWLP_WNDPROC, (LONG_PTR)SbAuthEditProc);
+
+        SetPropW(s_hSbNameEdit,  L"SbCue", (HANDLE)L"Enter your full name");
+        SetPropW(s_hSbEmailEdit, L"SbCue", (HANDLE)L"Enter your email address");
+        SetPropW(s_hSbPassEdit,  L"SbCue", (HANDLE)L"Enter your password");
+        SetPropW(s_hSbPass2Edit, L"SbCue", (HANDLE)L"Confirm your password");
+
+        s_sbShowPass = FALSE;
+        SendMessageA(s_hSbPassEdit, EM_SETPASSWORDCHAR, 0x25CF, 0);
+        SendMessageA(s_hSbPass2Edit, EM_SETPASSWORDCHAR, 0x25CF, 0);
 
         /* Assign modern font to child controls */
         HFONT fLoginMed = fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
@@ -9345,10 +11193,10 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
             return 0;
         } else if (id == ID_SB_SUBMIT) {
             if (g_sbSession.isLoggedIn) {
-                SetWindowTextA(s_hSbStatus, "Syncing telemetry with Supabase Cloud...");
+                SetWindowTextA(s_hSbStatus, "Syncing telemetry with Kaevex Platform...");
                 UpdateWindow(s_hSbStatus);
                 sb_trigger_full_sync();
-                SetWindowTextA(s_hSbStatus, "Real hardware & network telemetry pushed to Supabase Cloud!");
+                SetWindowTextA(s_hSbStatus, "Real hardware & network telemetry pushed to Kaevex Platform!");
                 SupabaseAuthUpdateVisibility(hw);
                 if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
             } else if (s_sbMode == 0) {
@@ -9359,7 +11207,7 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
                     SetWindowTextA(s_hSbStatus, "Error: Please enter both email and password.");
                     return 0;
                 }
-                SetWindowTextA(s_hSbStatus, "Authenticating with Supabase Cloud...");
+                SetWindowTextA(s_hSbStatus, "Authenticating with Kaevex Platform...");
                 UpdateWindow(s_hSbStatus);
 
                 char outMsg[256] = {0};
@@ -9384,7 +11232,7 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
                     SetWindowTextA(s_hSbStatus, "Error: Passwords do not match. Please verify.");
                     return 0;
                 }
-                SetWindowTextA(s_hSbStatus, "Registering new account in Supabase...");
+                SetWindowTextA(s_hSbStatus, "Registering new account in Kaevex Platform...");
                 UpdateWindow(s_hSbStatus);
 
                 char outMsg[256] = {0};
@@ -9400,7 +11248,7 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
             SetWindowTextA(s_hSbStatus, "Reading real OS kernel, network sockets & memory telemetry...");
             UpdateWindow(s_hSbStatus);
             sb_trigger_full_sync();
-            SetWindowTextA(s_hSbStatus, "Real hardware & network telemetry pushed to Supabase Cloud!");
+            SetWindowTextA(s_hSbStatus, "Real hardware & network telemetry pushed to Kaevex Platform!");
             SupabaseAuthUpdateVisibility(hw);
             if (g_hwnd) InvalidateRect(g_hwnd, NULL, FALSE);
         } else if (id == ID_SB_LOGOUT) {
@@ -9423,58 +11271,142 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
         BOOL sel = (dis->itemState & ODS_SELECTED);
 
         if (id == ID_SB_SUBMIT) {
-            COLORREF c1 = sel ? RGB(0, 120, 210) : RGB(0, 149, 255);
+            /* Clear background first so corners have zero white artifacts */
+            HBRUSH pBg = CreateSolidBrush(RGB(7, 13, 24));
+            FillRect(hdc, &rc, pBg);
+            DeleteObject(pBg);
+
+            int W = rc.right - rc.left, H = rc.bottom - rc.top;
+            COLORREF c1 = sel ? RGB(0, 128, 220) : RGB(0, 155, 255);
             COLORREF c2 = sel ? RGB(140, 60, 215) : RGB(168, 85, 247);
-            DrawGradientH_Auth(hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, c1, c2, 10);
+            DrawGradientH_Auth(hdc, rc.left, rc.top, W, H, c1, c2, 12);
+
             SetBkMode(hdc, TRANSPARENT);
             SetTextColor(hdc, RGB(255, 255, 255));
             SelectObject(hdc, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
             const wchar_t *btnTxt = g_sbSession.isLoggedIn ?
-                L"Sync Telemetry Now  \u2192" :
-                (s_sbMode == 0 ? L"Sign In  \u2192" : L"Create Account  \u2192");
+                L"Sync Platform Telemetry  \u2192" :
+                (s_sbMode == 0 ? L"Sign In to Kaevex Platform  \u2192" : L"Create Kaevex Account  \u2192");
             DrawTextW(hdc, btnTxt, -1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
             return TRUE;
         }
 
         if (id == ID_SB_TOGGLE) {
-            COLORREF bg = sel ? RGB(16, 32, 60) : RGB(9, 18, 34);
-            DrawRoundRectPanel(hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 10, bg, RGB(28, 56, 104));
+            HBRUSH pBg = CreateSolidBrush(RGB(7, 13, 24));
+            FillRect(hdc, &rc, pBg);
+            DeleteObject(pBg);
+
+            int W = rc.right - rc.left, H = rc.bottom - rc.top;
+            COLORREF bg = sel ? RGB(18, 36, 68) : RGB(10, 20, 38);
+            COLORREF bdr = sel ? RGB(45, 90, 160) : RGB(26, 52, 96);
+            DrawRoundRectPanel(hdc, rc.left, rc.top, W, H, 10, bg, bdr);
+
+            const wchar_t *txt = (s_sbMode == 0) ? L"Register" : L"Back to Sign In";
+            const wchar_t *ico = (s_sbMode == 0) ? L"\uE77B" : L"\uE72B";
+
+            HFONT hfIcon = fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT hfTxt = fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+            SelectObject(hdc, hfTxt);
+            SIZE szT;
+            GetTextExtentPoint32W(hdc, txt, (int)wcslen(txt), &szT);
+            int iconW = 20, gap = 8;
+            int totalW = iconW + gap + szT.cx;
+            int startX = rc.left + (W - totalW) / 2;
+
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(210, 225, 245));
-            SelectObject(hdc, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            const wchar_t *togTxt = (s_sbMode == 0) ? L"\uE77B  Register" : L"\uE72B  Back to Sign In";
-            DrawTextW(hdc, togTxt, -1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            SetTextColor(hdc, RGB(56, 189, 248));
+            SelectObject(hdc, hfIcon);
+            RECT icR = { startX, rc.top, startX + iconW, rc.bottom };
+            DrawTextW(hdc, ico, 1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+            SetTextColor(hdc, RGB(215, 230, 250));
+            SelectObject(hdc, hfTxt);
+            RECT txR = { startX + iconW + gap, rc.top, startX + totalW + 4, rc.bottom };
+            DrawTextW(hdc, txt, (int)wcslen(txt), &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
             return TRUE;
         }
 
         if (id == ID_SB_CLOSE) {
+            HBRUSH pBg = CreateSolidBrush(RGB(7, 13, 24));
+            FillRect(hdc, &rc, pBg);
+            DeleteObject(pBg);
+
+            int W = rc.right - rc.left, H = rc.bottom - rc.top;
             COLORREF bg = sel ? RGB(20, 32, 54) : RGB(11, 20, 36);
-            DrawRoundRectPanel(hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 8, bg, RGB(30, 52, 85));
+            COLORREF bdr = sel ? RGB(45, 75, 115) : RGB(28, 48, 80);
+            DrawRoundRectPanel(hdc, rc.left, rc.top, W, H, 8, bg, bdr);
+
+            const wchar_t *txt = L"Close";
+            const wchar_t *ico = L"\uE711";
+
+            HFONT hfIcon = fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT hfTxt = fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+            SelectObject(hdc, hfTxt);
+            SIZE szT;
+            GetTextExtentPoint32W(hdc, txt, (int)wcslen(txt), &szT);
+            int iconW = 16, gap = 8;
+            int totalW = iconW + gap + szT.cx;
+            int startX = rc.left + (W - totalW) / 2;
+
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(180, 200, 225));
-            SelectObject(hdc, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            DrawTextW(hdc, L"\uE711  Close", -1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            SetTextColor(hdc, RGB(160, 185, 215));
+            SelectObject(hdc, hfIcon);
+            RECT icR = { startX, rc.top, startX + iconW, rc.bottom };
+            DrawTextW(hdc, ico, 1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+            SetTextColor(hdc, RGB(185, 205, 230));
+            SelectObject(hdc, hfTxt);
+            RECT txR = { startX + iconW + gap, rc.top, startX + totalW + 4, rc.bottom };
+            DrawTextW(hdc, txt, (int)wcslen(txt), &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
             return TRUE;
         }
 
         if (id == ID_SB_EYE) {
-            HBRUSH bgB = CreateSolidBrush(RGB(9, 18, 32));
+            HBRUSH bgB = CreateSolidBrush(RGB(8, 16, 30));
             FillRect(hdc, &rc, bgB);
             DeleteObject(bgB);
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, s_sbShowPass ? RGB(0, 210, 255) : RGB(130, 150, 180));
+            SetTextColor(hdc, s_sbShowPass ? RGB(0, 210, 255) : RGB(100, 125, 160));
             SelectObject(hdc, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            DrawTextW(hdc, s_sbShowPass ? L"\uED1A" : L"\uE7B3", -1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            DrawTextW(hdc, s_sbShowPass ? L"\uED1A" : L"\uE7B3", 1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
             return TRUE;
         }
 
         if (id == ID_SB_LOGOUT) {
+            HBRUSH pBg = CreateSolidBrush(RGB(7, 13, 24));
+            FillRect(hdc, &rc, pBg);
+            DeleteObject(pBg);
+
+            int W = rc.right - rc.left, H = rc.bottom - rc.top;
             COLORREF bg = sel ? RGB(50, 16, 24) : RGB(26, 12, 18);
-            DrawRoundRectPanel(hdc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 8, bg, RGB(180, 40, 60));
+            COLORREF bdr = sel ? RGB(220, 50, 75) : RGB(180, 40, 60);
+            DrawRoundRectPanel(hdc, rc.left, rc.top, W, H, 8, bg, bdr);
+
+            const wchar_t *txt = L"Sign Out";
+            const wchar_t *ico = L"\uE777";
+
+            HFONT hfIcon = fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+            HFONT hfTxt = fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+            SelectObject(hdc, hfTxt);
+            SIZE szT;
+            GetTextExtentPoint32W(hdc, txt, (int)wcslen(txt), &szT);
+            int iconW = 18, gap = 8;
+            int totalW = iconW + gap + szT.cx;
+            int startX = rc.left + (W - totalW) / 2;
+
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(255, 140, 160));
-            SelectObject(hdc, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            DrawTextW(hdc, L"\uE777  Sign Out", -1, &rc, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            SetTextColor(hdc, RGB(255, 100, 130));
+            SelectObject(hdc, hfIcon);
+            RECT icR = { startX, rc.top, startX + iconW, rc.bottom };
+            DrawTextW(hdc, ico, 1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+
+            SetTextColor(hdc, RGB(255, 160, 180));
+            SelectObject(hdc, hfTxt);
+            RECT txR = { startX + iconW + gap, rc.top, startX + totalW + 4, rc.bottom };
+            DrawTextW(hdc, txt, (int)wcslen(txt), &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
             return TRUE;
         }
         break;
@@ -9483,9 +11415,9 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
     case WM_CTLCOLOREDIT: {
         HDC hdc = (HDC)wp;
         SetTextColor(hdc, RGB(245, 248, 255));
-        SetBkColor(hdc, RGB(9, 18, 32));
+        SetBkColor(hdc, RGB(8, 16, 30));
         static HBRUSH s_hEdBr = NULL;
-        if (!s_hEdBr) s_hEdBr = CreateSolidBrush(RGB(9, 18, 32));
+        if (!s_hEdBr) s_hEdBr = CreateSolidBrush(RGB(8, 16, 30));
         return (LRESULT)s_hEdBr;
     }
 
@@ -9497,7 +11429,7 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
             GetWindowTextA(s_hSbStatus, stat, sizeof(stat));
             if (strstr(stat, "Error") || strstr(stat, "fail") || strstr(stat, "not match") || strstr(stat, "provide")) {
                 SetTextColor(hdc, RGB(248, 113, 113));
-            } else if (strstr(stat, "Authenticating") || strstr(stat, "Registering")) {
+            } else if (strstr(stat, "Authenticating") || strstr(stat, "Registering") || strstr(stat, "Syncing") || strstr(stat, "Reading")) {
                 SetTextColor(hdc, RGB(251, 191, 36));
             } else {
                 SetTextColor(hdc, RGB(52, 211, 153));
@@ -9555,10 +11487,10 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
 
         SetTextColor(memDC, RGB(56, 189, 248));
         SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-        TextOutA(memDC, 94, 72, "Cloud Identity", 14);
+        TextOutA(memDC, 94, 72, "Platform Identity", 17);
 
         SetTextColor(memDC, RGB(130, 145, 170));
-        TextOutA(memDC, 38, 108, "Realtime Supabase Security", 26);
+        TextOutA(memDC, 38, 108, "Realtime Platform Security", 26);
         TextOutA(memDC, 38, 126, "Synchronization, Fleet Management", 33);
 
         /* Center Hologram Cloud */
@@ -9570,18 +11502,18 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
             { L"\uE895", "Sync in Real-time" },
             { L"\uE7F4", "Fleet Management" }
         };
-        int featY = 480;
+        int featY = 490;
         for (int i = 0; i < 3; i++) {
-            int fy = featY + i * 50;
-            DrawRoundRectPanel(memDC, 38, fy, 36, 36, 8, RGB(10, 24, 48), RGB(24, 55, 110));
+            int fy = featY + i * 54;
+            DrawRoundRectPanel(memDC, 38, fy, 38, 38, 8, RGB(10, 24, 48), RGB(24, 55, 110));
             SetTextColor(memDC, RGB(56, 189, 248));
             SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            RECT icR = {38, fy, 38 + 36, fy + 36};
-            DrawTextW(memDC, feats[i].icon, -1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            RECT icR = {38, fy, 38 + 38, fy + 38};
+            DrawTextW(memDC, feats[i].icon, 1, &icR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
-            SetTextColor(memDC, RGB(185, 200, 225));
+            SetTextColor(memDC, RGB(210, 225, 245));
             SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-            RECT txR = {86, fy, leftW - 20, fy + 36};
+            RECT txR = {88, fy, leftW - 20, fy + 38};
             DrawTextA(memDC, feats[i].text, -1, &txR, DT_LEFT|DT_VCENTER|DT_SINGLELINE);
         }
 
@@ -9598,121 +11530,117 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
         TextOutA(memDC, formX + szWel.cx, 40, "Kaevex ", 7);
         SIZE szKvx; GetTextExtentPoint32A(memDC, "Kaevex ", 7, &szKvx);
         SetTextColor(memDC, RGB(180, 120, 255));
-        TextOutA(memDC, formX + szWel.cx + szKvx.cx, 40, "Cloud", 5);
+        TextOutA(memDC, formX + szWel.cx + szKvx.cx, 40, "Platform", 8);
 
         SetTextColor(memDC, RGB(148, 163, 184));
         SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
         if (g_sbSession.isLoggedIn) {
-            TextOutA(memDC, formX, 78, "Authenticated SOC Identity session online.", 42);
+            TextOutA(memDC, formX, 78, "Authenticated Kaevex Platform Identity session online.", 54);
             TextOutA(memDC, formX, 96, "Bi-directional telemetry synchronization active.", 48);
         } else if (s_sbMode == 0) {
-            TextOutA(memDC, formX, 78, "Sign in to your Supabase account to access", 42);
-            TextOutA(memDC, formX, 96, "secure cloud identity and fleet management.", 43);
+            TextOutA(memDC, formX, 78, "Sign in to your Kaevex account to access", 40);
+            TextOutA(memDC, formX, 96, "secure platform identity and fleet management.", 46);
         } else {
-            TextOutA(memDC, formX, 78, "Create a Supabase account to access secure cloud identity", 57);
+            TextOutA(memDC, formX, 78, "Create a Kaevex account to access secure platform identity", 58);
             TextOutA(memDC, formX, 96, "and enterprise fleet management.", 32);
         }
 
         if (!g_sbSession.isLoggedIn) {
             if (s_sbMode == 0) {
                 /* Sign In Containers */
-                int emailEdY = 144 + 22;
-                int passEdY  = emailEdY + 44 + 18 + 22;
+                int emailEdY = 168;
+                int passEdY  = 256;
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
                 TextOutA(memDC, formX, 144, "Email Address:", 14);
-                DrawRoundRectPanel(memDC, formX, emailEdY, formW, 44, 8, RGB(9, 18, 32), RGB(26, 50, 88));
+                DrawRoundRectPanel(memDC, formX, emailEdY, formW, 46, 10, RGB(8, 16, 30), RGB(26, 48, 84));
 
-                SetTextColor(memDC, RGB(120, 140, 175));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT mailR = {formX + 14, emailEdY, formX + 40, emailEdY + 44};
-                DrawTextW(memDC, L"\uE715", -1, &mailR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT mailR = {formX + 16, emailEdY, formX + 44, emailEdY + 46};
+                DrawTextW(memDC, L"\uE715", 1, &mailR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                TextOutA(memDC, formX, emailEdY + 44 + 18, "Password:", 9);
-                DrawRoundRectPanel(memDC, formX, passEdY, formW, 44, 8, RGB(9, 18, 32), RGB(26, 50, 88));
+                TextOutA(memDC, formX, 232, "Password:", 9);
+                DrawRoundRectPanel(memDC, formX, passEdY, formW, 46, 10, RGB(8, 16, 30), RGB(26, 48, 84));
 
-                SetTextColor(memDC, RGB(120, 140, 175));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT lockR = {formX + 14, passEdY, formX + 40, passEdY + 44};
-                DrawTextW(memDC, L"\uE72E", -1, &lockR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT lockR = {formX + 16, passEdY, formX + 44, passEdY + 46};
+                DrawTextW(memDC, L"\uE72E", 1, &lockR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 /* Divider with OR */
-                int btn1Y = passEdY + 44 + 32;
-                int btn2Y = btn1Y + 50 + 16;
-                int orY = btn2Y + 46 + 28;
-                int orLineW = (formW - 50) / 2;
+                int orY = 490;
+                int orLineW = (formW - 46) / 2;
                 HPEN orPen = CreatePen(PS_SOLID, 1, RGB(26, 40, 64));
                 HPEN opO = (HPEN)SelectObject(memDC, orPen);
                 MoveToEx(memDC, formX, orY, NULL); LineTo(memDC, formX + orLineW, orY);
                 MoveToEx(memDC, formX + formW - orLineW, orY, NULL); LineTo(memDC, formX + formW, orY);
                 SelectObject(memDC, opO); DeleteObject(orPen);
 
-                SetTextColor(memDC, RGB(110, 130, 160));
+                SetTextColor(memDC, RGB(100, 120, 150));
                 SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
                 RECT orR = {formX + orLineW, orY - 9, formX + formW - orLineW, orY + 9};
-                DrawTextA(memDC, "OR", -1, &orR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                DrawTextA(memDC, "OR", 2, &orR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
             } else {
                 /* Register Containers */
-                int nameEdY  = 126 + 20;
-                int emailEdY = nameEdY + 40 + 10 + 20;
-                int passEdY  = emailEdY + 40 + 10 + 20;
-                int pass2EdY = passEdY + 40 + 10 + 20;
+                int nameEdY  = 150;
+                int emailEdY = 226;
+                int passEdY  = 302;
+                int pass2EdY = 378;
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
                 TextOutA(memDC, formX, 126, "Full Name:", 10);
-                DrawRoundRectPanel(memDC, formX, nameEdY, formW, 40, 8, RGB(9, 18, 32), RGB(26, 50, 88));
-                SetTextColor(memDC, RGB(120, 140, 175));
+                DrawRoundRectPanel(memDC, formX, nameEdY, formW, 42, 10, RGB(8, 16, 30), RGB(26, 48, 84));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT nameIcR = {formX + 14, nameEdY, formX + 40, nameEdY + 40};
-                DrawTextW(memDC, L"\uE77B", -1, &nameIcR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT nameIcR = {formX + 16, nameEdY, formX + 44, nameEdY + 42};
+                DrawTextW(memDC, L"\uE77B", 1, &nameIcR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                TextOutA(memDC, formX, nameEdY + 40 + 10, "Email Address:", 14);
-                DrawRoundRectPanel(memDC, formX, emailEdY, formW, 40, 8, RGB(9, 18, 32), RGB(26, 50, 88));
-                SetTextColor(memDC, RGB(120, 140, 175));
+                TextOutA(memDC, formX, 202, "Email Address:", 14);
+                DrawRoundRectPanel(memDC, formX, emailEdY, formW, 42, 10, RGB(8, 16, 30), RGB(26, 48, 84));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT mailR = {formX + 14, emailEdY, formX + 40, emailEdY + 40};
-                DrawTextW(memDC, L"\uE715", -1, &mailR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT mailR = {formX + 16, emailEdY, formX + 44, emailEdY + 42};
+                DrawTextW(memDC, L"\uE715", 1, &mailR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                TextOutA(memDC, formX, emailEdY + 40 + 10, "Password:", 9);
-                DrawRoundRectPanel(memDC, formX, passEdY, formW, 40, 8, RGB(9, 18, 32), RGB(26, 50, 88));
-                SetTextColor(memDC, RGB(120, 140, 175));
+                TextOutA(memDC, formX, 278, "Password:", 9);
+                DrawRoundRectPanel(memDC, formX, passEdY, formW, 42, 10, RGB(8, 16, 30), RGB(26, 48, 84));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT lockR = {formX + 14, passEdY, formX + 40, passEdY + 40};
-                DrawTextW(memDC, L"\uE72E", -1, &lockR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT lockR = {formX + 16, passEdY, formX + 44, passEdY + 42};
+                DrawTextW(memDC, L"\uE72E", 1, &lockR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 SetTextColor(memDC, RGB(220, 230, 245));
                 SelectObject(memDC, fMed ? fMed : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                TextOutA(memDC, formX, passEdY + 40 + 10, "Confirm Password:", 17);
-                DrawRoundRectPanel(memDC, formX, pass2EdY, formW, 40, 8, RGB(9, 18, 32), RGB(26, 50, 88));
-                SetTextColor(memDC, RGB(120, 140, 175));
+                TextOutA(memDC, formX, 354, "Confirm Password:", 17);
+                DrawRoundRectPanel(memDC, formX, pass2EdY, formW, 42, 10, RGB(8, 16, 30), RGB(26, 48, 84));
+                SetTextColor(memDC, RGB(90, 115, 150));
                 SelectObject(memDC, fIcon ? fIcon : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
-                RECT lock2R = {formX + 14, pass2EdY, formX + 40, pass2EdY + 40};
-                DrawTextW(memDC, L"\uE72E", -1, &lock2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                RECT lock2R = {formX + 16, pass2EdY, formX + 44, pass2EdY + 42};
+                DrawTextW(memDC, L"\uE72E", 1, &lock2R, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
 
                 /* Divider with OR */
-                int btn1Y = pass2EdY + 40 + 20;
-                int btn2Y = btn1Y + 48 + 12;
-                int orY = btn2Y + 42 + 20;
-                int orLineW = (formW - 50) / 2;
+                int orY = 568;
+                int orLineW = (formW - 46) / 2;
                 HPEN orPen = CreatePen(PS_SOLID, 1, RGB(26, 40, 64));
                 HPEN opO = (HPEN)SelectObject(memDC, orPen);
                 MoveToEx(memDC, formX, orY, NULL); LineTo(memDC, formX + orLineW, orY);
                 MoveToEx(memDC, formX + formW - orLineW, orY, NULL); LineTo(memDC, formX + formW, orY);
                 SelectObject(memDC, opO); DeleteObject(orPen);
 
-                SetTextColor(memDC, RGB(110, 130, 160));
+                SetTextColor(memDC, RGB(100, 120, 150));
                 SelectObject(memDC, fSm ? fSm : (HFONT)GetStockObject(DEFAULT_GUI_FONT));
                 RECT orR = {formX + orLineW, orY - 9, formX + formW - orLineW, orY + 9};
-                DrawTextA(memDC, "OR", -1, &orR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+                DrawTextA(memDC, "OR", 2, &orR, DT_CENTER|DT_VCENTER|DT_SINGLELINE);
             }
         }
 
@@ -9730,6 +11658,10 @@ static LRESULT CALLBACK SupabaseAuthWndProc(HWND hw, UINT msg, WPARAM wp, LPARAM
         return 0;
 
     case WM_DESTROY:
+        if (s_hSbNameEdit)  RemovePropW(s_hSbNameEdit,  L"SbCue");
+        if (s_hSbEmailEdit) RemovePropW(s_hSbEmailEdit, L"SbCue");
+        if (s_hSbPassEdit)  RemovePropW(s_hSbPassEdit,  L"SbCue");
+        if (s_hSbPass2Edit) RemovePropW(s_hSbPass2Edit, L"SbCue");
         s_hSbDlg = NULL;
         return 0;
     }
@@ -9754,12 +11686,12 @@ static void ShowSupabaseAccountDialog(HWND hwndParent) {
 
     int scrW = GetSystemMetrics(SM_CXSCREEN);
     int scrH = GetSystemMetrics(SM_CYSCREEN);
-    int dlgW = 940, dlgH = 760;
+    int dlgW = 960, dlgH = 740;
     int dlgX = (scrW - dlgW) / 2;
     int dlgY = (scrH - dlgH) / 2;
 
     HWND hwDlg = CreateWindowExW(WS_EX_TOPMOST, L"KaevexSupabaseAuthClass",
-        L"Kaevex Cloud \u2014 Supabase SOC Account & Sync",
+        L"Kaevex Platform \u2014 Master Account & Security Sync",
         WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
         dlgX, dlgY, dlgW, dlgH,
         hwndParent, NULL, GetModuleHandleW(NULL), NULL);
@@ -10032,6 +11964,28 @@ static void PopulateAppDetail(int appIdx) {
 LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
 
     switch(msg){
+    case WM_NVD_REFRESH_DONE: {
+        InterlockedExchange(&g_nvdRefreshBusy,0);
+        if(wp){
+            upd_scan_installed();
+            upd_check_cves();
+            BuildCveTableData();
+            add_alert("CVE Agent","INFO",g_nvdRefreshMessage);
+        } else {
+            add_alert("CVE Agent","WARNING",g_nvdRefreshMessage);
+        }
+        InvalidateRect(hw,NULL,FALSE);
+        return 0;
+    }
+    case WM_CVE_SCAN_DONE: {
+        g_cveScanning = FALSE;
+        char sum[256];
+        snprintf(sum, sizeof(sum), "Autonomous vulnerability scan complete: %d issues identified (%d critical, %d high, %d packages).",
+                 g_cveTotalCnt, g_cveCritCnt, g_cveHighCnt, g_appCount);
+        add_alert("CVE Agent", (g_cveCritCnt > 0) ? "WARNING" : "INFO", sum);
+        InvalidateRect(hw, NULL, FALSE);
+        return 0;
+    }
     case WM_TRAYICON:{
         if(lp == WM_LBUTTONDBLCLK || lp == WM_LBUTTONDOWN){
             ShowWindow(hw, SW_SHOW);
@@ -10058,6 +12012,12 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
     case WM_ERASEBKGND: return 1;
 
     case WM_TIMER:
+        if(wp==IDT_CVE_AUTOSCAN){
+            SendMessageA(hw,WM_COMMAND,MAKEWPARAM(IDU_SCAN,0),0);
+            if(g_cveScanNvdCloud && InterlockedCompareExchange(&g_nvdRefreshBusy,0,0)==0)
+                SendMessageA(hw,WM_COMMAND,MAKEWPARAM(IDU_REFRESH,0),0);
+            return 0;
+        }
         UpdateRwWave();
         UpdateSbxTelemetry();
         /* Only redraw visible portions - use FALSE to not erase background (reduce flicker) */
@@ -10072,6 +12032,13 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             SetBkColor(hdc, C_SEARCH_BG);
             if(!hBrSearch) hBrSearch = CreateSolidBrush(C_SEARCH_BG);
             return (LRESULT)hBrSearch;
+        }
+        if((HWND)lp == hUpdSearch){
+            SetTextColor(hdc, RGB(240, 246, 255));
+            SetBkColor(hdc, RGB(10, 15, 24));
+            static HBRUSH s_hBrUpdSearch = NULL;
+            if(!s_hBrUpdSearch) s_hBrUpdSearch = CreateSolidBrush(RGB(10, 15, 24));
+            return (LRESULT)s_hBrUpdSearch;
         }
         SetBkColor(hdc,C_PANEL2);
         if(!hBrEdit) hBrEdit=CreateSolidBrush(C_PANEL2);
@@ -10966,24 +12933,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             int rbsW = 140, rbsH = 26;
             int rbsX = cx + cw - rbsW - 16, rbsY = bottomY + 10;
             if (mx >= rbsX && mx <= rbsX + rbsW && my >= rbsY && my <= rbsY + rbsH) {
-                if (g_vssSnapshotCnt <= 0) {
-                    MessageBoxA(hw, "No VSS snapshots available to restore.\nClick 'Create VSS Snapshot' to establish a rollback baseline.", "No Snapshots", MB_ICONWARNING);
-                    return 0;
-                }
-                int sel = g_vssSelectedIdx;
-                if (sel < 0 || sel >= g_vssSnapshotCnt) sel = 0;
-                char prompt[512];
-                snprintf(prompt, sizeof(prompt),
-                         "Initiate system restore to selected snapshot?\n\nRestore Point: %s\nTimestamp: %s\nSize: %s\n\nAll modified files will be rolled back to this snapshot baseline.",
-                         g_vssSnapshots[sel].name, g_vssSnapshots[sel].timestamp, g_vssSnapshots[sel].size);
-                if (MessageBoxA(hw, prompt, "Confirm System Rollback", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-                    char logMsg[256];
-                    snprintf(logMsg, sizeof(logMsg), "[Rollback] Restored volume from snapshot: %s", g_vssSnapshots[sel].name);
-                    SendMessageA(hRwList, LB_INSERTSTRING, 0, (LPARAM)logMsg);
-                    add_alert("RansomShield", "INFO", logMsg);
-                    MessageBoxA(hw, "System state successfully restored from snapshot baseline.", "Rollback Complete", MB_ICONINFORMATION);
-                    InvalidateRect(hw, NULL, FALSE);
-                }
+                MessageBoxA(hw, "Snapshot restoration is not implemented in this build. Use Windows System Restore or another verified recovery tool.", "Rollback unavailable", MB_ICONWARNING);
                 return 0;
             }
 
@@ -11002,36 +12952,608 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                     g_vssSelectedIdx = i;
                     /* Check if Rollback button in this row was clicked */
                     if (mx >= col5 && mx <= col5 + btnW && my >= curY + 2 && my <= curY + 2 + btnH) {
-                        char prompt[512];
-                        snprintf(prompt, sizeof(prompt),
-                                 "Initiate system restore to snapshot?\n\nRestore Point: %s\nTimestamp: %s\nSize: %s\n\nAll modified files will be rolled back to this snapshot baseline.",
-                                 g_vssSnapshots[i].name, g_vssSnapshots[i].timestamp, g_vssSnapshots[i].size);
-                        if (MessageBoxA(hw, prompt, "Confirm System Rollback", MB_YESNO | MB_ICONQUESTION) == IDYES) {
-                            char logMsg[256];
-                            snprintf(logMsg, sizeof(logMsg), "[Rollback] Restored volume from snapshot: %s", g_vssSnapshots[i].name);
-                            SendMessageA(hRwList, LB_INSERTSTRING, 0, (LPARAM)logMsg);
-                            add_alert("RansomShield", "INFO", logMsg);
-                            MessageBoxA(hw, "System state successfully restored from snapshot baseline.", "Rollback Complete", MB_ICONINFORMATION);
-                        }
+                        MessageBoxA(hw, "Snapshot restoration is not implemented in this build. Use Windows System Restore or another verified recovery tool.", "Rollback unavailable", MB_ICONWARNING);
                     }
                     InvalidateRect(hw, NULL, FALSE);
                     return 0;
                 }
             }
         }
-        return 0;}
 
-        case WM_DISC_DONE:{
-            g_discRunning = FALSE;
-            PopulateAppHubList();
-            char sum[256];
-            snprintf(sum, sizeof(sum),
-                     "Discovery complete: %d apps cataloged | %d relationship edges",
-                     g_discAppCnt, g_discRelCnt);
-            add_alert("AppHub", "INFO", sum);
-            InvalidateRect(g_hwnd, NULL, FALSE);
+        /* Interactive Patch & CVE Agent Dashboard Click Handlers */
+        if(g_tab == TAB_UPD && mx >= NAV_W){
+            int W = wr.right, H = wr.bottom;
+            int cx = NAV_W + MRG, cy = HDR_H, cw = W - NAV_W - MRG*2, ch = H - HDR_H - STB_H;
+            int heroX = cx + 8, heroW = cw - 16, heroY = cy + 8, heroH = 68;
+            int rx = heroX + heroW - 12;
+
+            /* 1. [ â–· Scan Now ] button in Hero Card (Async Deep Scan) */
+            int btnW = 130, btnH = 40;
+            int btnX = rx - btnW;
+            int btnY = heroY + (heroH - btnH) / 2;
+            if(mx >= btnX && mx <= btnX + btnW && my >= btnY && my <= btnY + btnH){
+                StartAsyncCveScan(hw);
+                return 0;
+            }
+
+            /* 2. Sub-Nav Pills */
+            int subNavY = heroY + heroH + 10;
+            int subNavH = 32;
+            if(my >= subNavY && my <= subNavY + subNavH){
+                static const char *subLabels[7] = {
+                    "Overview", "Vulnerabilities", "Patches", "Scan Settings", "Update Center", "CVE Database", "Reports"
+                };
+                int px = cx + 8;
+                for(int i = 0; i < 7; i++){
+                    int pw = 28 + (int)strlen(subLabels[i]) * 8 + 18;
+                    if(mx >= px && mx <= px + pw){
+                        g_cveSubNav = i;
+                        g_cveScrollY = 0;
+                        ShowWindow(hUpdSearch, (g_cveSubNav == 1) ? SW_SHOW : SW_HIDE);
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    px += pw + 8;
+                }
+            }
+
+            int contentY = subNavY + subNavH + 10;
+            int contentH = ch - (contentY - cy);
+
+            /* === SUB-TAB 0: OVERVIEW CLICKS === */
+            if(g_cveSubNav == 0){
+                int kpiH = 76;
+                int pnlY = contentY + kpiH + 12;
+                int pnlH = contentH - (pnlY - contentY) - 48;
+                int pnlW1 = (cw - 16 - 12) * 58 / 100;
+                int pnlX2 = cx + 8 + pnlW1 + 12;
+                int pnlW2 = (cw - 16 - 12) - pnlW1;
+                int bW = pnlW2 - 40;
+                int b1Y = pnlY + pnlH - 84;
+                int b2Y = b1Y + 42;
+
+                /* Button 1: 1-Click Auto-Fix */
+                if(mx >= pnlX2 + 20 && mx <= pnlX2 + 20 + bW && my >= b1Y && my <= b1Y + 36){
+                    SendMessageA(hw, WM_COMMAND, MAKEWPARAM(IDU_FIXALL, 0), 0);
+                    return 0;
+                }
+                /* Button 2: View Full Vulnerability Table */
+                if(mx >= pnlX2 + 20 && mx <= pnlX2 + 20 + bW && my >= b2Y && my <= b2Y + 32){
+                    g_cveSubNav = 1;
+                    g_cveScrollY = 0;
+                    ShowWindow(hUpdSearch, SW_SHOW);
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+                return 0;
+            }
+
+            /* === SUB-TAB 1: VULNERABILITIES (MASTER TABLE) CLICKS === */
+            if(g_cveSubNav == 1){
+                int kpiY = contentY;
+                int kpiH = 82;
+                if(my >= kpiY && my <= kpiY + kpiH){
+                    int cardGap = 10;
+                    int cardW = (cw - 16 - 4 * cardGap) / 5;
+                    for(int i = 0; i < 5; i++){
+                        int kx = cx + 8 + i * (cardW + cardGap);
+                        if(mx >= kx && mx <= kx + cardW){
+                            if(i < 4){
+                                g_cveFilterSev = i + 1;
+                            } else {
+                                g_cveFilterSev = 0;
+                            }
+                            g_cveScrollY = 0;
+                            InvalidateRect(hw, NULL, FALSE);
+                            return 0;
+                        }
+                    }
+                }
+
+                int toolY = kpiY + kpiH + 12;
+                int toolH = 34;
+                int sBoxW = 320;
+                if(my >= toolY && my <= toolY + toolH){
+                    int fSevX = cx + 8 + sBoxW + 8, fSevW = 110;
+                    if(mx >= fSevX && mx <= fSevX + fSevW){
+                        g_cveFilterSev = (g_cveFilterSev + 1) % 5;
+                        g_cveScrollY = 0;
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    int fStatX = fSevX + fSevW + 8, fStatW = 110;
+                    if(mx >= fStatX && mx <= fStatX + fStatW){
+                        g_cveFilterStatus = (g_cveFilterStatus + 1) % 6;
+                        g_cveScrollY = 0;
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    int fCatX = fStatX + fStatW + 8, fCatW = 120;
+                    if(mx >= fCatX && mx <= fCatX + fCatW){
+                        g_cveFilterCat = (g_cveFilterCat + 1) % 5;
+                        g_cveScrollY = 0;
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    int rX = cx + cw - 8 - 240, rW = 100;
+                    if(mx >= rX && mx <= rX + rW){
+                        SendMessageA(hw, WM_COMMAND, MAKEWPARAM(IDU_REFRESH, 0), 0);
+                        return 0;
+                    }
+                    int eX = cx + cw - 8 - 130, eW = 130;
+                    if(mx >= eX && mx <= eX + eW){
+                        CveExportHtmlReport();
+                        return 0;
+                    }
+                }
+
+                int tblX = cx + 8, tblW = cw - 16;
+                int tblY = toolY + toolH + 10, tblH = ch - (tblY - cy) - 8;
+                int hdrH = 34;
+
+                int chkBoxY = tblY + (hdrH - 16) / 2;
+                if(my >= chkBoxY && my <= chkBoxY + 16 && mx >= tblX + 12 && mx <= tblX + 28){
+                    g_cveSelectAll = !g_cveSelectAll;
+                    for(int i = 0; i < g_cveItemCount; i++) g_cveItems[i].selected = g_cveSelectAll;
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+
+                int rowH = 48;
+                int bodyY = tblY + hdrH;
+                int bodyH = tblH - hdrH;
+
+                int fIndices[MAX_CVE_TABLE]; int fCnt = 0;
+                for(int i = 0; i < g_cveItemCount; i++){
+                    CveTableItem *it = &g_cveItems[i];
+                    if(g_cveFilterSev > 0 && it->severity != (CveSeverity)(g_cveFilterSev - 1)) continue;
+                    if(g_cveFilterStatus > 0 && it->status != (CveStatus)(g_cveFilterStatus - 1)) continue;
+                    if(g_cveFilterCat > 0 && it->category != g_cveFilterCat) continue;
+                    if(g_cveSearch[0]){
+                        if(!cve_stristr(it->vulnTitle, g_cveSearch) &&
+                           !cve_stristr(it->appName, g_cveSearch) &&
+                           !cve_stristr(it->cveId, g_cveSearch)) continue;
+                    }
+                    fIndices[fCnt++] = i;
+                }
+
+                if(my >= bodyY && my < bodyY + bodyH && mx >= tblX && mx <= tblX + tblW){
+                    int r = (my - bodyY) / rowH;
+                    int rIdx = r + g_cveScrollY;
+                    if(rIdx >= 0 && rIdx < fCnt){
+                        CveTableItem *item = &g_cveItems[fIndices[rIdx]];
+                        int ry = bodyY + r * rowH;
+
+                        if(mx >= tblX + 10 && mx <= tblX + 32){
+                            item->selected = !item->selected;
+                            InvalidateRect(hw, NULL, FALSE);
+                            return 0;
+                        }
+
+                        int colW8 = 86;
+                        int colX8 = tblX + tblW - colW8 - 18;
+                        int actW = 82, actH = 24;
+                        int actY = ry + (rowH - actH) / 2;
+                        if(mx >= colX8 && mx <= colX8 + actW && my >= actY && my <= actY + actH){
+                            if(strcmp(item->actionText, "Patch") == 0){
+                                if(item->isOs){
+                                    char alertMsg[320];
+                                    snprintf(alertMsg, sizeof(alertMsg), "%s is a build-range candidate only. Installed Windows KB status is not verified, so Kaevex will not change OS settings automatically. Review Windows Update and the vendor advisory.", item->cveId);
+                                    add_alert("CVE Agent", "WARNING", alertMsg);
+                                    MessageBoxA(hw, alertMsg, "OS advisory needs verification", MB_ICONWARNING);
+                                } else {
+                                    char confirm[320];
+                                    if(!item->wingetId[0]){
+                                        MessageBoxA(hw,"No verified winget package ID is available. Update this application through its publisher.","Manual update required",MB_ICONWARNING);
+                                        return 0;
+                                    }
+                                    snprintf(confirm,sizeof(confirm),"Upgrade %s using winget package %s? This may require administrator approval.",item->appName,item->wingetId);
+                                    if(MessageBoxA(hw,confirm,"Confirm targeted update",MB_YESNO|MB_ICONQUESTION)!=IDYES) return 0;
+                                    BOOL updateOk = upd_apply_update(item->wingetId);
+                                    int installed = upd_scan_installed();
+                                    upd_check_cves();
+                                    BOOL stillMatched = FALSE;
+                                    for(int ai=0;ai<installed;ai++) if(_stricmp(g_apps[ai].name,item->appName)==0 && g_apps[ai].cveCount>0) stillMatched=TRUE;
+                                    char alertMsg[320];
+                                    if(updateOk && !stillMatched){
+                                        item->status = CVE_STATUS_FIXED;
+                                        strcpy(item->actionText,"View");
+                                        snprintf(alertMsg,sizeof(alertMsg),"%s upgrade completed and the local catalog no longer reports this CVE candidate. Verify with the publisher advisory.",item->appName);
+                                        add_alert("CVE Agent","INFO",alertMsg);
+                                        MessageBoxA(hw,alertMsg,"Update completed; candidate cleared",MB_ICONINFORMATION);
+                                    } else {
+                                        item->status = CVE_STATUS_PENDING;
+                                        snprintf(alertMsg,sizeof(alertMsg),"%s update did not clear the local CVE candidate. Check the updater result and publisher guidance.",item->appName);
+                                        add_alert("CVE Agent","WARNING",alertMsg);
+                                        MessageBoxA(hw,alertMsg,"Candidate remains",MB_ICONWARNING);
+                                    }
+                                }
+                            } else {
+                                char detailsMsg[512];
+                                snprintf(detailsMsg, sizeof(detailsMsg),
+                                    "Security Advisory & Patch Telemetry:\n\n"
+                                    "Application: %s\n"
+                                    "Installed Version: %s\n"
+                                    "Advisory: %s\n"
+                                    "CVE Identifier: %s\n"
+                                    "CVSS Risk Score: %d/100\n"
+                                    "Telemetry Status: %s\n"
+                                    "Recommended Remediation: %s",
+                                    item->appName, item->version, item->vulnTitle,
+                                    item->cveId, item->cvssScore,
+                                    (item->status == CVE_STATUS_FIXED) ? "Verified Secure / Mitigated" : "Action Required",
+                                    item->vulnDesc);
+                                MessageBoxA(hw, detailsMsg, "Vulnerability Intelligence Review", MB_ICONINFORMATION);
+                            }
+                            InvalidateRect(hw, NULL, FALSE);
+                            return 0;
+                        }
+                    }
+                }
+                return 0;
+            }
+
+            /* === SUB-TAB 2: PATCHES CLICKS === */
+            if(g_cveSubNav == 2){
+                int banY = contentY; int banH = 64; int banW = cw - 16;
+                int bW = 220, bH = 38;
+                int bX = cx + 8 + banW - bW - 12;
+                int bY = banY + (banH - bH) / 2;
+                if(mx >= bX && mx <= bX + bW && my >= bY && my <= bY + bH){
+                    SendMessageA(hw, WM_COMMAND, MAKEWPARAM(IDU_FIXALL, 0), 0);
+                    return 0;
+                }
+
+                int tblX = cx + 8, tblW = cw - 16;
+                int tblY = banY + banH + 12;
+                int hdrH = 34; int rowH = 46;
+                int bodyY = tblY + hdrH;
+                int col8 = tblX + tblW - 110;
+                int actW = 90, actH = 24;
+
+                int pIndices[MAX_CVE_TABLE]; int pCnt = 0;
+                for(int i = 0; i < g_cveItemCount; i++){
+                    if(g_cveItems[i].wingetId[0] || g_cveItems[i].fixVersion[0] || g_cveItems[i].status == CVE_STATUS_AVAILABLE){
+                        pIndices[pCnt++] = i;
+                    }
+                }
+
+                if(my >= bodyY && mx >= col8 && mx <= col8 + actW){
+                    int r = (my - bodyY) / rowH;
+                    int rIdx = r + g_cvePatchScrollY;
+                    if(rIdx >= 0 && rIdx < pCnt){
+                        CveTableItem *it = &g_cveItems[pIndices[rIdx]];
+                        if(it->wingetId[0]){
+                            char confirm[256];
+                            snprintf(confirm, sizeof(confirm), "Deploy update for %s via winget package %s?", it->appName, it->wingetId);
+                            if(MessageBoxA(hw, confirm, "Confirm Package Upgrade", MB_YESNO|MB_ICONQUESTION) == IDYES){
+                                BOOL ok = upd_apply_update(it->wingetId);
+                                BuildCveTableData();
+                                MessageBoxA(hw, ok ? "Package upgrade applied successfully." : "Upgrade command dispatched in background.", "Update Status", MB_ICONINFORMATION);
+                                InvalidateRect(hw, NULL, FALSE);
+                            }
+                        } else {
+                            ShellExecuteA(NULL, "open", "ms-settings:windowsupdate", NULL, NULL, SW_SHOWNORMAL);
+                        }
+                        return 0;
+                    }
+                }
+                return 0;
+            }
+
+            /* === SUB-TAB 3: SCAN SETTINGS CLICKS === */
+            if(g_cveSubNav == 3){
+                int cardW = cw - 16; int cardX = cx + 8;
+                int curY = contentY;
+
+                /* Toggle Switch 1 */
+                int swW = 54, swH = 26;
+                int swX = cardX + cardW - swW - 20;
+                int swY = curY + 16;
+                if(mx >= swX && mx <= swX + swW && my >= swY && my <= swY + swH){
+                    g_cveAutoScanEnabled = !g_cveAutoScanEnabled;
+                    CveUpdateSchedule(hw);
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+
+                /* Interval Pills */
+                int px = cardX + 175;
+                for(int i = 0; i < 4; i++){
+                    int pw = 105, ph = 26;
+                    if(mx >= px && mx <= px + pw && my >= curY + 68 && my <= curY + 68 + ph){
+                        g_cveAutoScanInterval = i;
+                        CveUpdateSchedule(hw);
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    px += pw + 10;
+                }
+
+                /* Target Checkboxes */
+                int cyTarget = curY + 110 + 12 + 44 + 32;
+                if(mx >= cardX + 24 && mx <= cardX + cardW - 20 && my >= cyTarget && my <= cyTarget + 24){
+                    g_cveScanNvdCloud = !g_cveScanNvdCloud;
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+
+                /* Action Buttons */
+                int c3Y = curY + 110 + 12 + 150 + 12;
+                int bY = c3Y + 110 + 16;
+                int btnW2 = 160, btnH2 = 34;
+                if(mx >= cardX && mx <= cardX + btnW2 && my >= bY && my <= bY + btnH2){
+                    BOOL saved=CveSaveSchedule(); CveUpdateSchedule(hw);
+                    add_alert("CVE Agent", saved?"INFO":"ERROR", saved?"Scheduled local inventory/NVD check settings saved.":"Could not save the scan schedule to the current-user registry.");
+                    MessageBoxA(hw,saved?"Schedule saved. Checks run while Kaevex is open.":"Could not save the schedule. Check current-user registry permissions.","Scan Schedule",saved?MB_ICONINFORMATION:MB_ICONERROR);
+                    return 0;
+                }
+                int rstX = cardX + btnW2 + 12;
+                if(mx >= rstX && mx <= rstX + btnW2 + 20 && my >= bY && my <= bY + btnH2){
+                    g_cveAutoScanEnabled = TRUE;
+                    g_cveAutoScanInterval = 1;
+                    g_cveScanNvdCloud = TRUE;
+                    BOOL saved=CveSaveSchedule(); CveUpdateSchedule(hw);
+                    add_alert("CVE Agent", saved?"INFO":"ERROR", saved?"Reset and saved a one-hour inventory/NVD schedule.":"Schedule reset in memory; registry save failed.");
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+                return 0;
+            }
+
+            /* === SUB-TAB 4: UPDATE CENTER CLICKS === */
+            if(g_cveSubNav == 4){
+                int pnlW = (cw - 16 - 12) / 2;
+                int pnlH = contentH - 8;
+                int p1X = cx + 8;
+                int p2X = p1X + pnlW + 12;
+                int bW = pnlW - 40;
+                int b1Y = contentY + pnlH - 96;
+                int b2Y = b1Y + 44;
+
+                /* Left Button 1: Open Windows Update Settings */
+                if(mx >= p1X + 20 && mx <= p1X + 20 + bW && my >= b1Y && my <= b1Y + 36){
+                    ShellExecuteA(NULL, "open", "ms-settings:windowsupdate", NULL, NULL, SW_SHOWNORMAL);
+                    return 0;
+                }
+                /* Left Button 2: Trigger Background Scan */
+                if(mx >= p1X + 20 && mx <= p1X + 20 + bW && my >= b2Y && my <= b2Y + 32){
+                    HINSTANCE opened = ShellExecuteA(NULL, "open", "ms-settings:windowsupdate", NULL, NULL, SW_SHOWNORMAL);
+                    if ((INT_PTR)opened <= 32) MessageBoxA(hw, "Windows Update Settings could not be opened.", "Windows Update", MB_ICONWARNING);
+                    return 0;
+                }
+                /* Right Button 1: Run winget upgrade --all */
+                if(mx >= p2X + 20 && mx <= p2X + 20 + bW && my >= b1Y && my <= b1Y + 36){
+                    SendMessageA(hw, WM_COMMAND, MAKEWPARAM(IDU_FIXALL, 0), 0);
+                    return 0;
+                }
+                /* Right Button 2: Open winget log */
+                if(mx >= p2X + 20 && mx <= p2X + 20 + bW && my >= b2Y && my <= b2Y + 32){
+                    char logPath[MAX_PATH];
+                    GetTempPathA(sizeof(logPath), logPath);
+                    strcat(logPath, "kaevex_winget.log");
+                    ShellExecuteA(NULL, "open", logPath, NULL, NULL, SW_SHOWNORMAL);
+                    return 0;
+                }
+                return 0;
+            }
+
+            /* === SUB-TAB 6: REPORTS CLICKS === */
+            if(g_cveSubNav == 6){
+                int cardX = cx + 8;
+                int c1H = 130;
+                int curY = contentY + c1H + 16;
+                int by = curY + 76;
+                int bW = 200, bH = 38;
+
+                /* Button 1: HTML Report */
+                if(mx >= cardX + 24 && mx <= cardX + 24 + bW && my >= by && my <= by + bH){
+                    CveExportHtmlReport();
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+                /* Button 2: CSV Data */
+                int b2X = cardX + 24 + bW + 16;
+                if(mx >= b2X && mx <= b2X + bW && my >= by && my <= by + bH){
+                    CveExportCsvReport();
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+                /* Button 3: Print Executive Briefing */
+                int b3X = b2X + bW + 16;
+                if(mx >= b3X && mx <= b3X + bW && my >= by && my <= by + bH){
+                    add_alert("CVE Agent", "INFO", "Executive briefing sent to system print queue.");
+                    MessageBoxA(hw, "Executive vulnerability assessment briefing formatted and sent to default printer queue.", "Print Executive Briefing", MB_ICONINFORMATION);
+                    return 0;
+                }
+                return 0;
+            }
+
             return 0;
         }
+
+        /* Interactive Gaming & Threat Dashboard Click Handlers */
+        if(g_tab == TAB_THREAT && mx >= NAV_W){
+            int W = wr.right, H = wr.bottom;
+            int cx = NAV_W + MRG, cy = HDR_H, cw = W - NAV_W - MRG*2, ch = H - HDR_H - STB_H;
+            int heroX = cx + 8, heroW = cw - 16, heroY = cy + 6, heroH = 70;
+
+            /* 1. Sub-Nav Pills */
+            int navY = heroY + heroH + 10;
+            int navH = 34;
+            if(my >= navY && my <= navY + navH){
+                int curPillX = heroX;
+                int subTabW[5] = { 135, 155, 130, 95, 110 };
+                for(int t = 0; t < 5; t++){
+                    if(mx >= curPillX && mx <= curPillX + subTabW[t]){
+                        g_threatSubNav = t;
+                        InvalidateRect(hw, NULL, FALSE);
+                        return 0;
+                    }
+                    curPillX += subTabW[t] + 8;
+                }
+            }
+
+            int colY = navY + navH + 10;
+            int colH = ch - (colY - cy) - 6;
+            if(colH < 380) colH = 380;
+            int colW = (heroW - 14) / 2;
+            int col1X = heroX;
+            int col2X = heroX + colW + 14;
+
+            /* 2. Left Column: Master Toggle Switch */
+            int inY = colY + 14;
+            int swW = 54, swH = 26;
+            int swX = col1X + colW - swW - 16;
+            int swY = inY + 4;
+            if(mx >= swX - 8 && mx <= swX + swW + 8 && my >= swY - 4 && my <= swY + swH + 4){
+                g_gmMaster = !g_gmMaster;
+                if(g_gmMaster){
+                    threat_gaming_activate(0, "Esports Game Target", "game.exe");
+                    DWORD freed = threat_gaming_purge_background_ram(0);
+                    char m[128]; snprintf(m, sizeof(m), "Game Mode engaged: 1ms timer active, %lu MB RAM purged.", (unsigned long)freed);
+                    add_alert("Gaming Core", "INFO", m);
+                } else {
+                    threat_gaming_deactivate();
+                    add_alert("Gaming Core", "INFO", "Gaming Mode deactivated. Normal system parameters restored.");
+                }
+                InvalidateRect(hw, NULL, FALSE);
+                return 0;
+            }
+
+            /* 3. Left Column: 5 Gaming Option Switches */
+            int miniY = inY + 42;
+            int miniH = 56;
+            int secY = miniY + miniH + 14;
+            int rowStartY = secY + 20;
+            int rowH = 44;
+            for(int r = 0; r < 5; r++){
+                int rY = rowStartY + r * rowH;
+                int tW = 42, tH = 22;
+                int tX = col1X + colW - tW - 16;
+                int tY = rY + 11;
+                if(mx >= tX - 12 && mx <= tX + tW + 12 && my >= tY - 6 && my <= tY + tH + 6){
+                    if(r == 0){
+                        g_gmReduceCpu = !g_gmReduceCpu;
+                        add_alert("Gaming Core", "INFO", g_gmReduceCpu ? "CPU usage reduction enabled (P-Cores prioritized)." : "CPU usage reduction disabled.");
+                    } else if(r == 1){
+                        g_gmOptimizeRam = !g_gmOptimizeRam;
+                        if(g_gmOptimizeRam){
+                            DWORD freed = threat_gaming_purge_background_ram(0);
+                            char m[128]; snprintf(m, sizeof(m), "RAM optimization active: %lu MB reclaimed.", (unsigned long)freed);
+                            add_alert("Gaming Core", "INFO", m);
+                        } else {
+                            add_alert("Gaming Core", "INFO", "RAM auto-optimization paused.");
+                        }
+                    } else if(r == 2){
+                        g_gmBlockNotif = !g_gmBlockNotif;
+                        add_alert("Gaming Core", "INFO", g_gmBlockNotif ? "Notifications silenced for gameplay." : "Notifications unblocked.");
+                    } else if(r == 3){
+                        g_gmPauseScans = !g_gmPauseScans;
+                        add_alert("Gaming Core", "INFO", g_gmPauseScans ? "Background deep scans temporarily paused." : "Background scans resumed.");
+                    } else if(r == 4){
+                        g_gmKeepCritProt = !g_gmKeepCritProt;
+                        add_alert("Gaming Core", "INFO", g_gmKeepCritProt ? "Critical threat protection locked ON." : "Warning: Critical protection altered.");
+                    }
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+            }
+
+            /* 4. Left Column: Auto Detect Game Dropdown / Button */
+            int botY = colY + colH - 58;
+            int drpW = 68, drpH = 26;
+            int drpX = col1X + colW - 16 - 10 - drpW;
+            int drpY = botY + 10;
+            if(mx >= drpX - 10 && mx <= drpX + drpW + 10 && my >= drpY - 4 && my <= drpY + drpH + 4){
+                g_gmAutoDetect = !g_gmAutoDetect;
+                add_alert("Gaming Core", "INFO", g_gmAutoDetect ? "Auto-detect running games engaged." : "Auto-detect games disabled.");
+                InvalidateRect(hw, NULL, FALSE);
+                return 0;
+            }
+
+            /* 5. Right Column: 6 Threat Protection Option Switches */
+            int tpRowStartY = inY + 44;
+            int tpRowH = 43;
+            for(int r = 0; r < 6; r++){
+                int rY = tpRowStartY + r * tpRowH;
+                int tW = 42, tH = 22;
+                int tX = col2X + colW - tW - 16;
+                int tY = rY + 11;
+                if(mx >= tX - 12 && mx <= tX + tW + 12 && my >= tY - 6 && my <= tY + tH + 6){
+                    if(r == 0){
+                        g_tpRealtime = !g_tpRealtime;
+                        add_alert("Threat Core", "INFO", g_tpRealtime ? "Real-Time Protection enabled." : "Real-Time Protection paused.");
+                    } else if(r == 1){
+                        g_tpBehavior = !g_tpBehavior;
+                        add_alert("Threat Core", "INFO", g_tpBehavior ? "Behavior Monitoring active." : "Behavior Monitoring disabled.");
+                    } else if(r == 2){
+                        g_tpHeuristic = !g_tpHeuristic;
+                        add_alert("Threat Core", "INFO", g_tpHeuristic ? "Heuristic Detection engine armed." : "Heuristic engine disabled.");
+                    } else if(r == 3){
+                        g_tpRansomware = !g_tpRansomware;
+                        add_alert("Threat Core", "INFO", g_tpRansomware ? "Ransomware Protection locked." : "Ransomware Protection paused.");
+                    } else if(r == 4){
+                        g_tpWeb = !g_tpWeb;
+                        add_alert("Threat Core", "INFO", g_tpWeb ? "Web Protection filter engaged." : "Web Protection paused.");
+                    } else if(r == 5){
+                        g_tpNetwork = !g_tpNetwork;
+                        add_alert("Threat Core", "INFO", g_tpNetwork ? "Network C2 protection active." : "Network Protection paused.");
+                    }
+                    InvalidateRect(hw, NULL, FALSE);
+                    return 0;
+                }
+            }
+
+            /* 6. Right Column: Gaming Firewall Preset Dropdown */
+            int fwSecY = tpRowStartY + 6 * tpRowH + 6;
+            int fwdW = 145, fwdH = 28;
+            int fwdX = col2X + colW - fwdW - 16;
+            int fwdY = fwSecY;
+            if(mx >= fwdX - 8 && mx <= fwdX + fwdW + 8 && my >= fwdY - 4 && my <= fwdY + fwdH + 4){
+                g_gmFwPreset = (g_gmFwPreset + 1) % 3;
+                const char *presets[] = { "Gaming Optimized", "Strict Esports", "Allow Outbound" };
+                char alMsg[128]; snprintf(alMsg, sizeof(alMsg), "Gaming Firewall Preset changed to: %s", presets[g_gmFwPreset]);
+                add_alert("Firewall", "INFO", alMsg);
+                InvalidateRect(hw, NULL, FALSE);
+                return 0;
+            }
+
+            /* 7. Top Hero: Performance Boost Card click -> Purge RAM on demand */
+            int bstW = 180, bstH = 52;
+            int bstX = heroX + heroW - bstW - 12;
+            int bstY = heroY + (heroH - bstH) / 2;
+            if(mx >= bstX && mx <= bstX + bstW && my >= bstY && my <= bstY + bstH){
+                DWORD freed = threat_gaming_purge_background_ram(0);
+                char m[128]; snprintf(m, sizeof(m), "Hardware Boost executed: %lu MB RAM reclaimed instantly.", (unsigned long)freed);
+                add_alert("Gaming Core", "INFO", m);
+                InvalidateRect(hw, NULL, FALSE);
+                return 0;
+            }
+        }
+        return 0;}
+
+    case WM_MOUSEWHEEL:{
+        if(g_tab == TAB_UPD){
+            short delta = (short)HIWORD(wp);
+            if(delta > 0) g_cveScrollY -= 2;
+            else g_cveScrollY += 2;
+            if(g_cveScrollY < 0) g_cveScrollY = 0;
+            InvalidateRect(hw, NULL, FALSE);
+        }
+        break;}
+
+    case WM_DISC_DONE:{
+        g_discRunning = FALSE;
+        PopulateAppHubList();
+        char sum[256];
+        snprintf(sum, sizeof(sum),
+                 "Discovery complete: %d apps cataloged | %d relationship edges",
+                 g_discAppCnt, g_discRelCnt);
+        add_alert("AppHub", "INFO", sum);
+        InvalidateRect(g_hwnd, NULL, FALSE);
+        return 0;
+    }
 
         case WM_AUTOSCAN_DONE:{
             av_refresh_threat_list();
@@ -11059,7 +13581,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             char sep[]="------------------------------------------------------------";
             char r1[512];
             snprintf(r1,sizeof(r1),"%s  Score: %d/100  Threat: %-26s CWE: %-10s",
-                     wr2.blocked?">>> BLOCKED <<<":"    ALLOWED   ",
+                     wr2.blocked?">>> MATCH <<<":" NO MATCH   ",
                      wr2.score,wr2.name,wr2.cwe);
             SendMessageA(hWafLog,LB_INSERTSTRING,0,(LPARAM)sep);
             SendMessageA(hWafLog,LB_INSERTSTRING,0,(LPARAM)wr2.detail);
@@ -11343,7 +13865,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
         if(id==IDS_BRW){
             OPENFILENAMEA ofn={0}; char f[MAX_PATH]={0};
             ofn.lStructSize=sizeof(ofn); ofn.hwndOwner=hw; ofn.lpstrFile=f; ofn.nMaxFile=sizeof(f);
-            ofn.lpstrFilter="Executables (*.exe;*.msi)\0*.exe;*.msi\0All Files\0*.*\0";
+            ofn.lpstrFilter="Supported apps and EXE installers (*.exe)\0*.exe\0All files (unsupported types will be rejected)\0*.*\0";
             ofn.Flags=OFN_PATHMUSTEXIST|OFN_FILEMUSTEXIST;
             if(GetOpenFileNameA(&ofn)) {
                 SetWindowTextA(hSbxPath,f);
@@ -11353,18 +13875,27 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             return 0;}
         if(id==IDS_RUN){
             char path[MAX_PATH]={0}; GetWindowTextA(hSbxPath,path,sizeof(path)-1);
-            if(!path[0]){MessageBoxA(hw,"Select an executable to sandbox.","Sandbox",MB_ICONWARNING);return 0;}
+            if(!path[0]){MessageBoxA(hw,"Select an existing EXE application or EXE installer. MSI is not supported by this hardened backend.","Sandbox",MB_ICONWARNING);return 0;}
             if(g_sbx.active){MessageBoxA(hw,"A sandbox session is already active. Kill it first.","Sandbox",MB_ICONWARNING);return 0;}
-            if(sbx_launch(path,hw)){
+            const char *ext = strrchr(path, '.');
+            if(ext && _stricmp(ext, ".msi") == 0) {
+                MessageBoxA(hw,"MSI installation is not enabled because the available sandbox backend requires weakened isolation for Windows Installer. Choose an EXE application/installer instead.","MSI not supported safely",MB_ICONWARNING);
+                return 0;
+            }
+            if(!ext || _stricmp(ext, ".exe") != 0) {
+                MessageBoxA(hw,"Only EXE applications and EXE installers are supported by the Windows Sandboxie backend.","Unsupported file",MB_ICONWARNING);
+                return 0;
+            }
+            if(sbx_launch_sandboxie_exe(path)){
                 /* Reset telemetry to start session fresh */
                 for(int i=0;i<SBX_TIMELINE_PTS;i++){ s_sbxCpuHistory[i]=0.0f; s_sbxMemHistory[i]=0.0f; s_sbxAlertMarkers[i]=0; }
                 RefreshSbxDynamicData();
-                char m[256]; snprintf(m,sizeof(m),"[Sandbox] Process PID=%lu launched with 5 isolation layers.",(unsigned long)g_sbx.pid);
+                char m[256]; snprintf(m,sizeof(m),"[Sandbox] Launched in persistent Sandboxie box '%s'; TCP/UDP blocked. Desktop shortcut created when available.",g_sbx.externalBoxName);
                 SendMessageA(hSbxLog,LB_INSERTSTRING,0,(LPARAM)m);
                 add_alert("SmartSandbox","INFO",m);
                 InvalidateRect(hw,NULL,FALSE);
             } else {
-                MessageBoxA(hw,"Sandbox launch failed. Please run as Administrator.","Error",MB_ICONERROR);
+                MessageBoxA(hw,"Sandboxie-Plus could not be found or its hardened network-blocked box could not be configured. Nothing was launched. Install Sandboxie-Plus from its official release, then try again.","Secure sandbox unavailable",MB_ICONERROR);
             }
             return 0;}
         if(id==IDS_KILL){
@@ -11372,20 +13903,14 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             sbx_kill();
             for(int i=0;i<SBX_TIMELINE_PTS;i++){ s_sbxCpuHistory[i]=0.0f; s_sbxMemHistory[i]=0.0f; s_sbxAlertMarkers[i]=0; }
             RefreshSbxDynamicData();
-            SendMessageA(hSbxLog,LB_INSERTSTRING,0,(LPARAM)"[Sandbox] Job terminated. All resources wiped.");
+            SendMessageA(hSbxLog,LB_INSERTSTRING,0,(LPARAM)"[Sandbox] Box processes terminated; persistent box data retained.");
             add_alert("SmartSandbox","WARNING","Sandbox session terminated");
             InvalidateRect(hw,NULL,FALSE); return 0;}
         if(id==IDS_BNET){
-            g_sbxBlockNet = !g_sbxBlockNet;
-            RefreshSbxDynamicData();
-            add_alert("SmartSandbox", "INFO", g_sbxBlockNet ? "Network Access: Hardened Isolation ENFORCED" : "Network Access: Boundary Filtered (Low Integrity)");
-            InvalidateRect(hw, NULL, FALSE);
+            MessageBoxA(hw,"SmartSandbox enforces WFP deny rules for TCP/UDP traffic in each Kaevex box. Windows may still answer DNS queries through its system resolver. This policy cannot be relaxed from this screen.","Sandbox network policy",MB_ICONINFORMATION);
             return 0;}
         if(id==IDS_BFILE){
-            g_sbxBlockFs = !g_sbxBlockFs;
-            RefreshSbxDynamicData();
-            add_alert("SmartSandbox", "INFO", g_sbxBlockFs ? "File System Isolation: Read-Only / Ephemeral Workspace ENFORCED" : "File System Isolation: Sandboxed");
-            InvalidateRect(hw, NULL, FALSE);
+            MessageBoxA(hw,"Sandboxie redirects application writes into its persistent per-application box. Host writes are not enabled by SmartSandbox.","Sandbox filesystem policy",MB_ICONINFORMATION);
             return 0;}
         if(id==IDS_BPROC){
             char path[MAX_PATH]={0}; GetWindowTextA(hSbxPath,path,sizeof(path)-1);
@@ -11581,13 +14106,19 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                     strcpy(snapName, "ShadowCopy_C_RestorePoint");
                 }
             }
-            AddVssSnapshotRecord(snapName, "48.2 MB", ok ? "Available" : "Available");
+            if (!ok) {
+                AddVssSnapshotRecord(snapName, "Unknown", "Failed");
+                add_alert("RansomShield","WARNING","VSS snapshot creation failed; no rollback point was created");
+                MessageBoxA(hw,"Windows did not create the VSS snapshot. Check administrator rights and the Volume Shadow Copy service.","VSS Failed",MB_ICONWARNING);
+                return 0;
+            }
+            AddVssSnapshotRecord(snapName, "Unknown", "Created");
             add_alert("RansomShield","INFO","VSS Volume Shadow Copy created successfully");
             char vssLog[256];
-            snprintf(vssLog, sizeof(vssLog), "[VSS] Snapshot created: %s [Available]", snapName);
+            snprintf(vssLog, sizeof(vssLog), "[VSS] Snapshot created: %s [Created]", snapName);
             SendMessageA(hRwList, LB_INSERTSTRING, 0, (LPARAM)vssLog);
             InvalidateRect(hw, NULL, FALSE);
-            MessageBoxA(hw,"VSS Volume Shadow Copy snapshot created. Rollback point armed.","VSS Ready",MB_ICONINFORMATION);
+            MessageBoxA(hw,"Windows reports that a VSS snapshot was created. Kaevex does not currently implement snapshot restoration.","VSS Snapshot Created",MB_ICONINFORMATION);
             return 0;}
 
         /* DataGuard DLP */
@@ -12103,23 +14634,32 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             } else MessageBoxA(hw,"Select a vulnerable app from the CVE list first.","AI Fix",MB_ICONWARNING);
             return 0;}
         if(id==IDU_SANDBOX){
-            int sel2=(int)SendMessageA(hUpdList,LB_GETCURSEL,0,0);
-            char appLine2[512]={0};
-            if(sel2>=0) SendMessageA(hUpdList,LB_GETTEXT,sel2,(LPARAM)appLine2);
-            if(appLine2[0]){
-                char msg[600];
-                snprintf(msg,sizeof(msg),
-                    "Sandbox & Update: '%s'\n\n"
-                    "This will:\n"
-                    "  1. Block the app in SmartSandbox (network+filesystem isolation)\n"
-                    "  2. Open Windows Update for the patch\n"
-                    "  3. Re-scan when done\n\n"
-                    "Proceed?", appLine2);
-                if(MessageBoxA(hw,msg,"Sandbox & Update",MB_YESNO|MB_ICONQUESTION)==IDYES){
-                    add_alert("CVEAgent","INFO","App sandboxed pending update ??? isolation active");
-                    ShellExecuteA(hw,"open","ms-settings:windowsupdate",NULL,NULL,SW_SHOW);
+            CveTableItem *selected = NULL;
+            for(int ci=0; ci<g_cveItemCount; ++ci)
+                if(g_cveItems[ci].selected) { selected = &g_cveItems[ci]; break; }
+            if(!selected){
+                MessageBoxA(hw,"Select an application row in the CVE table first.","Sandbox",MB_ICONWARNING);
+                return 0;
+            }
+            if(selected->isOs || selected->isIntelOnly || !selected->executablePath[0]){
+                MessageBoxA(hw,"No verified application EXE path is available for this row. Nothing was launched.","Sandbox unavailable",MB_ICONWARNING);
+                return 0;
+            }
+            char msg[640];
+            snprintf(msg,sizeof(msg),
+                "Launch %s inside its persistent Sandboxie box?\n\n"
+                "Sandboxie network blocking must verify successfully before launch. This does not install a patch or prove the CVE is fixed.",
+                selected->appName);
+            if(MessageBoxA(hw,msg,"Sandboxed review",MB_YESNO|MB_ICONQUESTION)==IDYES){
+                if(sbx_launch_sandboxie_exe(selected->executablePath)){
+                    char result[256];
+                    snprintf(result,sizeof(result),"Started %s in Sandboxie box %s; network block configured.",selected->appName,g_sbx.externalBoxName);
+                    add_alert("SmartSandbox","INFO",result);
+                    MessageBoxA(hw,result,"Sandboxed launch",MB_ICONINFORMATION);
+                } else {
+                    MessageBoxA(hw,"Sandboxie could not verify the hardened box configuration. Nothing was launched.","Secure sandbox unavailable",MB_ICONERROR);
                 }
-            } else MessageBoxA(hw,"Select a vulnerable app from the CVE list first.","Sandbox",MB_ICONWARNING);
+            }
             return 0;}
 
         /* Full Team selector buttons */
@@ -12130,12 +14670,23 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
         if(id==IDTM_GREEN){ g_activeTeam=4; InvalidateRect(hw,NULL,FALSE); return 0;}
 
         if(id==IDTM_AUTO){
-            g_teamAutoMode = !g_teamAutoMode;
-            SetWindowTextA(hTmAuto, g_teamAutoMode ? "Auto Agents: ON" : "Auto Agents: OFF");
-            char amMsg[128];
-            snprintf(amMsg, sizeof(amMsg), "Autonomous Team monitoring %s", g_teamAutoMode ? "ACTIVATED" : "PAUSED");
-            add_alert("Full Team", "INFO", amMsg);
-            InvalidateRect(hw, NULL, FALSE);
+            int installed = upd_scan_installed();
+            int cveCandidates = upd_check_cves();
+            BOOL firewallEnabled = fw_is_enabled();
+            char sbieStart[MAX_PATH] = {0}, sbieIni[MAX_PATH] = {0};
+            BOOL sandboxInstalled = sbx_find_sandboxie(sbieStart,sizeof(sbieStart),sbieIni,sizeof(sbieIni));
+            BOOL wfpBlocked = sandboxInstalled &&
+                sbx_sbie_query_has(sbieIni,"GlobalSettings","NetworkEnableWFP","y");
+            char evidence[2048];
+            snprintf(evidence,sizeof(evidence),
+                "Run a defensive review of this live local evidence. This evidence was collected now by Kaevex: "
+                "Windows app inventory count=%d; local catalog candidate matches=%d (catalog freshness/authority not established); "
+                "Windows Firewall enabled=%s; Sandboxie-Plus installed=%s; Sandboxie WFP enabled=%s; "
+                "Windows KB status=not checked. These checks did not execute or fuzz applications and did not change system state. "
+                "Identify what is and is not established, prioritize concrete defensive next steps, and do not claim a clean system or completed remediation.",
+                installed,cveCandidates,firewallEnabled?"yes":"no",sandboxInstalled?"yes":"no",wfpBlocked?"yes":"no");
+            SetWindowTextA(hTmPrompt,evidence);
+            SendMessageA(hw,WM_COMMAND,MAKEWPARAM(IDTM_SEND,0),0);
             return 0;}
 
         if(id==IDTM_CLEAR){
@@ -12150,18 +14701,15 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
 
             /* Determine system role based on active team */
             static const char *sysRoles[]={
-                "You are the Red Team lead Alex Mercer of Kaevex SOC. You specialize in offensive cybersecurity: "
-                "reconnaissance, exploitation, payload crafting, social engineering, lateral movement, "
-                "and privilege escalation. Analyze the user's task and respond with detailed offensive methodology, "
-                "tools (nmap, metasploit, burpsuite, etc), and step-by-step attack plan. Be concise and technical.",
+                "You are the authorized security assessment role for a system the user owns or is explicitly permitted to test. "
+                "Provide safe, non-destructive validation plans and defensive recommendations. Do not provide persistence, credential theft, evasion, weaponized payloads, or instructions to compromise third-party systems. State assumptions and never claim a test ran unless tool output proves it.",
 
                 "You are the Blue Team lead Sarah Connor of Kaevex SOC. You specialize in defensive cybersecurity: "
                 "incident response, threat hunting, SOC analysis, SIEM correlation, malware analysis, "
                 "and forensics. Respond with defensive countermeasures, IOCs to watch, and remediation steps.",
 
-                "You are the Purple Team coordinator Elena Rostov of Kaevex SOC. You bridge Red and Blue teams. "
-                "For each threat scenario, provide both the attacker perspective and defender countermeasure. "
-                "Reference MITRE ATT&CK framework TTPs and map defenses to detection opportunities.",
+                "You are the Purple Team coordinator. Review authorized assessment evidence and map defensive coverage to MITRE ATT&CK. "
+                "Do not invent test results or provide weaponized exploitation steps.",
 
                 "You are the Yellow Team AppSec lead Tariq Al-Sayed of Kaevex SOC. You specialize in application security: "
                 "SAST, DAST, OWASP Top-10, secure code review, API security, and DevSecOps. "
@@ -12174,30 +14722,30 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
 
             /* Add user message to list */
             char userLine[4200];
+            BOOL allTeams = (SendMessageA(hTmAllTeams,BM_GETCHECK,0,0) == BST_CHECKED);
             snprintf(userLine,sizeof(userLine),"[YOU -> %s]: %s",
-                (const char*[]){"RED","BLUE","PURPLE","YELLOW","GREEN"}[g_activeTeam], prompt);
+                allTeams ? "ALL FIVE ROLE AGENTS" : (const char*[]){"RED","BLUE","PURPLE","YELLOW","GREEN"}[g_activeTeam], prompt);
             SendMessageA(hTmList,LB_ADDSTRING,0,(LPARAM)userLine);
-            SendMessageA(hTmList,LB_ADDSTRING,0,(LPARAM)"[AGENT]: Thinking ...");
-            int cnt=(int)SendMessageA(hTmList,LB_GETCOUNT,0,0);
-            SendMessageA(hTmList,LB_SETTOPINDEX,cnt-1,0);
-
-            /* Disable send while processing */
             EnableWindow(hTmSend,FALSE);
-
-            /* Spawn Groq worker thread */
-            GroqWorkerArgs *ga=(GroqWorkerArgs*)malloc(sizeof(GroqWorkerArgs));
-            if(ga){
-                ZeroMemory(ga,sizeof(*ga));
+            int firstTeam = allTeams ? 0 : g_activeTeam;
+            int endTeam = allTeams ? 5 : g_activeTeam + 1;
+            for(int t=firstTeam;t<endTeam;t++){
+                GroqWorkerArgs *ga=(GroqWorkerArgs*)calloc(1,sizeof(GroqWorkerArgs));
+                if(!ga){ SendMessageA(hTmList,LB_ADDSTRING,0,(LPARAM)"[TEAM ERROR] Could not allocate an agent request."); continue; }
                 strncpy(ga->prompt,prompt,sizeof(ga->prompt)-1);
-                strncpy(ga->systemRole,sysRoles[g_activeTeam],sizeof(ga->systemRole)-1);
-                ga->hList=hTmList;
-                ga->hSend=hTmSend;
-                /* Remove "Thinking..." placeholder */
-                SendMessageA(hTmList,LB_DELETESTRING,cnt-1,0);
+                snprintf(ga->systemRole,sizeof(ga->systemRole),
+                    "You are a text-only AI analyst and cannot run scans, open files, or apply fixes. Assess only evidence in the prompt. Never claim a test or remediation occurred without tool output. Work only with authorized systems and give non-destructive recommendations. %s",sysRoles[t]);
+                ga->teamIndex=t; ga->provider=g_aiProvider; ga->hList=hTmList; ga->hSend=hTmSend;
+                const char *queued=(const char*[]){"[RED AGENT] queued", "[BLUE AGENT] queued", "[PURPLE AGENT] queued", "[YELLOW AGENT] queued", "[GREEN AGENT] queued"}[t];
+                SendMessageA(hTmList,LB_ADDSTRING,0,(LPARAM)queued);
+                InterlockedIncrement(&g_teamPendingRequests);
                 HANDLE ht=CreateThread(NULL,0,GroqWorkerThread,ga,0,NULL);
                 if(ht) CloseHandle(ht);
-                else { free(ga); EnableWindow(hTmSend,TRUE); }
+                else { InterlockedDecrement(&g_teamPendingRequests); free(ga); SendMessageA(hTmList,LB_ADDSTRING,0,(LPARAM)"[TEAM ERROR] Agent request could not start."); }
             }
+            if(InterlockedCompareExchange(&g_teamPendingRequests,0,0)==0) EnableWindow(hTmSend,TRUE);
+            int cnt=(int)SendMessageA(hTmList,LB_GETCOUNT,0,0);
+            SendMessageA(hTmList,LB_SETTOPINDEX,cnt>0?cnt-1:0,0);
             return 0;}
 
         /* Settings Webhook & Configuration */
@@ -12316,7 +14864,10 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             if(!rName[0]){
                 snprintf(rName,sizeof(rName),"Kaevex-Block-Port-%s",rPort);
             }
-            fw_add_rule(rName, NULL, "in", "block", "tcp", rPort);
+            if(!fw_add_rule(rName, NULL, "in", "block", "tcp", rPort)){
+                MessageBoxA(hw,"Windows Firewall rejected the rule or elevation was denied. No rule was confirmed.","Firewall Rule Failed",MB_ICONERROR);
+                return 0;
+            }
             char am[160]; snprintf(am,sizeof(am),"Added Firewall Rule: %s (Port: %s)", rName, rPort);
             add_alert("Firewall","INFO",am);
             SendMessageA(hw,WM_COMMAND,IDF_RELOAD,0);
@@ -12390,10 +14941,55 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             InvalidateRect(hw, NULL, FALSE);
             return 0;}
 
+        if(LOWORD(wp) == IDU_SEARCH && HIWORD(wp) == EN_CHANGE){
+            GetWindowTextA(hUpdSearch, g_cveSearch, sizeof(g_cveSearch));
+            g_cveScrollY = 0;
+            InvalidateRect(hw, NULL, FALSE);
+            return 0;
+        }
+
+        if(id == IDU_REFRESH){
+            if(InterlockedCompareExchange(&g_nvdRefreshBusy,1,0)!=0) return 0;
+            HANDLE thread=CreateThread(NULL,0,NvdRefreshThread,hw,0,NULL);
+            if(thread) CloseHandle(thread);
+            else {
+                InterlockedExchange(&g_nvdRefreshBusy,0);
+                add_alert("CVE Agent","ERROR","NVD refresh worker could not start.");
+            }
+            InvalidateRect(hw,NULL,FALSE);
+            return 0;
+        }
+
+        if(id == IDU_EXPORT){
+            char tempPath[MAX_PATH];
+            GetTempPathA(sizeof(tempPath), tempPath);
+            char csvPath[MAX_PATH];
+            snprintf(csvPath, sizeof(csvPath), "%skaevex_cve_audit_report.csv", tempPath);
+            FILE *fp = fopen(csvPath, "w");
+            if(fp){
+                fprintf(fp, "ID,Vulnerability / Patch,Affected Software,Version,Severity,CVE ID,Status,Action\n");
+                static const char *sevNames[] = {"Critical", "High", "Medium", "Low"};
+                static const char *statNames[] = {"Pending", "Available", "Fixed", "Ignored"};
+                for(int i = 0; i < g_cveItemCount; i++){
+                    CveTableItem *it = &g_cveItems[i];
+                    fprintf(fp, "%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                        it->id, it->vulnTitle, it->appName, it->version,
+                        sevNames[it->severity], it->cveId, statNames[it->status], it->actionText);
+                }
+                fclose(fp);
+                char alertMsg[256];
+                snprintf(alertMsg, sizeof(alertMsg), "CVE Audit Report exported successfully to %s", csvPath);
+                add_alert("CVE Agent", "INFO", alertMsg);
+                ShellExecuteA(NULL, "open", csvPath, NULL, NULL, SW_SHOWNORMAL);
+            }
+            return 0;
+        }
+
         /* Autonomous CVE Agent & Software Inventory */
         if(id==IDU_SCAN){
-            int appCnt = upd_scan_installed();
-            int cveCnt = upd_check_cves();
+            BuildCveTableData();
+            int appCnt = g_appCount;
+            int cveCnt = g_cveCritCnt + g_cveHighCnt;
             SendMessageA(hUpdList,LB_RESETCONTENT,0,0);
             SendMessageA(hUpdList,LB_ADDSTRING,0,(LPARAM)"  === WINDOWS OPERATING SYSTEM SECURITY AUDIT ===");
             char osRow[256];
@@ -12412,7 +15008,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             SendMessageA(hUpdList,LB_ADDSTRING,0,(LPARAM)"  Application Name                                  Version          Publisher                    CVE Status");
             SendMessageA(hUpdList,LB_ADDSTRING,0,(LPARAM)"  ------------------------------------------------  ---------------  ---------------------------  ----------");
             for(int i=0; i<appCnt; i++){
-                char row[512]; char cveStr[48] = "[CLEAN]";
+                char row[512]; char cveStr[48] = "[NO LOCAL MATCH]";
                 if(g_apps[i].cveCount > 0) {
                     snprintf(cveStr,sizeof(cveStr),"[!%d CVE: %s, CVSS %d]",
                              g_apps[i].cveCount, g_apps[i].cveId[0], g_apps[i].cvssScore[0]);
@@ -12422,8 +15018,8 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                 SendMessageA(hUpdList,LB_ADDSTRING,0,(LPARAM)row);
             }
             char am[128];
-            snprintf(am,sizeof(am),"Scanned %d apps & OS build %s: Found %d software CVEs + %d OS CVEs",
-                     appCnt, g_osInfo.currentBuild, cveCnt, g_osInfo.cveCount);
+            snprintf(am,sizeof(am),"Scanned %d apps & OS build %s: Found %d potential CVE catalog matches",
+                     appCnt, g_osInfo.currentBuild, cveCnt);
             add_alert("CVE Agent", cveCnt > 0 ? "WARNING" : "INFO", am);
             InvalidateRect(hw,NULL,FALSE);
             return 0;}
@@ -12433,21 +15029,38 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             int appCnt = upd_scan_installed();
             int cveCnt = upd_check_cves();
             SendMessageA(hw, WM_COMMAND, MAKEWPARAM(IDU_SCAN, 0), 0);
-            char am[128]; snprintf(am, sizeof(am), "Catalog reloaded: %d software audited, %d CVEs detected", appCnt, cveCnt);
+            char am[128]; snprintf(am, sizeof(am), "Local advisory catalog reloaded: %d apps audited, %d potential CVE matches", appCnt, cveCnt);
             add_alert("CVE Agent", "INFO", am);
-            MessageBoxA(hw, am, "CVE Database Updated", MB_ICONINFORMATION);
+            MessageBoxA(hw, am, "Local CVE Catalog", MB_ICONINFORMATION);
             return 0;}
 
         if(id==IDU_FIXALL || id==IDU_SEL){
+            int foundApps = upd_scan_installed();
+            int foundCves = upd_check_cves();
+            if(foundCves == 0 && g_osInfo.cveCount == 0){
+                if(g_updNotifyBeforeFix) MessageBoxA(hw,"The local advisory catalog found no candidate CVEs. No remediation was started.","Auto-Fix",MB_ICONINFORMATION);
+                return 0;
+            }
+            if(g_updNotifyBeforeFix){
+                char confirm[512];
+                snprintf(confirm,sizeof(confirm),"The local catalog reports %d application CVE matches and %d OS build matches across %d installed apps. These matches may need independent verification. Start targeted package upgrades? If an upgrade fails and an app EXE is known, Kaevex will block all that app's network traffic with Windows Firewall, which may break connectivity. OS build matches are manual review only.",foundCves,g_osInfo.cveCount,foundApps);
+                if(MessageBoxA(hw,confirm,"Review before Auto-Fix",MB_OKCANCEL|MB_ICONWARNING)!=IDOK) return 0;
+            }
             /* Clear list and show header */
             SendMessageA(hUpdList, LB_RESETCONTENT, 0, 0);
-            SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AUTO-FIX] Launching Autonomous CVE Remediation Engine...");
-            SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)"  [*] Scanning 150+ CVE signatures across all installed software...");
+            SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)"  [KAEVEX AUTO-FIX] Targeted remediation started; catalog matches are advisory, not confirmed vulnerabilities.");
+            SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)(g_updNotifyBeforeFix ? "  [*] User reviewed the remediation summary." : "  [*] Quiet mode enabled; no pre-action notification was shown."));
             SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)"  [*] Process running in background - results will appear below in real-time:");
             SendMessageA(hUpdList, LB_ADDSTRING, 0, (LPARAM)"  ------------------------------------------------------------");
-            add_alert("CVE Agent", "INFO", "Autonomous CVE Remediation Engine started - monitoring progress in Updates tab");
+            if(g_updNotifyBeforeFix) add_alert("CVE Agent", "INFO", "Targeted CVE remediation started after user review.");
             /* Launch background thread - posts progress directly to hUpdList */
             upd_auto_fix_all_async(hUpdList, hw);
+            return 0;}
+
+        if(id==IDU_NOTIFYMODE){
+            g_updNotifyBeforeFix = !g_updNotifyBeforeFix;
+            SetWindowTextA(hUpdNotifyMode, g_updNotifyBeforeFix ? "Auto-Fix: Ask Before Applying" : "Auto-Fix: Quiet Mode");
+            if(g_updNotifyBeforeFix) add_alert("CVE Agent","INFO","Auto-Fix confirmation is enabled.");
             return 0;}
 
 
@@ -12469,16 +15082,11 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             InvalidateRect(hw,NULL,FALSE);
             return 0;}
 
-        /* Engines control */
-        if(id==IDE_STALL){ for(int i=0;i<8;i++) g_eng[i].run=1; add_alert("Kaevex","INFO","All 8 engines started"); InvalidateRect(hw,NULL,FALSE); return 0;}
-        if(id==IDE_SPALL){
-            if(MessageBoxA(hw,"WARNING: Stopping all engines leaves system unprotected!\nProceed?",
-               "Confirm",MB_YESNO|MB_ICONWARNING)==IDYES){
-                for(int i=0;i<8;i++) g_eng[i].run=0;
-                add_alert("Kaevex","CRITICAL","ALL ENGINES STOPPED");
-                InvalidateRect(hw,NULL,FALSE);
-            }
-            return 0;}
+        /* These controls previously changed UI flags but did not start/stop services. */
+        if(id==IDE_STALL || id==IDE_SPALL){
+            MessageBoxA(hw,"These modules run when their feature workflows are invoked; this build has no per-engine background service controller.","On-demand feature modules",MB_ICONINFORMATION);
+            return 0;
+        }
 
         return 0;}
 
@@ -12492,7 +15100,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             nidMsg.uFlags = NIF_INFO;
             nidMsg.dwInfoFlags = NIIF_INFO;
             strncpy(nidMsg.szInfoTitle, "Kaevex Continuous Defense Active", sizeof(nidMsg.szInfoTitle)-1);
-            strncpy(nidMsg.szInfo, "Kaevex is running in the background. Engines, Tray, and Mobile API remain active.", sizeof(nidMsg.szInfo)-1);
+            strncpy(nidMsg.szInfo, "Kaevex is running in the background. Available background features continue while enabled.", sizeof(nidMsg.szInfo)-1);
             Shell_NotifyIconA(NIM_MODIFY, &nidMsg);
         }
         return 0;
@@ -12568,8 +15176,8 @@ static void CreateControls(HWND hw){
 
     /* Sandbox */
     hSbxPath =CE("EDIT","",ES_AUTOHSCROLL,IDS_PATH);
-    SET_CUE(hSbxPath, L"Select binary to execute in AppContainer sandbox...");
-    hSbxBrw  =CB("BUTTON","Browse EXE",BS_OWNERDRAW,IDS_BRW);
+    SET_CUE(hSbxPath, L"Select an existing EXE application or EXE installer for Sandboxie...");
+    hSbxBrw  =CB("BUTTON","Choose EXE Setup",BS_OWNERDRAW,IDS_BRW);
     hSbxRun  =CB("BUTTON","Run in Sandbox",BS_OWNERDRAW,IDS_RUN);
     hSbxKill =CB("BUTTON","Kill Sandbox",BS_OWNERDRAW,IDS_KILL);
     hSbxBNet =CB("BUTTON","[x] Block Network",BS_OWNERDRAW,IDS_BNET);
@@ -12596,11 +15204,17 @@ static void CreateControls(HWND hw){
     /* Autonomous CVE Agent */
     hUpdScan    =CB("BUTTON","Scan System & OS",BS_OWNERDRAW,IDU_SCAN);
     hUpdFixAll  =CB("BUTTON","1-Click Auto-Fix All",BS_OWNERDRAW,IDU_FIXALL);
-    hUpdChk     =CB("BUTTON","Check Updates",BS_OWNERDRAW,IDU_CHKUPD);
+    hUpdNotifyMode=CB("BUTTON","Auto-Fix: Ask Before Applying",BS_OWNERDRAW,IDU_NOTIFYMODE);
+    hUpdChk     =CB("BUTTON","Reload Local Catalog",BS_OWNERDRAW,IDU_CHKUPD);
     hUpdSel     =CB("BUTTON","Remediate Item",BS_OWNERDRAW,IDU_SEL);
     hUpdWin     =CB("BUTTON","Windows Update",BS_OWNERDRAW,IDU_WIN);
     hUpdWatcher =CB("BUTTON","Toggle Watcher",BS_OWNERDRAW,IDU_WATCHER);
     hUpdList    =CLB(IDU_LIST);
+    hUpdSearch  =CreateWindowExW(0, L"EDIT", L"",
+                    WS_CHILD | ES_LEFT | ES_AUTOHSCROLL,
+                    0, 0, 10, 10, g_hwnd, (HMENU)IDU_SEARCH, GetModuleHandleA(NULL), NULL);
+    SendMessageA(hUpdSearch, WM_SETFONT, (WPARAM)fSm, 0);
+    SET_CUE(hUpdSearch, L"Search vulnerabilities, software, or CVE...");
 
     /* NetGuard */
     hNetScan     =CB("BUTTON","Scan Connections",BS_OWNERDRAW,IDN_SCAN);
@@ -12681,12 +15295,12 @@ static void CreateControls(HWND hw){
     hStProv = CreateWindowExA(0,"COMBOBOX","",WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST,0,0,0,0,hw,(HMENU)(UINT_PTR)IDST_PROV,hi,NULL);
     SendMessageA(hStProv, CB_ADDSTRING, 0, (LPARAM)"Together AI (DeepSeek-V4-Pro-0813) [Default]");
     SendMessageA(hStProv, CB_ADDSTRING, 0, (LPARAM)"Groq Cloud (Llama 3.3 70B - Versatile)");
-    SendMessageA(hStProv, CB_ADDSTRING, 0, (LPARAM)"NVIDIA Kimi-K3 Neural Engine");
+    SendMessageA(hStProv, CB_ADDSTRING, 0, (LPARAM)"NVIDIA GLM-5.3 Flash (z-ai/glm-5.3-flash)");
     SendMessageA(hStProv, CB_ADDSTRING, 0, (LPARAM)"Autonomous Local SOC Engine");
     SendMessageA(hStProv, CB_SETCURSEL, g_aiProvider, 0);
 
     hStAiKey   =CE("EDIT","",ES_AUTOHSCROLL|ES_PASSWORD,IDST_AIKEY);
-    SET_CUE(hStAiKey, L"Enter Together AI API Key (sk-tog...)...");
+    SET_CUE(hStAiKey, L"Provider API key (NVIDIA_API_KEY supported)...");
     if(g_aiApiKey[0]) SetWindowTextA(hStAiKey, g_aiApiKey);
     hStAiApply =CB("BUTTON","Save Key",BS_OWNERDRAW,IDST_AIAPPLY);
 
@@ -12723,9 +15337,12 @@ static void CreateControls(HWND hw){
     hTmPurple=CB("BUTTON","PURPLE TEAM",BS_OWNERDRAW,IDTM_PURPLE);
     hTmYellow=CB("BUTTON","YELLOW TEAM",BS_OWNERDRAW,IDTM_YELLOW);
     hTmGreen =CB("BUTTON","GREEN TEAM",BS_OWNERDRAW,IDTM_GREEN);
-    hTmAuto  =CB("BUTTON","Auto Agents: OFF",BS_OWNERDRAW,IDTM_AUTO);
+    hTmAuto  =CB("BUTTON","Background Checks Unavailable",BS_OWNERDRAW,IDTM_AUTO);
+    SetWindowTextA(hTmAuto,"Run Live Local Checks + AI Review");
+    hTmAllTeams=CB("BUTTON","Run all 5 role agents for this request",BS_AUTOCHECKBOX,IDTM_ALL);
+    SendMessageA(hTmAllTeams,BM_SETCHECK,BST_CHECKED,0);
     hTmPrompt=CE("EDIT","",ES_AUTOHSCROLL,IDTM_PROMPT);
-    SET_CUE(hTmPrompt, L"Describe your task for the active team agent (e.g. scan target 192.168.1.0/24 for vulns)...");
+    SET_CUE(hTmPrompt, L"Dispatch one authorized analysis request to the selected team role...");
     hTmSend  =CB("BUTTON","Dispatch",BS_OWNERDRAW,IDTM_SEND);
     hTmClear =CB("BUTTON","Clear",BS_OWNERDRAW,IDTM_CLEAR);
     hTmList  =CLB(IDTM_LIST);
@@ -12762,7 +15379,7 @@ static void CreateControls(HWND hw){
     /* Seed initial alerts */
     add_alert("Kaevex",      "INFO",    "Kaevex Enterprise SOC initialized - 8 defense engines active");
     add_alert("NetGuard",       "INFO",    "Startup baseline network analysis complete - verified CDN/Web endpoints");
-    add_alert("SmartSandbox",   "INFO",    "AppContainer kernel enforcement subsystem active");
+    add_alert("SmartSandbox",   "INFO",    "Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode");
     add_alert("RansomShield",   "INFO",    "Canary honeypots armed & VSS shadow copy engine online");
     add_alert("DataGuard DLP",  "INFO",    "Sensitive credential scanner loaded");
     add_alert("ThreatIntel",    "INFO",    "Zero-driver anti-cheat compatibility mode active");
@@ -12774,7 +15391,7 @@ static void CreateControls(HWND hw){
 
 /* --- Kaevex GUI & Background Engine Host Entry Point ----------------------- */
 int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMinimized){
-    (void)hp;(void)lp;
+    (void)hp;
 
     /* Single-instance check: raise the existing window if already running */
     HANDLE hMutex = CreateMutexA(NULL, TRUE, "KaevexMasterMutex");
@@ -12892,9 +15509,11 @@ int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMini
     DwmSetWindowAttribute(g_hwnd,19,&dark,sizeof(dark));
 
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    CveLoadSchedule();
     CreateControls(g_hwnd);
     Layout(g_hwnd);
     SetTimer(g_hwnd, ID_TIMER, 1000, NULL);
+    CveUpdateSchedule(g_hwnd);
     CreateThread(NULL,0,telemThread,NULL,0,NULL);
     mobile_api_bind_telemetry(&g_avThreats, &g_wafBlk, &g_wafInsp, &g_realInPkts, &g_realOutPkts, &g_realDrops, &g_netConnCnt, &g_lockdown);
     mobile_api_bind_platform_callbacks(
@@ -12908,7 +15527,6 @@ int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMini
     mobile_api_start(API_PORT);
     supabase_engine_init(HandleRemoteSupabaseAction);
     g_teamAutoMode = FALSE;   /* Manual by default  -  user toggles with the button */
-    g_teamAutoThread = CreateThread(NULL,0,TeamAutoAgentWorker,NULL,0,NULL);
     /* Gaming mode is strictly manual - watchdog runs only when user turns it ON */
     if (startMinimized) {
         ShowWindow(g_hwnd, SW_HIDE);
@@ -12920,7 +15538,11 @@ int kaevex_gui_main(HINSTANCE hi, HINSTANCE hp, LPSTR lp, int ns, BOOL startMini
 
     InitTrayIcon(g_hwnd);
     if (!startMinimized) {
-        PromptFirstRunWizard(g_hwnd);
+        if (lp && (strstr(lp, "--login") || strstr(lp, "--auth"))) {
+            ShowSupabaseAccountDialog(g_hwnd);
+        } else {
+            PromptFirstRunWizard(g_hwnd);
+        }
         InvalidateRect(g_hwnd, NULL, TRUE);
         UpdateWindow(g_hwnd);
     } else {

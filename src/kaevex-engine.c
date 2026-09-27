@@ -244,87 +244,17 @@ static long long uptime_secs(void) { return (long long)(time(NULL) - g_start_tim
 
 /* ????????? Seed initial data ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static void seed_data(void) {
-    char ts[32];
-    now_str(ts, sizeof(ts));
-    /* 5 seed alerts */
-    for (int i = 0; i < 5; i++) {
-        Alert *a       = &g_alerts[g_alert_count++];
-        a->id          = g_alert_id++;
-        strncpy(a->timestamp, ts,             sizeof(a->timestamp)-1);
-        strncpy(a->engine,    RPICK(ENGINES), sizeof(a->engine)-1);
-        strncpy(a->type,      RPICK(TYPES),   sizeof(a->type)-1);
-        strncpy(a->severity,  RPICK(SEVERITIES), sizeof(a->severity)-1);
-        rand_ip(a->src_ip);
-        snprintf(a->dst_ip, sizeof(a->dst_ip), "192.168.1.%d", rand()%50+1);
-        a->src_port    = rand()%60000+1024;
-        a->dst_port    = 443;
-        strncpy(a->proto, RPICK(PROTOS), sizeof(a->proto)-1);
-        snprintf(a->payload, sizeof(a->payload), "Detected %s pattern (seed alert %d)", a->type, i+1);
-        strncpy(a->attck, RPICK(TECHNIQUES), sizeof(a->attck)-1);
-        a->blocked     = rand()%2;
-        a->ip_banned   = a->blocked && rand()%2;
-    }
-    /* 3 seed incidents */
-    for (int i = 0; i < 3; i++) {
-        Incident *n    = &g_incidents[g_inc_count++];
-        n->id          = g_inc_id++;
-        strncpy(n->timestamp, ts, sizeof(n->timestamp)-1);
-        snprintf(n->title, sizeof(n->title), "%s multi-stage attack", RPICK(FAMILIES));
-        snprintf(n->summary, sizeof(n->summary), "Correlated %d events from %d engines", rand()%10+3, rand()%4+2);
-        rand_ip(n->attacker_ip);
-        snprintf(n->target_ip, sizeof(n->target_ip), "192.168.1.%d", rand()%15+2);
-        n->kill_chain_stage = rand()%6+1;
-        n->threat_score     = rand()%50+40;
-        n->threat_level     = n->threat_score >= 80 ? 4 : 3;
-        strncpy(n->threat_family, RPICK(FAMILIES),    sizeof(n->threat_family)-1);
-        snprintf(n->techniques, sizeof(n->techniques), "%s,%s", RPICK(TECHNIQUES), RPICK(TECHNIQUES));
-        n->auto_remediated  = 1;
-    }
-    /* 3 seed IOCs */
-    char ip[24]; rand_ip(ip);
-    strncpy(g_iocs[0].type, "IP",  16); strncpy(g_iocs[0].value, ip, 128);
-    strncpy(g_iocs[0].threat_actor,"APT29",64); strncpy(g_iocs[0].campaign,"SolarWinds-2",64);
-    strncpy(g_iocs[0].attck_tech,"T1078",16); g_iocs[0].confidence=95; g_iocs[0].hit_count=5;
-    strncpy(g_iocs[1].type,"Domain",16); strncpy(g_iocs[1].value,"malicious-c2.net",128);
-    strncpy(g_iocs[1].threat_actor,"LockBit",64); strncpy(g_iocs[1].campaign,"Ransomware-Q4",64);
-    strncpy(g_iocs[1].attck_tech,"T1071",16); g_iocs[1].confidence=88; g_iocs[1].hit_count=2;
-    strncpy(g_iocs[2].type,"Hash",16); strncpy(g_iocs[2].value,"a1b2c3d4e5f6deadbeef1234567890abcdef1234",128);
-    strncpy(g_iocs[2].threat_actor,"Unknown",64); strncpy(g_iocs[2].campaign,"Generic-Dropper",64);
-    strncpy(g_iocs[2].attck_tech,"T1055",16); g_iocs[2].confidence=72; g_iocs[2].hit_count=0;
-    g_ioc_count = 3;
+    /* Alert, incident and IOC records now start empty; only live engine events may populate them. */
 
     /* Stats init */
-    g_stats.av_hash_db_size      = 42381;
-    g_stats.av_pattern_count     = 8743;
-    g_stats.av_realtime_enabled  = 1;
-    g_stats.av_auto_kill         = 1;
-    g_stats.waf_rule_count       = 248;
-    strncpy(g_stats.waf_profile, "Aggressive", sizeof(g_stats.waf_profile)-1);
-    g_stats.waf_allowlist_count  = 3;
-    g_stats.waf_rate_limit_rps   = 1000;
-    g_stats.waf_block_threshold  = 60;
-    g_stats.waf_ban_threshold    = 80;
-    g_stats.sb_count             = 2;
-    g_stats.sb_proxy_running     = 1;
-    g_stats.sb_proxy_port        = 8080;
-    g_stats.hg_components_scanned= rand()%600+200;
-    g_stats.hg_cve_found         = rand()%10;
-    g_stats.hg_updates_auto      = rand()%8;
-    g_stats.hg_updates_user      = rand()%4;
-    g_stats.ig_fim_av            = rand()%50;
-    g_stats.ig_proc_av           = rand()%100;
-    g_stats.ig_tls_hash          = rand()%200;
-    g_stats.ig_malware_bans      = rand()%10;
-    g_stats.ig_realtime_blocks   = rand()%20;
-    g_stats.ig_total             = rand()%200;
-    g_stats.bus_total_events     = rand()%9000+1000;
     g_stats.bus_capacity         = 65536;
-    g_stats.nx_ioc_count         = g_ioc_count;
+    g_stats.nx_ioc_count         = 0;
 }
 
 /* ????????? Background ticker thread ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static DWORD WINAPI ticker_thread(LPVOID unused) {
     (void)unused;
+    unsigned long long lastObservedPackets = 0;
     while (1) {
         Sleep(3000);
         /* Real system queries */
@@ -343,6 +273,7 @@ static DWORD WINAPI ticker_thread(LPVOID unused) {
         /* Network bytes */
         MIB_IFTABLE *ifTable = NULL;
         DWORD ifSz = 0;
+        unsigned long long observedPackets = 0;
         GetIfTable(ifTable, &ifSz, FALSE);
         if (ifSz) {
             ifTable = (MIB_IFTABLE*)malloc(ifSz);
@@ -351,7 +282,7 @@ static DWORD WINAPI ticker_thread(LPVOID unused) {
                     if (ifTable->table[i].dwType == IF_TYPE_ETHERNET_CSMACD ||
                         ifTable->table[i].dwType == IF_TYPE_IEEE80211) {
                         EnterCriticalSection(&g_lock);
-                        g_stats.bus_total_events += ifTable->table[i].dwInUcastPkts / 100 + 1;
+                        observedPackets += ifTable->table[i].dwInUcastPkts;
                         LeaveCriticalSection(&g_lock);
                     }
                 }
@@ -374,12 +305,10 @@ static DWORD WINAPI ticker_thread(LPVOID unused) {
         EnterCriticalSection(&g_lock);
         g_stats.nx_active_sessions = connCnt;
         g_stats.av_processes_scanned = procCnt;
-        g_stats.bus_total_events++; /* 1 event per tick */
-        g_stats.api_requests++;
-        /* Scale WAF stats based on real network activity */
-        if (connCnt > 20) {
-            g_stats.waf_requests_inspected += connCnt / 10;
-        }
+        /* Event bus counts packet-counter deltas; API requests have their own handler counter. */
+        if (observedPackets >= lastObservedPackets)
+            g_stats.bus_total_events += (long long)(observedPackets - lastObservedPackets);
+        lastObservedPackets = observedPackets;
         LeaveCriticalSection(&g_lock);
     }
     return 0;
@@ -1033,58 +962,32 @@ static DWORD WINAPI conn_handler(LPVOID arg) {
         send_json(s,buf2); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/waf/allowlist")==0) {
-        send_json(s,"{\"allowlist\":[\"127.0.0.1\",\"::1\",\"192.168.1.1\"]}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"WAF allowlist storage is not connected to this API\",\"allowlist\":[]}"); goto done;
     }
     if (strcmp(method,"POST")==0 && strcmp(path,"/waf/allowlist")==0) {
-        send_json(s,"{\"status\":\"added\"}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"WAF allowlist storage is not connected to this API\"}"); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/waf/syswatch")==0) {
         send_json(s,"{\"entries\":[]}"); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/waf/report")==0) {
-        send_json(s,"{\"attacks_today\":12,\"top_type\":\"SQLi\",\"top_ip\":\"203.0.113.1\"}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"WAF report aggregation is not implemented\",\"attacks_today\":0}"); goto done;
     }
     /* ?????? /sandbox/ ?????? */
     if (strcmp(method,"GET")==0 && strcmp(path,"/sandbox/list")==0) {
-        send_json(s,"{\"sandboxes\":["
-            "{\"name\":\"Sandbox-Alpha\",\"state\":\"running\",\"pid\":4321,"
-            "\"exe\":\"C:\\\\Windows\\\\System32\\\\cmd.exe\","
-            "\"start_time\":\"2025-01-01T00:00:00Z\","
-            "\"firewall_active\":true,\"low_integrity\":true,"
-            "\"bytes_sent\":51200,\"bytes_recv\":102400,\"connections\":3},"
-            "{\"name\":\"Sandbox-Beta\",\"state\":\"running\",\"pid\":5678,"
-            "\"exe\":\"C:\\\\Windows\\\\System32\\\\notepad.exe\","
-            "\"start_time\":\"2025-01-01T00:00:00Z\","
-            "\"firewall_active\":true,\"low_integrity\":true,"
-            "\"bytes_sent\":20480,\"bytes_recv\":40960,\"connections\":1}"
-            "]}");
+        send_json(s,"{\"available\":false,\"reason\":\"Sandboxie process enumeration is not connected to this API\",\"sandboxes\":[]}");
         goto done;
     }
     if (strcmp(method,"GET")==0 && strncmp(path,"/sandbox/proxy-logs",19)==0) {
-        char b2[JSON_SIZE]; int pp=0;
-        EnterCriticalSection(&g_lock);
-        pp=jscat(b2,pp,JSON_SIZE,"{\"logs\":[");
-        int cnt=g_alert_count<10?g_alert_count:10;
-        for(int i=0;i<cnt;i++){
-            Alert*a=&g_alerts[i];
-            if(i>0) pp=jscat(b2,pp,JSON_SIZE,",");
-            pp=jscat(b2,pp,JSON_SIZE,
-                "{\"timestamp\":\"%s\",\"method\":\"CONNECT\","
-                "\"host\":\"cdn.trusted.com\",\"port\":443,"
-                "\"sandbox\":\"Sandbox-Alpha\",\"was_blocked\":%s}",
-                a->timestamp,a->blocked?"true":"false");
-        }
-        pp=jscat(b2,pp,JSON_SIZE,"]}");
-        LeaveCriticalSection(&g_lock);
-        send_json(s,b2); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"Sandboxie network audit logs are not connected to this API\",\"logs\":[]}"); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/sandbox/diagnostics")==0) {
-        send_json(s,"{\"status\":\"ok\",\"proxy_reachable\":true}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"Sandbox proxy diagnostics are not implemented\"}"); goto done;
     }
     /* ?????? /hostguard/ ?????? */
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/stats")==0) {
         char b[1024]; EnterCriticalSection(&g_lock);
-        snprintf(b,sizeof(b),"{\"hostguard\":{"
+        snprintf(b,sizeof(b),"{\"available\":false,\"reason\":\"HostGuard counters are not wired to their engines\",\"hostguard\":{"
             "\"stat_components_scanned\":%d,\"stat_cve_found\":%d,"
             "\"stat_remediations_applied\":%d,\"stat_firewall_rules_added\":%d,"
             "\"stat_processes_killed\":%d,\"ransomware_detections\":%d,"
@@ -1101,70 +1004,37 @@ static DWORD WINAPI conn_handler(LPVOID arg) {
         send_json(s,b); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/threads")==0) {
-        send_json(s,"{\"threads\":["
-            "{\"id\":1,\"name\":\"HostGuard-Scanner\",\"alive\":true,\"last_heartbeat_age_s\":2,\"restart_count\":0},"
-            "{\"id\":2,\"name\":\"CVE-Checker\",\"alive\":true,\"last_heartbeat_age_s\":3,\"restart_count\":0},"
-            "{\"id\":3,\"name\":\"UpdateManager\",\"alive\":true,\"last_heartbeat_age_s\":1,\"restart_count\":0},"
-            "{\"id\":4,\"name\":\"Honeypot-Monitor\",\"alive\":true,\"last_heartbeat_age_s\":5,\"restart_count\":0},"
-            "{\"id\":5,\"name\":\"RansomwareShield\",\"alive\":true,\"last_heartbeat_age_s\":2,\"restart_count\":0},"
-            "{\"id\":6,\"name\":\"FIM-Watcher\",\"alive\":true,\"last_heartbeat_age_s\":4,\"restart_count\":0},"
-            "{\"id\":7,\"name\":\"Heartbeat-Monitor\",\"alive\":true,\"last_heartbeat_age_s\":1,\"restart_count\":0}"
-            "]}");
+        send_json(s,"{\"available\":false,\"reason\":\"Worker heartbeat reporting is not implemented\",\"threads\":[]}");
         goto done;
     }
     if (strcmp(method,"GET")==0 && strncmp(path,"/hostguard/components",21)==0) {
-        send_json(s,"{\"components\":["
-            "{\"db_id\":1,\"name\":\"OpenSSL\",\"version\":\"3.0.2\",\"type\":\"Library\",\"os_info\":\"Windows 11\",\"first_seen\":\"2025-01-01T00:00:00Z\",\"last_seen\":\"2025-01-01T00:00:00Z\",\"needs_cve_check\":true,\"needs_update_check\":true},"
-            "{\"db_id\":2,\"name\":\"Node.js\",\"version\":\"20.19.0\",\"type\":\"Runtime\",\"os_info\":\"Windows 11\",\"first_seen\":\"2025-01-01T00:00:00Z\",\"last_seen\":\"2025-01-01T00:00:00Z\",\"needs_cve_check\":false,\"needs_update_check\":false},"
-            "{\"db_id\":3,\"name\":\"Microsoft Edge\",\"version\":\"121.0.0\",\"type\":\"Browser\",\"os_info\":\"Windows 11\",\"first_seen\":\"2025-01-01T00:00:00Z\",\"last_seen\":\"2025-01-01T00:00:00Z\",\"needs_cve_check\":false,\"needs_update_check\":true},"
-            "{\"db_id\":4,\"name\":\"Python 3\",\"version\":\"3.11.2\",\"type\":\"Runtime\",\"os_info\":\"Windows 11\",\"first_seen\":\"2025-01-01T00:00:00Z\",\"last_seen\":\"2025-01-01T00:00:00Z\",\"needs_cve_check\":true,\"needs_update_check\":false},"
-            "{\"db_id\":5,\"name\":\"curl\",\"version\":\"8.1.2\",\"type\":\"Tool\",\"os_info\":\"Windows 11\",\"first_seen\":\"2025-01-01T00:00:00Z\",\"last_seen\":\"2025-01-01T00:00:00Z\",\"needs_cve_check\":false,\"needs_update_check\":false}"
-            "]}");
+        send_json(s,"{\"available\":false,\"reason\":\"This endpoint is not wired to the Windows software inventory\",\"components\":[]}");
         goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/cves")==0) {
         char b[1024]; EnterCriticalSection(&g_lock);
-        snprintf(b,sizeof(b),
-            "{\"total_cve_found\":%d,\"total_checks_done\":%d,"
-            "\"remediations_applied\":%d,\"recent_remediations\":[%s]}",
-            g_stats.hg_cve_found, g_stats.hg_components_scanned,
-            g_stats.hg_remediations,
-            g_stats.hg_cve_found>0 ?
-            "{\"db_id\":1,\"component\":\"OpenSSL\",\"risk_level\":\"high\","
-            "\"cve_list\":\"CVE-2023-0215\",\"status\":\"remediated\","
-            "\"executed_at\":\"2025-01-01T00:00:00Z\"}" : "");
+        snprintf(b,sizeof(b),"{\"available\":false,\"reason\":\"No verified CVE remediation records are connected to this API\",\"recent_remediations\":[]}");
         LeaveCriticalSection(&g_lock);
         send_json(s,b); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/updates")==0) {
         char b[1024]; EnterCriticalSection(&g_lock);
-        snprintf(b,sizeof(b),"{\"auto_installed\":%d,\"user_required\":%d,\"pending\":[%s]}",
-            g_stats.hg_updates_auto, g_stats.hg_updates_user,
-            g_stats.hg_updates_user>0 ?
-            "{\"component\":\"OpenSSL\",\"type\":\"security\","
-            "\"current_version\":\"3.0.2\",\"latest_version\":\"3.2.1\","
-            "\"update_safe\":true,\"status\":\"pending_approval\"}" : "");
+        snprintf(b,sizeof(b),"{\"available\":false,\"reason\":\"Update workflow is not connected to this API\",\"pending\":[]}");
         LeaveCriticalSection(&g_lock);
         send_json(s,b); goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/honeypots")==0) {
-        send_json(s,"{\"count\":3,\"ransomware_lockdown\":false,\"files\":["
-            "{\"path\":\"C:\\\\Decoy\\\\salary.xlsx\",\"size\":24576,\"active\":true,"
-            "\"created\":\"2025-01-01T00:00:00Z\",\"sha256\":\"deadbeefcafe0102030405060708090a0b0c0d0e0f\"},"
-            "{\"path\":\"C:\\\\Decoy\\\\passwords.txt\",\"size\":512,\"active\":true,"
-            "\"created\":\"2025-01-01T00:00:00Z\",\"sha256\":\"0102030405060708090a0b0c0d0e0f101112131415\"}"
-            "]}");
+        send_json(s,"{\"available\":false,\"reason\":\"Honeypot file inventory is not connected to this API\",\"count\":0,\"files\":[]}");
         goto done;
     }
     if (strcmp(method,"GET")==0 && strcmp(path,"/hostguard/ransomware")==0) {
         char b[256]; EnterCriticalSection(&g_lock);
-        snprintf(b,sizeof(b),"{\"total_detections\":%d,\"processes_killed\":%d,\"currently_locked_down\":false,\"honeypot_count\":3}",
-            g_stats.hg_ransomware,g_stats.hg_proc_killed);
+        snprintf(b,sizeof(b),"{\"available\":false,\"reason\":\"Ransomware response state is not wired to this API\"}");
         LeaveCriticalSection(&g_lock);
         send_json(s,b); goto done;
     }
     if (strcmp(method,"POST")==0 && strcmp(path,"/hostguard/scan")==0) {
-        send_json(s,"{\"status\":\"scan_initiated\"}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"HostGuard scan endpoint does not start a scan\"}"); goto done;
     }
     /* ?????? /integration/stats ?????? */
     if (strcmp(method,"GET")==0 && strcmp(path,"/integration/stats")==0) {
@@ -1193,7 +1063,7 @@ static DWORD WINAPI conn_handler(LPVOID arg) {
     }
     /* ?????? /system/autostart ?????? */
     if (strcmp(method,"POST")==0 && strcmp(path,"/system/autostart")==0) {
-        send_json(s,"{\"status\":\"ok\"}"); goto done;
+        send_json(s,"{\"available\":false,\"reason\":\"Autostart configuration is not implemented by this API\"}"); goto done;
     }
 
     /* ?????? /gaming/ ?????? */
@@ -1329,8 +1199,7 @@ int main(void) {
 
     /* Start background threads */
     CreateThread(NULL,0,ticker_thread,  NULL,0,NULL);
-    CreateThread(NULL,0,alert_thread,   NULL,0,NULL);
-    CreateThread(NULL,0,incident_thread,NULL,0,NULL);
+    /* No synthetic alert/incident generator: only verified detections may be shown. */
     threat_start_game_watchdog();
 
     printf("????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
@@ -1338,8 +1207,8 @@ int main(void) {
     printf("???  Copyright (c) 2025 Kaevex Security Systems   ???\n");
     printf("????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
     printf("???  Listening: http://127.0.0.1:%d/api/v1/        ???\n", API_PORT);
-    printf("???  8 engine endpoints simulated                     ???\n");
-    printf("???  New alert every 8s | Incident every 30s          ???\n");
+    printf("???  Live host counters; no synthetic alerts/incidents ???\n");
+    printf("???  Detection feeds report only connected sources    ???\n");
     printf("???  Press Ctrl+C to stop                             ???\n");
     printf("????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????\n");
     fflush(stdout);

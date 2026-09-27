@@ -33,7 +33,7 @@ C:\GCC\bin\gcc.exe -mwindows -O2 -w -fno-lto ^
     -o dist\kaevex.exe ^
     src\main.c src\gui\kaevex-gui.c src\cli\kaevex-cli.c dist\kaevex_res.o ^
     -lcomctl32 -lws2_32 -liphlpapi -lshell32 ^
-    -lole32 -loleaut32 -lcomdlg32 -lcrypt32 ^
+    -lole32 -loleaut32 -luuid -lcomdlg32 -lcrypt32 ^
     -lpsapi -ldwmapi -luxtheme -lwinhttp ^
     -lshlwapi -lntdll -ladvapi32 -luser32 -lgdi32 -lwinmm -lwintrust
 
@@ -85,6 +85,12 @@ if exist assets\world_map_cyber.bmp (
     copy /y assets\world_map_cyber.bmp release\world_map_cyber.bmp >nul 2>&1
     copy /y assets\world_map_cyber.bmp release\v1\world_map_cyber.bmp >nul 2>&1
     echo [OK]   world_map_cyber.bmp copied to dist and release directories
+)
+if exist assets\auth_hologram.bmp (
+    copy /y assets\auth_hologram.bmp dist\auth_hologram.bmp >nul 2>&1
+    copy /y assets\auth_hologram.bmp release\auth_hologram.bmp >nul 2>&1
+    copy /y assets\auth_hologram.bmp release\v1\auth_hologram.bmp >nul 2>&1
+    echo [OK]   auth_hologram.bmp copied to dist and release directories
 )
 
 echo.
