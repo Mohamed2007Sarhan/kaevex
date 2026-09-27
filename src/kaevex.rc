@@ -2,6 +2,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+// Manifest for Common Controls v6 and Per-Monitor V2 DPI awareness
+1 24 "src\\kaevex.manifest"
+
 // Application Icon (Resource ID 1 is standard default icon for Windows Explorer)
 1 ICON "assets\\icon.ico"
 2 ICON "assets\\icon.ico"

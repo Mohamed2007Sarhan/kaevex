@@ -62,6 +62,7 @@ static void CaptureWindow(HWND hwnd, const char *path) {
 
 int main(int argc, char **argv) {
     system("taskkill /f /im kaevex.exe >nul 2>&1");
+    system("taskkill /f /im Kaevex-GUI.exe >nul 2>&1");
     Sleep(500);
 
     printf("[*] Launching dist\\kaevex.exe ...\n");
@@ -70,13 +71,14 @@ int main(int argc, char **argv) {
     char cmd[] = "dist\\kaevex.exe";
     if (CreateProcessA(NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
         CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
     } else {
         printf("[FAIL] Failed to launch kaevex.exe\n");
         return 1;
     }
 
     HWND hwnd = NULL;
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 80; i++) {
         Sleep(250);
         hwnd = FindWindowA("KaevexGUIModern", NULL);
         if (hwnd) break;
@@ -89,9 +91,9 @@ int main(int argc, char **argv) {
 
     ShowWindow(hwnd, SW_RESTORE);
     SetForegroundWindow(hwnd);
-    Sleep(1200);
+    Sleep(1500);
 
-    static const char *tabNames[10] = {
+    static const char *tabNames[15] = {
         "tab0_dashboard",
         "tab1_defense_engines",
         "tab2_netguard",
@@ -101,19 +103,24 @@ int main(int argc, char **argv) {
         "tab6_smartsandbox",
         "tab7_firewall",
         "tab8_cve_agent",
-        "tab9_gaming_threat"
+        "tab9_gaming_threat",
+        "tab10_app_hub",
+        "tab11_ai_soc",
+        "tab12_forensics",
+        "tab13_settings",
+        "tab14_full_team"
     };
 
     int startY = 54 + 10;
     int tabH = 38;
     int clickX = 60;
 
-    for (int t = 0; t < 10; t++) {
+    for (int t = 0; t < 15; t++) {
         int clickY = startY + t * tabH + 19;
         LPARAM lp = MAKELPARAM(clickX, clickY);
         SendMessageA(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lp);
         SendMessageA(hwnd, WM_LBUTTONUP, 0, lp);
-        Sleep(500);
+        Sleep(600);
 
         char bmpPath[MAX_PATH];
         snprintf(bmpPath, sizeof(bmpPath),
@@ -122,7 +129,29 @@ int main(int argc, char **argv) {
         CaptureWindow(hwnd, bmpPath);
     }
 
+    /* Tab 9 Sub-tabs */
+    static const struct { const char *name; int x; int y; } gSubTabs[4] = {
+        { "threat_sub1_protection",  398, 157 },
+        { "threat_sub2_performance", 549, 157 },
+        { "threat_sub3_rules",       669, 157 },
+        { "threat_sub4_profiles",    780, 157 }
+    };
+
+    for (int s = 0; s < 4; s++) {
+        LPARAM lp = MAKELPARAM(gSubTabs[s].x, gSubTabs[s].y);
+        SendMessageA(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lp);
+        SendMessageA(hwnd, WM_LBUTTONUP, 0, lp);
+        Sleep(600);
+
+        char bmpPath[MAX_PATH];
+        snprintf(bmpPath, sizeof(bmpPath),
+                 "C:\\Users\\Moham\\.gemini\\antigravity\\brain\\ea40fe83-cd23-489f-9996-2a73f0e38bc8\\screen_%s.bmp",
+                 gSubTabs[s].name);
+        CaptureWindow(hwnd, bmpPath);
+    }
+
     PostMessageA(hwnd, WM_CLOSE, 0, 0);
-    Sleep(400);
+    Sleep(500);
+    printf("[DONE] All 10 main tabs and 4 gaming sub-tabs captured!\n");
     return 0;
 }

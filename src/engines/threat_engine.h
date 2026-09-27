@@ -753,10 +753,10 @@ static DWORD threat_detect_foreground_game(char *outTitle, int maxTitle, char *o
 
 /* 8. Master Core Gaming Activation */
 static BOOL threat_gaming_activate(DWORD pid, const char *title, const char *exe) {
-    if (pid == 0) return FALSE;
-
-    threat_gaming_apply_process_boost(pid);
-    threat_gaming_apply_cpu_topology(pid);
+    if (pid > 0) {
+        threat_gaming_apply_process_boost(pid);
+        threat_gaming_apply_cpu_topology(pid);
+    }
     threat_gaming_set_high_res_timer(TRUE);
     threat_gaming_tune_system_profile(TRUE);
     threat_gaming_tune_tcp(TRUE);
@@ -768,8 +768,8 @@ static BOOL threat_gaming_activate(DWORD pid, const char *title, const char *exe
 
     g_gaming.active = TRUE;
     g_gaming.gamePID = pid;
-    strncpy(g_gaming.gameName, title ? title : "Active Game", sizeof(g_gaming.gameName)-1);
-    strncpy(g_gaming.gameExe, exe ? exe : "game.exe", sizeof(g_gaming.gameExe)-1);
+    strncpy(g_gaming.gameName, title ? title : (pid > 0 ? "Active Game" : "Gaming Turbo Engine"), sizeof(g_gaming.gameName)-1);
+    strncpy(g_gaming.gameExe, exe ? exe : (pid > 0 ? "game.exe" : "system"), sizeof(g_gaming.gameExe)-1);
     g_gaming.startTimeTick = GetTickCount();
     g_gaming.scansSuspended = TRUE;
 
@@ -784,13 +784,17 @@ static BOOL threat_gaming_activate(DWORD pid, const char *title, const char *exe
     }
 
     /* Query live memory */
-    HANDLE hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
-    if (hp) {
-        PROCESS_MEMORY_COUNTERS pmc = {0}; pmc.cb = sizeof(pmc);
-        if (GetProcessMemoryInfo(hp, &pmc, sizeof(pmc))) {
-            g_gaming.gameWorkingSetMB = (DWORD)(pmc.WorkingSetSize / (1024 * 1024));
+    if (pid > 0) {
+        HANDLE hp = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+        if (hp) {
+            PROCESS_MEMORY_COUNTERS pmc = {0}; pmc.cb = sizeof(pmc);
+            if (GetProcessMemoryInfo(hp, &pmc, sizeof(pmc))) {
+                g_gaming.gameWorkingSetMB = (DWORD)(pmc.WorkingSetSize / (1024 * 1024));
+            }
+            CloseHandle(hp);
         }
-        CloseHandle(hp);
+    } else {
+        g_gaming.gameWorkingSetMB = 0;
     }
 
     /* Sync legacy global flags */
@@ -801,8 +805,8 @@ static BOOL threat_gaming_activate(DWORD pid, const char *title, const char *exe
     /* Immutable Forensics Log */
     char logBuf[512];
     snprintf(logBuf, sizeof(logBuf),
-             "[GAMING CORE ENGAGED] Game: %s (PID: %lu) | 0.5ms Timer: ON | GPU: Level 8 | P-Cores: Cores 1..%u | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: %lu MB",
-             g_gaming.gameName, (unsigned long)pid, (unsigned)g_gaming.cpuCoreCount, (unsigned long)freedMB);
+             "[GAMING CORE ENGAGED] Mode: %s (PID: %lu) | 0.5ms Timer: ON | GPU: Level 8 | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: %lu MB",
+             g_gaming.gameName, (unsigned long)pid, (unsigned long)freedMB);
     threat_forensics_write("GamingCore", "OPTIMIZE", logBuf);
 
     /* Start watchdog worker strictly during active manual session */

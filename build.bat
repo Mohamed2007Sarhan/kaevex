@@ -92,6 +92,12 @@ if exist assets\auth_hologram.bmp (
     copy /y assets\auth_hologram.bmp release\v1\auth_hologram.bmp >nul 2>&1
     echo [OK]   auth_hologram.bmp copied to dist and release directories
 )
+if exist assets\gaming_controller.bmp (
+    copy /y assets\gaming_controller.bmp dist\gaming_controller.bmp >nul 2>&1
+    copy /y assets\gaming_controller.bmp release\gaming_controller.bmp >nul 2>&1
+    copy /y assets\gaming_controller.bmp release\v1\gaming_controller.bmp >nul 2>&1
+    echo [OK]   gaming_controller.bmp copied to dist and release directories
+)
 
 echo.
 echo ========================================================================
