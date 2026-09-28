@@ -13531,3 +13531,49 @@ Permissions updated in real-time.
 [2026-09-28 00:48:16] [INFO    ] Team Management  Invited new team member 'New Member #27' (member27@kaevex.com) with role Security Analyst.
 Added to team roster with active credentials.
 [2026-09-28 00:48:18] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-28 03:09:46] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-28 03:34:48] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-28 04:53:37] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-28 05:28:39] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+=== Kaevex Forensics Log - Session started 2026-09-28 05:57:28 ===
+[2026-09-28 05:57:28] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-28 05:57:28] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-28 05:57:28] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-28 05:57:28] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-28 05:57:28] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-28 05:57:28] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-28 05:57:28] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-28 05:57:28] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 109221)
+[2026-09-28 05:57:28] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-09-28 05:57:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 05:57:28] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-28 05:57:31] [INFO    ] AppHub           Discovery complete: 364 apps cataloged | 160 relationship edges
+[2026-09-28 05:57:37] [INFO    ] Antivirus        Startup security audit complete: 18 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-28 06:06:06 ===
+[2026-09-28 06:06:06] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-28 06:06:06] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-28 06:06:06] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-28 06:06:06] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-28 06:06:06] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-28 06:06:06] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-28 06:06:06] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-28 06:06:06] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 110913)
+[2026-09-28 06:06:06] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-09-28 06:06:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 06:06:06] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-28 06:06:09] [INFO    ] AppHub           Discovery complete: 364 apps cataloged | 159 relationship edges
+[2026-09-28 06:06:16] [INFO    ] Antivirus        Startup security audit complete: 18 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-28 14:13:49 ===
+[2026-09-28 14:13:49] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-28 14:13:49] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-28 14:13:49] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-28 14:13:49] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-28 14:13:49] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-28 14:13:49] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-28 14:13:49] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-28 14:13:49] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 108169)
+[2026-09-28 14:13:49] [WARNING ] NetGuard         Baseline: 62 active conns (35 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-28 14:13:49] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 14:13:49] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-28 14:13:51] [INFO    ] AppHub           Discovery complete: 364 apps cataloged | 158 relationship edges
+[2026-09-28 14:13:55] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
