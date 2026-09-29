@@ -73,16 +73,14 @@ static int             g_ban_count    = 14;
 static CRITICAL_SECTION g_lock;
 
 /* ---- Helpers -------------------------------------------------------------- */
-static BOOL tray_query_api(char *jsonOut, int maxLen) {
-    /* Try to connect to the engine REST API and get stats */
+static BOOL tray_query_api_port(int port, char *jsonOut, int maxLen) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
     if (s == INVALID_SOCKET) return FALSE;
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
-    sa.sin_port = htons(9009);
+    sa.sin_port = htons((u_short)port);
     sa.sin_addr.s_addr = inet_addr("127.0.0.1");
-    /* Non-blocking connect with timeout */
-    DWORD to = 500; /* 500ms timeout */
+    DWORD to = 400; /* 400ms timeout */
     setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char*)&to, sizeof(to));
     setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, (char*)&to, sizeof(to));
     if (connect(s, (struct sockaddr*)&sa, sizeof(sa)) != 0) {
@@ -94,12 +92,16 @@ static BOOL tray_query_api(char *jsonOut, int maxLen) {
     char buf[4096] = {0};
     recv(s, buf, sizeof(buf)-1, 0);
     closesocket(s);
-    /* Find JSON body after \r\n\r\n */
     char *body = strstr(buf, "\r\n\r\n");
     if (!body) return FALSE;
     body += 4;
     strncpy(jsonOut, body, maxLen-1);
     return TRUE;
+}
+
+static BOOL tray_query_api(char *jsonOut, int maxLen) {
+    if (tray_query_api_port(9009, jsonOut, maxLen)) return TRUE;
+    return tray_query_api_port(9010, jsonOut, maxLen);
 }
 
 static void run_cmd_in_terminal(const char *args) {

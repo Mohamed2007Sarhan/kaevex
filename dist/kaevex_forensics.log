@@ -13577,3 +13577,100 @@ Added to team roster with active credentials.
 [2026-09-28 14:13:49] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
 [2026-09-28 14:13:51] [INFO    ] AppHub           Discovery complete: 364 apps cataloged | 158 relationship edges
 [2026-09-28 14:13:55] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-28 14:41:09 ===
+[2026-09-28 14:41:09] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-28 14:41:09] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-28 14:41:09] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-28 14:41:09] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-28 14:41:09] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-28 14:41:09] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-28 14:41:09] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-28 14:41:09] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 113525)
+[2026-09-28 14:41:09] [WARNING ] NetGuard         Baseline: 58 active conns (31 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-28 14:41:09] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 14:41:09] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-28 14:41:11] [INFO    ] AppHub           Discovery complete: 363 apps cataloged | 158 relationship edges
+[2026-09-28 14:41:13] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+[2026-09-28 14:41:22] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-28 14:41:24] [OPTIMIZE] GamingCore       [GAMING CORE ENGAGED] Mode: Esports Game Target (PID: 0) | 0.5ms Timer: ON | GPU: Level 8 | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: 979 MB
+[2026-09-28 14:41:25] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 16 MB RAM purged.
+[2026-09-28 14:41:28] [RESTORE ] GamingCore       [GAMING CORE DISENGAGED] Session closed for Esports Game Target (PID: 0) after 2 sec | Kernel Timers & Net Profile RESTORED | Security Scans RESUMED
+[2026-09-28 14:41:28] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-28 14:41:29] [OPTIMIZE] GamingCore       [GAMING CORE ENGAGED] Mode: Esports Game Target (PID: 0) | 0.5ms Timer: ON | GPU: Level 8 | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: 84 MB
+[2026-09-28 14:41:29] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 5 MB RAM purged.
+[2026-09-28 14:41:32] [RESTORE ] GamingCore       [GAMING CORE DISENGAGED] Session closed for Esports Game Target (PID: 0) after 1 sec | Kernel Timers & Net Profile RESTORED | Security Scans RESUMED
+[2026-09-28 14:41:32] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-28 14:41:33] [OPTIMIZE] GamingCore       [GAMING CORE ENGAGED] Mode: Esports Game Target (PID: 0) | 0.5ms Timer: ON | GPU: Level 8 | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: 132 MB
+[2026-09-28 14:41:33] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 22 MB RAM purged.
+[2026-09-28 14:41:37] [RESTORE ] GamingCore       [GAMING CORE DISENGAGED] Session closed for Esports Game Target (PID: 0) after 2 sec | Kernel Timers & Net Profile RESTORED | Security Scans RESUMED
+[2026-09-28 14:41:37] [INFO    ] Gaming Core      Gaming Mode deactivated. Normal system parameters restored.
+[2026-09-28 14:41:38] [OPTIMIZE] GamingCore       [GAMING CORE ENGAGED] Mode: Esports Game Target (PID: 0) | 0.5ms Timer: ON | GPU: Level 8 | Power: Ultimate | TCP 0-Tick: ON | Background RAM Freed: 45 MB
+[2026-09-28 14:41:38] [INFO    ] Gaming Core      Game Mode engaged: 1ms timer active, 0 MB RAM purged.
+[2026-09-28 14:41:39] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-28 14:41:39] [INFO    ] Gaming Core      CPU usage reduction disabled.
+[2026-09-28 14:41:40] [INFO    ] Gaming Core      RAM auto-optimization paused.
+[2026-09-28 14:41:41] [INFO    ] Gaming Core      Notifications unblocked.
+[2026-09-28 14:41:42] [INFO    ] Gaming Core      Background scans resumed.
+[2026-09-28 14:41:43] [INFO    ] Gaming Core      Warning: Critical protection altered.
+[2026-09-28 14:41:45] [INFO    ] Gaming Core      Critical threat protection locked ON.
+[2026-09-28 14:41:45] [INFO    ] Gaming Core      Background deep scans temporarily paused.
+[2026-09-28 14:41:46] [INFO    ] Gaming Core      Notifications silenced for gameplay (Focus Assist engaged).
+[2026-09-28 14:41:47] [INFO    ] Gaming Core      RAM optimization active: 114 MB reclaimed.
+[2026-09-28 14:41:48] [INFO    ] Gaming Core      CPU usage reduction enabled (EcoQoS background priority applied).
+[2026-09-28 14:41:49] [INFO    ] Threat Core      Network Protection paused.
+[2026-09-28 14:41:50] [INFO    ] Threat Core      Network C2 protection active.
+[2026-09-28 14:41:52] [INFO    ] Firewall         Gaming Firewall Preset changed to: Strict Esports (QoS routing updated).
+[2026-09-28 14:41:52] [INFO    ] Firewall         Gaming Firewall Preset changed to: Allow Outbound (QoS routing updated).
+[2026-09-28 14:41:53] [INFO    ] Firewall         Gaming Firewall Preset changed to: Gaming Optimized (QoS routing updated).
+[2026-09-28 14:43:23] [INFO    ] ClusterMesh      Cluster Mesh Pairing Key [KVX-MOHAMED-9899-MESH] copied to clipboard.
+[2026-09-28 14:43:35] [INFO    ] PacketGuard AV   File Clean
+[2026-09-28 14:44:04] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-28 14:44:04] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-28 14:44:05] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-28 14:44:05] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-28 14:44:06] [INFO    ] Theme            Theme palette changed via header quick-toggle.
+[2026-09-28 15:41:09] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 15:41:59] [INFO    ] CVE Agent        NVD refreshed: 2895 CVEs from the last 7 days; downloaded 2895 (showing newest available subset)
+[2026-09-28 18:57:59] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 18:58:43] [INFO    ] CVE Agent        NVD refreshed: 2903 CVEs from the last 7 days; downloaded 2903 (showing newest available subset)
+[2026-09-28 21:15:45] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-28 21:16:28] [INFO    ] CVE Agent        NVD refreshed: 2893 CVEs from the last 7 days; downloaded 2893 (showing newest available subset)
+=== Kaevex Forensics Log - Session started 2026-09-29 21:45:13 ===
+[2026-09-29 21:45:13] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-29 21:45:13] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-29 21:45:13] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-29 21:45:13] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-29 21:45:13] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-29 21:45:13] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-29 21:45:13] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-29 21:45:13] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 118312)
+[2026-09-29 21:45:13] [WARNING ] NetGuard         Baseline: 155 active conns (57 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-29 21:45:13] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 21:45:13] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-29 21:45:15] [INFO    ] AppHub           Discovery complete: 367 apps cataloged | 43 relationship edges
+[2026-09-29 21:45:20] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-29 21:46:19 ===
+[2026-09-29 21:46:19] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-29 21:46:19] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-29 21:46:19] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-29 21:46:19] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-29 21:46:19] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-29 21:46:19] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-29 21:46:19] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-29 21:46:20] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 118528)
+[2026-09-29 21:46:20] [WARNING ] NetGuard         Baseline: 167 active conns (67 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-29 21:46:20] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 21:46:20] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+=== Kaevex Forensics Log - Session started 2026-09-29 21:46:49 ===
+[2026-09-29 21:46:49] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-29 21:46:49] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-29 21:46:49] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-29 21:46:49] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-29 21:46:49] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-29 21:46:49] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-29 21:46:49] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-29 21:46:49] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 118626)
+[2026-09-29 21:46:49] [WARNING ] NetGuard         Baseline: 179 active conns (74 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-29 21:46:49] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 21:46:49] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-29 21:46:51] [INFO    ] AppHub           Discovery complete: 367 apps cataloged | 43 relationship edges

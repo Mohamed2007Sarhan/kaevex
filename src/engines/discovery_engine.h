@@ -538,21 +538,22 @@ static void disc_scan_ports(void) {
                 int port = ntohs((USHORT)row->dwLocalPort);
                 DWORD pid = row->dwOwningPid;
                 /* Find app owning this PID */
-                for (int a = 0; a < g_discAppCnt; a++) {
-                    if (g_discApps[a].pid == pid || g_discApps[a].pid == 0) {
-                        /* Add port to app's listen list */
-                        if (g_discApps[a].listenPortCnt < DISC_MAX_PORTS) {
-                            BOOL alreadyHave = FALSE;
-                            for (int pp = 0; pp < g_discApps[a].listenPortCnt; pp++)
-                                if (g_discApps[a].listenPorts[pp] == port) { alreadyHave = TRUE; break; }
-                            if (!alreadyHave)
-                                g_discApps[a].listenPorts[g_discApps[a].listenPortCnt++] = port;
+                if (pid > 0) {
+                    for (int a = 0; a < g_discAppCnt; a++) {
+                        if (g_discApps[a].pid == pid) {
+                            /* Add port to app's listen list */
+                            if (g_discApps[a].listenPortCnt < DISC_MAX_PORTS) {
+                                BOOL alreadyHave = FALSE;
+                                for (int pp = 0; pp < g_discApps[a].listenPortCnt; pp++)
+                                    if (g_discApps[a].listenPorts[pp] == port) { alreadyHave = TRUE; break; }
+                                if (!alreadyHave)
+                                    g_discApps[a].listenPorts[g_discApps[a].listenPortCnt++] = port;
+                            }
+                            g_discApps[a].sourceMask |= 0x08;
+                            if (g_discApps[a].state == APP_STATE_STOPPED)
+                                g_discApps[a].state = APP_STATE_RUNNING;
+                            break;
                         }
-                        g_discApps[a].sourceMask |= 0x08;
-                        if (g_discApps[a].state == APP_STATE_STOPPED)
-                            g_discApps[a].state = APP_STATE_RUNNING;
-                        if (pid > 0) g_discApps[a].pid = pid;
-                        break;
                     }
                 }
             }
@@ -630,8 +631,8 @@ static const KnownStack g_knownStacks[] = {
       3000
     },
     { "Python",
-      {"C:\\Python","C:\\Python3","C:\\Python312","C:\\Python311",
-       "C:\\Users\\", /* Will be checked with AppData path */NULL},
+      {"C:\\Python","C:\\Python3","C:\\Python312","C:\\Python311","C:\\Python310",
+       "C:\\Program Files\\Python312","C:\\Program Files\\Python311","C:\\Program Files\\Python310", NULL},
       "python.exe",
       {"python.exe","pip.exe",NULL},
       8000

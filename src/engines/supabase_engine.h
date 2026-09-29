@@ -104,6 +104,10 @@ static void sb_get_real_os_version(char *outOs, size_t maxLen) {
         RegQueryValueExA(hKey, "CurrentBuild", NULL, NULL, (BYTE*)build, &sz);
         RegCloseKey(hKey);
     }
+    if (atoi(build) >= 22000) {
+        char *p10 = strstr(prodName, "Windows 10");
+        if (p10) p10[9] = '1';
+    }
     if (prodName[0]) {
         snprintf(outOs, maxLen, "%s%s%s (Build %s)",
                  prodName,

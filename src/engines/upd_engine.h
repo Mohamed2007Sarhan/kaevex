@@ -1,4 +1,4 @@
-﻿/*===========================================================================
+/*===========================================================================
  * Kaevex Updater + Autonomous CVE Agent - upd_engine.h
  * Windows software inventory, local CVE catalog matching, targeted package updates,
  * Real-Time Progress Callbacks, and Continuous Background Vulnerability Watcher
@@ -287,6 +287,16 @@ static void upd_scan_os_info(void) {
     }
     if (!g_osInfo.productName[0]) strcpy(g_osInfo.productName, "Microsoft Windows");
     g_osInfo.buildNumber = atoi(g_osInfo.currentBuild);
+    if (g_osInfo.buildNumber >= 22000) {
+        char *p10 = strstr(g_osInfo.productName, "Windows 10");
+        if (p10) {
+            p10[9] = '1';
+        } else if (!strstr(g_osInfo.productName, "Windows 11")) {
+            char temp[128];
+            snprintf(temp, sizeof(temp), "Windows 11 %s", g_osInfo.productName);
+            strncpy(g_osInfo.productName, temp, sizeof(g_osInfo.productName) - 1);
+        }
+    }
     upd_load_catalog();
 
     /* Cross-reference OS build against dynamic OS CVE database */

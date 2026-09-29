@@ -1279,8 +1279,19 @@ static DWORD WINAPI mobile_api_listener_thread(LPVOID pArg) {
     addr.sin_port        = htons((u_short)port);
 
     if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
-        closesocket(srv);
-        return 1;
+        int err = WSAGetLastError();
+        if (err == WSAEADDRINUSE && port == MOBILE_API_DEFAULT_PORT) {
+            port = 9010;
+            g_mobilePort = port;
+            addr.sin_port = htons((u_short)port);
+            if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+                closesocket(srv);
+                return 1;
+            }
+        } else {
+            closesocket(srv);
+            return 1;
+        }
     }
 
     if (listen(srv, 32) != 0) {
