@@ -13674,3 +13674,412 @@ Added to team roster with active credentials.
 [2026-09-29 21:46:49] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
 [2026-09-29 21:46:49] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
 [2026-09-29 21:46:51] [INFO    ] AppHub           Discovery complete: 367 apps cataloged | 43 relationship edges
+=== Kaevex Forensics Log - Session started 2026-09-29 22:08:15 ===
+[2026-09-29 22:08:15] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-29 22:08:15] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-29 22:08:15] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-29 22:08:15] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-29 22:08:15] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-29 22:08:15] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-29 22:08:15] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-29 22:08:16] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 122825)
+[2026-09-29 22:08:16] [WARNING ] NetGuard         Baseline: 131 active conns (48 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-29 22:08:16] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 22:08:16] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-29 22:08:18] [INFO    ] AppHub           Discovery complete: 367 apps cataloged | 43 relationship edges
+[2026-09-29 22:08:22] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+=== Kaevex Forensics Log - Session started 2026-09-29 22:21:06 ===
+[2026-09-29 22:21:06] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-09-29 22:21:06] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-09-29 22:21:06] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-09-29 22:21:06] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-09-29 22:21:06] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-09-29 22:21:06] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-09-29 22:21:06] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-09-29 22:21:06] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 125343)
+[2026-09-29 22:21:06] [WARNING ] NetGuard         Baseline: 139 active conns (57 Web, 0 DL, 1 Unverified: Spotify.exe -> Spotify.exe -> 104.199.65.9:4070)
+[2026-09-29 22:21:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 22:21:06] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-09-29 22:21:08] [INFO    ] AppHub           Discovery complete: 369 apps cataloged | 47 relationship edges
+[2026-09-29 22:21:11] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+[2026-09-29 22:21:36] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-09-29 23:21:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-29 23:21:06] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-29 23:21:48] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-29 23:21:50] [INFO    ] CVE Agent        NVD refreshed: 3038 CVEs from the last 7 days; downloaded 3038 (showing newest available subset)
+[2026-09-30 00:21:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 00:21:06] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 00:21:48] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 00:21:50] [INFO    ] CVE Agent        NVD refreshed: 3032 CVEs from the last 7 days; downloaded 3032 (showing newest available subset)
+[2026-09-30 01:21:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 01:21:07] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 01:21:46] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 01:21:50] [INFO    ] CVE Agent        NVD refreshed: 3015 CVEs from the last 7 days; downloaded 3015 (showing newest available subset)
+[2026-09-30 02:21:06] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 02:21:08] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 02:21:46] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 02:21:50] [INFO    ] CVE Agent        NVD refreshed: 3013 CVEs from the last 7 days; downloaded 3013 (showing newest available subset)
+[2026-09-30 03:21:07] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 03:21:08] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 03:21:48] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 03:21:55] [INFO    ] CVE Agent        NVD refreshed: 3025 CVEs from the last 7 days; downloaded 3025 (showing newest available subset)
+[2026-09-30 08:29:33] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 08:30:21] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 09:19:56] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 09:20:40] [INFO    ] CVE Agent        NVD refreshed: 3026 CVEs from the last 7 days; downloaded 3026 (showing newest available subset)
+[2026-09-30 11:05:29] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 11:06:09] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 11:55:52] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 11:56:41] [INFO    ] CVE Agent        NVD refreshed: 3013 CVEs from the last 7 days; downloaded 3013 (showing newest available subset)
+[2026-09-30 12:05:29] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 12:06:09] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 13:05:29] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 13:06:08] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 13:43:18] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 13:44:15] [INFO    ] CVE Agent        NVD refreshed: 3034 CVEs from the last 7 days; downloaded 3034 (showing newest available subset)
+[2026-09-30 14:11:00] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 14:12:41] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 14:51:59] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 14:52:48] [INFO    ] CVE Agent        NVD refreshed: 3027 CVEs from the last 7 days; downloaded 3027 (showing newest available subset)
+[2026-09-30 15:11:01] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 15:11:47] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 15:52:01] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 15:52:48] [INFO    ] CVE Agent        NVD refreshed: 3014 CVEs from the last 7 days; downloaded 3014 (showing newest available subset)
+[2026-09-30 16:11:01] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 16:11:42] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 17:11:05] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 17:11:43] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 17:40:07] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 17:40:52] [INFO    ] CVE Agent        NVD refreshed: 3140 CVEs from the last 7 days; downloaded 3140 (showing newest available subset)
+[2026-09-30 19:22:31] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 19:23:11] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 20:45:52] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 20:46:42] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 20:47:17] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 20:48:06] [INFO    ] CVE Agent        NVD refreshed: 3254 CVEs from the last 7 days; downloaded 3254 (showing newest available subset)
+[2026-09-30 22:31:15] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 22:31:15] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 22:31:16] [WARNING ] CVE Agent        NVD refresh failed (network/API response unavailable); last successful data was not replaced.
+[2026-09-30 22:32:12] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 23:31:14] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-09-30 23:31:14] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-09-30 23:31:56] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-09-30 23:32:02] [INFO    ] CVE Agent        NVD refreshed: 3150 CVEs from the last 7 days; downloaded 3150 (showing newest available subset)
+[2026-10-01 00:31:15] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 00:31:55] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 00:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 00:32:46] [INFO    ] CVE Agent        NVD refreshed: 3207 CVEs from the last 7 days; downloaded 3207 (showing newest available subset)
+[2026-10-01 01:31:16] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 01:31:53] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 01:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 01:32:51] [INFO    ] CVE Agent        NVD refreshed: 3198 CVEs from the last 7 days; downloaded 3198 (showing newest available subset)
+[2026-10-01 02:31:16] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 02:31:54] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 02:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 02:32:45] [INFO    ] CVE Agent        NVD refreshed: 3200 CVEs from the last 7 days; downloaded 3200 (showing newest available subset)
+[2026-10-01 03:31:17] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 03:31:54] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 03:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 03:32:47] [INFO    ] CVE Agent        NVD refreshed: 3190 CVEs from the last 7 days; downloaded 3190 (showing newest available subset)
+[2026-10-01 04:31:17] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 04:31:55] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 04:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 04:32:50] [INFO    ] CVE Agent        NVD refreshed: 3186 CVEs from the last 7 days; downloaded 3186 (showing newest available subset)
+[2026-10-01 05:31:18] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 05:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 05:31:57] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 05:32:47] [INFO    ] CVE Agent        NVD refreshed: 3183 CVEs from the last 7 days; downloaded 3183 (showing newest available subset)
+[2026-10-01 06:31:19] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 06:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 06:31:57] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 06:32:47] [INFO    ] CVE Agent        NVD refreshed: 3181 CVEs from the last 7 days; downloaded 3181 (showing newest available subset)
+[2026-10-01 07:31:19] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 07:31:57] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 07:31:57] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 07:33:30] [INFO    ] CVE Agent        NVD refreshed: 3181 CVEs from the last 7 days; downloaded 3181 (showing newest available subset)
+[2026-10-01 08:31:19] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 08:31:57] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 08:31:58] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 08:33:21] [INFO    ] CVE Agent        NVD refreshed: 3200 CVEs from the last 7 days; downloaded 3200 (showing newest available subset)
+[2026-10-01 10:42:45] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 10:44:24] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 10:47:25] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 10:48:13] [INFO    ] CVE Agent        NVD refreshed: 3203 CVEs from the last 7 days; downloaded 3203 (showing newest available subset)
+[2026-10-01 11:42:46] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 11:43:28] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 11:47:25] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 11:48:22] [INFO    ] CVE Agent        NVD refreshed: 3210 CVEs from the last 7 days; downloaded 3210 (showing newest available subset)
+[2026-10-01 12:42:46] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 12:43:27] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 12:47:26] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 12:48:15] [INFO    ] CVE Agent        NVD refreshed: 3221 CVEs from the last 7 days; downloaded 3221 (showing newest available subset)
+[2026-10-01 13:42:47] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 13:43:25] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 13:47:26] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 13:48:16] [INFO    ] CVE Agent        NVD refreshed: 3241 CVEs from the last 7 days; downloaded 3241 (showing newest available subset)
+[2026-10-01 14:42:47] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 14:43:30] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 14:47:26] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 14:49:47] [INFO    ] CVE Agent        NVD refreshed: 3293 CVEs from the last 7 days; downloaded 3293 (showing newest available subset)
+[2026-10-01 15:42:48] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 15:43:30] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 15:47:26] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 15:48:17] [INFO    ] CVE Agent        NVD refreshed: 3298 CVEs from the last 7 days; downloaded 3298 (showing newest available subset)
+[2026-10-01 16:42:49] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 16:43:29] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 16:47:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 16:48:19] [INFO    ] CVE Agent        NVD refreshed: 3311 CVEs from the last 7 days; downloaded 3311 (showing newest available subset)
+[2026-10-01 17:42:51] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 17:43:29] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 17:47:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 17:48:17] [INFO    ] CVE Agent        NVD refreshed: 3300 CVEs from the last 7 days; downloaded 3300 (showing newest available subset)
+[2026-10-01 18:42:51] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 18:43:29] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 18:47:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 18:48:17] [INFO    ] CVE Agent        NVD refreshed: 3294 CVEs from the last 7 days; downloaded 3294 (showing newest available subset)
+[2026-10-01 19:42:52] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 19:43:29] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 19:47:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 19:48:16] [INFO    ] CVE Agent        NVD refreshed: 3193 CVEs from the last 7 days; downloaded 3193 (showing newest available subset)
+[2026-10-01 20:42:52] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 20:43:33] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 20:47:28] [INFO    ] CVE Agent        Scanned 54 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 20:48:13] [INFO    ] CVE Agent        NVD refreshed: 3032 CVEs from the last 7 days; downloaded 3032 (showing newest available subset)
+[2026-10-01 21:35:08] [INFO    ] CVEWatcher       New software install detected - triggering CVE re-scan ...
+[2026-10-01 21:35:08] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 21:35:16] [INFO    ] CVE Watcher      Local advisory catalog: 53 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-01 21:35:38] [INFO    ] CVEWatcher       New software install detected - triggering CVE re-scan ...
+[2026-10-01 21:35:38] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 21:36:16] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-01 21:40:46] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-01 21:42:53] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 21:43:37] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 21:47:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 21:48:15] [INFO    ] CVE Agent        NVD refreshed: 3022 CVEs from the last 7 days; downloaded 3022 (showing newest available subset)
+=== Kaevex Forensics Log - Session started 2026-10-01 21:55:41 ===
+[2026-10-01 21:55:41] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-10-01 21:55:41] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-10-01 21:55:41] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-10-01 21:55:41] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-10-01 21:55:41] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-10-01 21:55:41] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-10-01 21:55:41] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-10-01 21:55:42] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 127599)
+[2026-10-01 21:55:42] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-10-01 21:55:42] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 21:55:42] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-10-01 21:55:44] [INFO    ] AppHub           Discovery complete: 347 apps cataloged | 34 relationship edges
+[2026-10-01 21:55:47] [INFO    ] Antivirus        Startup security audit complete: 14 binaries inspected | 0 threats recorded in database.
+[2026-10-01 21:56:11] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+=== Kaevex Forensics Log - Session started 2026-10-01 21:58:42 ===
+[2026-10-01 21:58:42] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-10-01 21:58:42] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-10-01 21:58:42] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-10-01 21:58:42] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-10-01 21:58:42] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-10-01 21:58:42] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-10-01 21:58:42] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-10-01 21:58:42] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 128190)
+[2026-10-01 21:58:42] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-10-01 21:58:42] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 21:58:42] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-10-01 21:58:43] [INFO    ] AppHub           Discovery complete: 346 apps cataloged | 34 relationship edges
+[2026-10-01 21:58:44] [INFO    ] Antivirus        Startup security audit complete: 7 binaries inspected | 0 threats recorded in database.
+[2026-10-01 21:59:12] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-01 22:58:42] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 22:58:43] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 22:59:23] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 22:59:28] [INFO    ] CVE Agent        NVD refreshed: 2999 CVEs from the last 7 days; downloaded 2999 (showing newest available subset)
+[2026-10-01 23:58:42] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-01 23:58:43] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-01 23:59:22] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-01 23:59:28] [INFO    ] CVE Agent        NVD refreshed: 3004 CVEs from the last 7 days; downloaded 3004 (showing newest available subset)
+[2026-10-02 02:42:38] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 02:45:14] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 03:27:56] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 03:28:41] [INFO    ] CVE Agent        NVD refreshed: 3032 CVEs from the last 7 days; downloaded 3032 (showing newest available subset)
+[2026-10-02 13:57:34] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 13:57:34] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 13:57:34] [WARNING ] CVE Agent        NVD refresh failed (network/API response unavailable); last successful data was not replaced.
+[2026-10-02 13:58:36] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 14:57:33] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 14:57:34] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 14:58:15] [INFO    ] CVE Agent        NVD refreshed: 2733 CVEs from the last 7 days; downloaded 2733 (showing newest available subset)
+[2026-10-02 14:58:21] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 15:57:33] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 15:57:35] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 15:58:15] [INFO    ] CVE Agent        NVD refreshed: 2821 CVEs from the last 7 days; downloaded 2821 (showing newest available subset)
+[2026-10-02 15:58:17] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 16:57:33] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 16:57:35] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 16:58:10] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 16:58:16] [INFO    ] CVE Agent        NVD refreshed: 2842 CVEs from the last 7 days; downloaded 2842 (showing newest available subset)
+[2026-10-02 17:57:33] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 17:57:36] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 17:58:11] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 17:58:15] [INFO    ] CVE Agent        NVD refreshed: 2815 CVEs from the last 7 days; downloaded 2815 (showing newest available subset)
+[2026-10-02 18:57:33] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 18:57:37] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 18:58:15] [INFO    ] CVE Agent        NVD refreshed: 2821 CVEs from the last 7 days; downloaded 2821 (showing newest available subset)
+[2026-10-02 18:58:33] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+=== Kaevex Forensics Log - Session started 2026-10-02 19:23:15 ===
+[2026-10-02 19:23:16] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-10-02 19:23:16] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-10-02 19:23:16] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-10-02 19:23:16] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-10-02 19:23:16] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-10-02 19:23:16] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-10-02 19:23:16] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-10-02 19:23:16] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 117737)
+[2026-10-02 19:23:16] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-10-02 19:23:16] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 19:23:16] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-10-02 19:23:17] [INFO    ] AppHub           Discovery complete: 349 apps cataloged | 38 relationship edges
+[2026-10-02 19:23:19] [INFO    ] Antivirus        Startup security audit complete: 17 binaries inspected | 0 threats recorded in database.
+[2026-10-02 19:23:46] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-02 20:55:51] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 20:56:41] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 21:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 21:39:51] [INFO    ] CVE Agent        NVD refreshed: 2784 CVEs from the last 7 days; downloaded 2784 (showing newest available subset)
+[2026-10-02 21:55:52] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 21:56:37] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 22:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 22:39:48] [INFO    ] CVE Agent        NVD refreshed: 2754 CVEs from the last 7 days; downloaded 2754 (showing newest available subset)
+[2026-10-02 22:55:52] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 22:56:33] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-02 23:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-02 23:39:48] [INFO    ] CVE Agent        NVD refreshed: 2756 CVEs from the last 7 days; downloaded 2756 (showing newest available subset)
+[2026-10-02 23:55:53] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-02 23:56:27] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 00:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 00:39:48] [INFO    ] CVE Agent        NVD refreshed: 2741 CVEs from the last 7 days; downloaded 2741 (showing newest available subset)
+[2026-10-03 00:55:54] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 00:56:28] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 01:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 01:39:47] [INFO    ] CVE Agent        NVD refreshed: 2738 CVEs from the last 7 days; downloaded 2738 (showing newest available subset)
+[2026-10-03 01:55:54] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 01:56:32] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 02:39:07] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 02:39:48] [INFO    ] CVE Agent        NVD refreshed: 2740 CVEs from the last 7 days; downloaded 2740 (showing newest available subset)
+[2026-10-03 02:55:54] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 02:56:32] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 03:39:08] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 03:39:49] [INFO    ] CVE Agent        NVD refreshed: 2749 CVEs from the last 7 days; downloaded 2749 (showing newest available subset)
+[2026-10-03 04:55:33] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+=== Kaevex Forensics Log - Session started 2026-10-03 13:39:27 ===
+[2026-10-03 13:39:27] [INFO    ] Kaevex           Kaevex Enterprise SOC initialized - 8 defense engines active
+[2026-10-03 13:39:27] [INFO    ] NetGuard         Startup baseline network analysis complete - verified CDN/Web endpoints
+[2026-10-03 13:39:27] [INFO    ] SmartSandbox     Sandboxie-Plus backend ready when installed; MSI is disabled in hardened mode
+[2026-10-03 13:39:27] [INFO    ] RansomShield     Canary honeypots armed & VSS shadow copy engine online
+[2026-10-03 13:39:27] [INFO    ] DataGuard DLP    Sensitive credential scanner loaded
+[2026-10-03 13:39:27] [INFO    ] ThreatIntel      Zero-driver anti-cheat compatibility mode active
+[2026-10-03 13:39:27] [INFO    ] CVE Agent        Continuous CVE Watcher started - background polling engaged
+[2026-10-03 13:39:28] [INFO    ] MobileAPI        Android Mobile REST API listening on 0.0.0.0:9009 (Pairing PIN: 103142)
+[2026-10-03 13:39:28] [INFO    ] NetGuard         Baseline scan verified: All active network connections are authenticated.
+[2026-10-03 13:39:28] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 13:39:28] [INFO    ] RansomShield     RansomShield is monitoring C:\Users\Moham
+[2026-10-03 13:39:29] [INFO    ] AppHub           Discovery complete: 363 apps cataloged | 42 relationship edges
+[2026-10-03 13:39:32] [INFO    ] Antivirus        Startup security audit complete: 19 binaries inspected | 0 threats recorded in database.
+[2026-10-03 13:39:57] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 14:18:58] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 14:19:28] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 14:38:28] [INFO    ] CVE Watcher      Local advisory catalog: 56 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 14:39:28] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 14:39:28] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 14:40:08] [INFO    ] CVE Agent        NVD refreshed: 2738 CVEs from the last 7 days; downloaded 2738 (showing newest available subset)
+[2026-10-03 14:40:15] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 14:59:59] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 14:59:59] [INFO    ] CVEWatcher       New software install detected - triggering CVE re-scan ...
+[2026-10-03 14:59:59] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 15:00:29] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 15:06:34] [INFO    ] CVEWatcher       New software install detected - triggering CVE re-scan ...
+[2026-10-03 15:06:34] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 15:06:59] [INFO    ] CVE Watcher      Local advisory catalog: 53 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 15:39:28] [INFO    ] CVE Agent        Scanned 53 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 15:39:29] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 15:40:10] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 15:40:15] [INFO    ] CVE Agent        NVD refreshed: 2737 CVEs from the last 7 days; downloaded 2737 (showing newest available subset)
+[2026-10-03 16:20:30] [INFO    ] CVE Watcher      Local advisory catalog: 54 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 16:29:00] [INFO    ] CVE Watcher      Local advisory catalog: 55 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-03 16:39:28] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 16:39:30] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 16:40:08] [INFO    ] CVE Agent        NVD refreshed: 2736 CVEs from the last 7 days; downloaded 2736 (showing newest available subset)
+[2026-10-03 16:40:09] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 17:39:28] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 17:39:30] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 17:40:08] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 17:40:09] [INFO    ] CVE Agent        NVD refreshed: 2629 CVEs from the last 7 days; downloaded 2629 (showing newest available subset)
+[2026-10-03 18:04:45] [INFO    ] PacketGuard AV   File Clean
+[2026-10-03 18:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 18:39:31] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 18:40:08] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 18:40:09] [INFO    ] CVE Agent        NVD refreshed: 2625 CVEs from the last 7 days; downloaded 2625 (showing newest available subset)
+[2026-10-03 19:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 19:39:32] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 19:40:06] [INFO    ] CVE Agent        NVD refreshed: 2626 CVEs from the last 7 days; downloaded 2626 (showing newest available subset)
+[2026-10-03 19:40:08] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 20:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 20:39:32] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 20:40:09] [INFO    ] CVE Agent        NVD refreshed: 2626 CVEs from the last 7 days; downloaded 2626 (showing newest available subset)
+[2026-10-03 20:40:13] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 21:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 21:39:33] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 21:40:08] [INFO    ] CVE Agent        NVD refreshed: 2624 CVEs from the last 7 days; downloaded 2624 (showing newest available subset)
+[2026-10-03 21:40:09] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 22:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 22:39:34] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 22:40:07] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-03 22:40:07] [INFO    ] CVE Agent        NVD refreshed: 2623 CVEs from the last 7 days; downloaded 2623 (showing newest available subset)
+[2026-10-03 23:39:27] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-03 23:39:34] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-03 23:40:07] [INFO    ] CVE Agent        NVD refreshed: 2623 CVEs from the last 7 days; downloaded 2623 (showing newest available subset)
+[2026-10-03 23:40:08] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 00:39:28] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 00:39:34] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 00:40:09] [INFO    ] CVE Agent        NVD refreshed: 2612 CVEs from the last 7 days; downloaded 2612 (showing newest available subset)
+[2026-10-04 00:40:11] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 01:39:29] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 01:39:35] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 01:40:08] [INFO    ] CVE Agent        NVD refreshed: 2611 CVEs from the last 7 days; downloaded 2611 (showing newest available subset)
+[2026-10-04 01:40:13] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 03:34:40] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 03:35:16] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 04:00:48] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 04:01:34] [INFO    ] CVE Agent        NVD refreshed: 2619 CVEs from the last 7 days; downloaded 2619 (showing newest available subset)
+[2026-10-04 04:34:40] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 04:35:19] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 05:00:48] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 05:01:30] [INFO    ] CVE Agent        NVD refreshed: 2618 CVEs from the last 7 days; downloaded 2618 (showing newest available subset)
+[2026-10-04 11:14:16] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 11:15:00] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 12:09:58] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 12:10:50] [INFO    ] CVE Agent        NVD refreshed: 2567 CVEs from the last 7 days; downloaded 2567 (showing newest available subset)
+[2026-10-04 12:14:16] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 12:14:54] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 13:09:58] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 13:10:44] [INFO    ] CVE Agent        NVD refreshed: 2573 CVEs from the last 7 days; downloaded 2573 (showing newest available subset)
+[2026-10-04 13:14:17] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 13:14:56] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 14:09:58] [INFO    ] CVE Agent        Scanned 55 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 14:10:39] [INFO    ] CVE Agent        NVD refreshed: 2564 CVEs from the last 7 days; downloaded 2564 (showing newest available subset)
+[2026-10-04 14:14:17] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 14:14:54] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 14:29:42] [INFO    ] CVE Watcher      Local advisory catalog: 56 installed apps, 0 potential CVE version matches. Verify with the vendor; no fix was applied.
+[2026-10-04 14:30:05] [INFO    ] CVEWatcher       New software install detected - triggering CVE re-scan ...
+[2026-10-04 14:30:05] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 15:09:58] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 15:10:44] [INFO    ] CVE Agent        NVD refreshed: 2567 CVEs from the last 7 days; downloaded 2567 (showing newest available subset)
+[2026-10-04 15:14:17] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 15:14:58] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 16:09:58] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 16:10:36] [INFO    ] CVE Agent        NVD refreshed: 2562 CVEs from the last 7 days; downloaded 2562 (showing newest available subset)
+[2026-10-04 16:14:18] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 16:14:54] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 17:09:58] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 17:10:38] [INFO    ] CVE Agent        NVD refreshed: 2558 CVEs from the last 7 days; downloaded 2558 (showing newest available subset)
+[2026-10-04 17:14:18] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 17:14:53] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found
+[2026-10-04 18:09:58] [INFO    ] CVE Agent        Scanned 56 apps & OS build 26200: Found 0 potential CVE catalog matches
+[2026-10-04 18:10:39] [INFO    ] CVE Agent        NVD refreshed: 2556 CVEs from the last 7 days; downloaded 2556 (showing newest available subset)
+[2026-10-04 18:14:19] [INFO    ] AutoAV           Hourly scheduled scan starting: System32 + Program Files ...
+[2026-10-04 18:14:52] [INFO    ] AutoAV           Hourly scan complete: 500 files scanned, 0 threats found

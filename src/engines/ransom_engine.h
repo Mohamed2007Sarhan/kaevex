@@ -108,6 +108,66 @@ static void rw_add_event(const char *path, const char *action, BOOL suspicious) 
     LeaveCriticalSection(&g_rwCS);
 }
 
+/* List VSS snapshots for a drive */
+static BOOL rw_list_snapshots(const char *drive, char *outputBuffer, int bufferLen) {
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "vssadmin list shadows /for=%c:", drive[0]);
+
+    char logPath[MAX_PATH];
+    snprintf(logPath, sizeof(logPath), "%s\\kaevex_vss_list.log",
+             getenv("TEMP") ? getenv("TEMP") : "C:\\Temp");
+
+    char args[512];
+    snprintf(args, sizeof(args), "/c %s > \"%s\" 2>&1", cmd, logPath);
+
+    SHELLEXECUTEINFOA sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.lpVerb = "runas";
+    sei.lpFile = "cmd.exe";
+    sei.lpParameters = args;
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+    sei.nShow = SW_HIDE;
+
+    if(!ShellExecuteExA(&sei)) return FALSE;
+    WaitForSingleObject(sei.hProcess, 5000);
+    CloseHandle(sei.hProcess);
+
+    FILE *f = fopen(logPath, "r");
+    if(!f) return FALSE;
+
+    size_t bytesRead = fread(outputBuffer, 1, bufferLen - 1, f);
+    outputBuffer[bytesRead] = '\0';
+    fclose(f);
+    DeleteFileA(logPath);
+
+    return bytesRead > 0;
+}
+
+/* Mount a specific shadow copy as a symbolic link for recovery */
+static BOOL rw_restore_snapshot(const char *shadowPath, const char *mountPoint) {
+    /* Format: mklink /d C:\KaevexRecovery \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyX
+       Since we are in a native C app, we use cmd /c mklink */
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "/c mklink /d \"%s\" \"%s\"", mountPoint, shadowPath);
+
+    char args[1100];
+    snprintf(args, sizeof(args), "cmd.exe %s", cmd);
+
+    SHELLEXECUTEINFOA sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.lpVerb = "runas";
+    sei.lpFile = "cmd.exe";
+    sei.lpParameters = args;
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+    sei.nShow = SW_HIDE;
+
+    if(!ShellExecuteExA(&sei)) return FALSE;
+    WaitForSingleObject(sei.hProcess, 5000);
+    CloseHandle(sei.hProcess);
+
+    return TRUE;
+}
+
 /* ?????? Create VSS snapshot via vssadmin ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
 static BOOL rw_create_vss_snapshot(const char *drive, char *shadowPathOut, int outLen) {
     char cmd[256];

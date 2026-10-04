@@ -245,6 +245,7 @@ static const wchar_t *TAB_ICON_W[TAB_COUNT] = {
 #define IDR_HONEY    292
 #define IDR_CHECKH   293
 #define IDR_VSS      294
+#define IDV_LIST     295
 #define IDR_LIST     295
 #define IDD_SCAN     300
 #define IDD_CLIP     301
@@ -931,7 +932,7 @@ static HWND hStSound,hStRsAuto,hStExPath,hStExBrw,hStLogMax,hStLogApply,hStWizar
 
 static HWND hEngStAll,hEngSpAll;
 static HWND hNetScan,hNetPorts,hNetClosePort,hNetBlockDns,hNetKill,hNetPortIn,hNetDnsIn,hNetList,hNetSort;
-static HWND hRwStart,hRwStop,hRwDeployHoney,hRwCheckHoney,hRwVss,hRwList;
+static HWND hRwStart,hRwStop,hRwDeployHoney,hRwCheckHoney,hRwVss,hRwList,hVssList;
 static HWND hDgScan,hDgClip,hDgClr,hDgDir,hDgList;
 static HWND hThrGame,hThrBoost,hThrPurge,hThrCustom,hThrTcp,hThrAc,hThrHibp,hThrPassIn,hThrList;
 static HWND hSocScan,hSocPing,hSocPairIp,hSocPairKey,hSocPairBtn,hSocList;
@@ -15812,7 +15813,27 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             int rbsW = 140, rbsH = 26;
             int rbsX = cx + cw - rbsW - 16, rbsY = bottomY + 10;
             if (mx >= rbsX && mx <= rbsX + rbsW && my >= rbsY && my <= rbsY + rbsH) {
-                MessageBoxA(hw, "Snapshot restoration is not implemented in this build. Use Windows System Restore or another verified recovery tool.", "Rollback unavailable", MB_ICONWARNING);
+                /* Check if a snapshot is selected in the list */
+                int sel = (int)SendMessageA(hVssList, LB_GETCURSEL, 0, 0);
+                if (sel != LB_ERR) {
+                    char shadowPath[MAX_PATH];
+                    SendMessageA(hVssList, LB_GETTEXT, sel, (LPARAM)shadowPath);
+
+                    char mountPath[MAX_PATH];
+                    snprintf(mountPath, MAX_PATH, "C:\\KaevexRecovery_%d", sel);
+
+                    if (rw_restore_snapshot(shadowPath, mountPath)) {
+                        char msg[MAX_PATH + 128];
+                        snprintf(msg, sizeof(msg), "Snapshot restored as symbolic link:\n\n%s\n\nAccess this folder in Explorer to recover your files.", mountPath);
+                        add_alert("RansomShield", "INFO", "VSS Rollback successful");
+                        MessageBoxA(hw, msg, "Rollback Complete", MB_ICONINFORMATION);
+                    } else {
+                        add_alert("RansomShield", "ERROR", "VSS Rollback failed");
+                        MessageBoxA(hw, "Failed to mount the shadow copy. Ensure you are running as Administrator.", "Rollback Failed", MB_ICONERROR);
+                    }
+                } else {
+                    MessageBoxA(hw, "Please select a snapshot from the list to restore.", "No Selection", MB_ICONWARNING);
+                }
                 return 0;
             }
 
@@ -15831,7 +15852,27 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                     g_vssSelectedIdx = i;
                     /* Check if Rollback button in this row was clicked */
                     if (mx >= col5 && mx <= col5 + btnW && my >= curY + 2 && my <= curY + 2 + btnH) {
-                        MessageBoxA(hw, "Snapshot restoration is not implemented in this build. Use Windows System Restore or another verified recovery tool.", "Rollback unavailable", MB_ICONWARNING);
+                        /* Check if a snapshot is selected in the list */
+                int sel = (int)SendMessageA(hVssList, LB_GETCURSEL, 0, 0);
+                if (sel != LB_ERR) {
+                    char shadowPath[MAX_PATH];
+                    SendMessageA(hVssList, LB_GETTEXT, sel, (LPARAM)shadowPath);
+
+                    char mountPath[MAX_PATH];
+                    snprintf(mountPath, MAX_PATH, "C:\\KaevexRecovery_%d", sel);
+
+                    if (rw_restore_snapshot(shadowPath, mountPath)) {
+                        char msg[MAX_PATH + 128];
+                        snprintf(msg, sizeof(msg), "Snapshot restored as symbolic link:\n\n%s\n\nAccess this folder in Explorer to recover your files.", mountPath);
+                        add_alert("RansomShield", "INFO", "VSS Rollback successful");
+                        MessageBoxA(hw, msg, "Rollback Complete", MB_ICONINFORMATION);
+                    } else {
+                        add_alert("RansomShield", "ERROR", "VSS Rollback failed");
+                        MessageBoxA(hw, "Failed to mount the shadow copy. Ensure you are running as Administrator.", "Rollback Failed", MB_ICONERROR);
+                    }
+                } else {
+                    MessageBoxA(hw, "Please select a snapshot from the list to restore.", "No Selection", MB_ICONWARNING);
+                }
                     }
                     InvalidateRect(hw, NULL, FALSE);
                     return 0;
@@ -15883,7 +15924,7 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
                     } else if (s_sbxSelectedBox == 2) { /* LowIntegrityBox */
                         g_sbxBlockProc = TRUE;
                     }
-                    if (sbx_launch_sandboxie_exe(path)) {
+                    if (sbx_launch(path, hw, g_sbxLayers[0], g_sbxLayers[1], g_sbxLayers[4])) {
                         char alertMsg[256];
                         snprintf(alertMsg, sizeof(alertMsg), "Launched '%s' in isolated box: %s", path, s_availBoxes[s_sbxSelectedBox].name);
                         add_alert("SmartSandbox", "INFO", alertMsg);
@@ -17660,8 +17701,9 @@ LRESULT CALLBACK WndProc(HWND hw,UINT msg,WPARAM wp,LPARAM lp){
             snprintf(vssLog, sizeof(vssLog), "[VSS] Snapshot created: %s [Created]", snapName);
             SendMessageA(hRwList, LB_INSERTSTRING, 0, (LPARAM)vssLog);
             InvalidateRect(hw, NULL, FALSE);
-            MessageBoxA(hw,"Windows reports that a VSS snapshot was created. Kaevex does not currently implement snapshot restoration.","VSS Snapshot Created",MB_ICONINFORMATION);
+            MessageBoxA(hw,"Windows reports that a VSS snapshot was created. Use the 'Rollback' feature to recover files from this point.","VSS Snapshot Created",MB_ICONINFORMATION);
             return 0;}
+
 
         /* DataGuard DLP */
         if(id==IDD_SCAN){
@@ -18857,6 +18899,7 @@ static void CreateControls(HWND hw){
     hRwCheckHoney =CB("BUTTON","Check Honeypots",BS_OWNERDRAW,IDR_CHECKH);
     hRwVss        =CB("BUTTON","Create VSS Snapshot",BS_OWNERDRAW,IDR_VSS);
     hRwList       =CLB(IDR_LIST);
+    hVssList       =CLB(IDV_LIST);
 
     /* DataGuard DLP */
     hDgDir =CE("EDIT","",ES_AUTOHSCROLL,IDD_DIR);

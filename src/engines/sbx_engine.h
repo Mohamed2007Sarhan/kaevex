@@ -330,8 +330,9 @@ static HANDLE sbx_make_restricted_token(void) {
 }
 
 /* ?????? Main sandbox launch function ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
+static BOOL sbx_launch(const char *exePath, HWND notifyWnd, BOOL useAC, BOOL useJob, BOOL useSepDesktop) {
     sbx_load_apis();
+
 
     /* Reset session */
     if(g_sbx.active) return FALSE;
@@ -347,13 +348,14 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
     sbx_log(&g_sbx, logBuf);
 
     /* ?????? Layer 1+2: AppContainer ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
-    BOOL useAC = sbx_has_appcontainer();
+    /* Layer 1+2: AppContainer */
+    BOOL useAC_eff = useAC && sbx_has_appcontainer();
     PSID acSid = NULL;
     LPPROC_THREAD_ATTRIBUTE_LIST pAttrList = NULL;
     SIZE_T attrListSize = 0;
     SECURITY_CAPABILITIES sc = {0};
 
-    if(useAC) {
+    if(useAC_eff) {
         wchar_t cName[64];
         wsprintfW(cName, L"KaevexSbx%08X", GetTickCount());
         wcsncpy(g_sbx.containerName, cName, 63);
@@ -362,14 +364,13 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
         if(FAILED(hr)) {
             if(hr == HRESULT_FROM_WIN32(ERROR_ALREADY_EXISTS) && g_pfnDeriveAC)
                 g_pfnDeriveAC(cName, &acSid);
-            else useAC = FALSE;
+            else useAC_eff = FALSE;
         }
 
-        if(useAC && acSid) {
+        if(useAC_eff && acSid) {
             g_sbx.acSid = acSid;
             sc.AppContainerSid = acSid;
 
-            /* Prepare attribute list for AppContainer */
             InitializeProcThreadAttributeList(NULL, 1, 0, &attrListSize);
             pAttrList = (LPPROC_THREAD_ATTRIBUTE_LIST)LocalAlloc(LMEM_FIXED, attrListSize);
             if(pAttrList) {
@@ -381,8 +382,8 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
             g_sbx.layerAppContainer = TRUE;
             sbx_log(&g_sbx, "Layer 1+2: AppContainer + Low Integrity (KERNEL ENFORCED)");
         }
-    } else {
-        sbx_log(&g_sbx, "Layer 1+2: AppContainer not available - using Job+Low IL fallback");
+    } else if (useAC) {
+        sbx_log(&g_sbx, "Layer 1+2: AppContainer requested but not available - using Job+Low IL fallback");
     }
 
     /* ?????? Layer 3: Restricted Token ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
@@ -390,9 +391,10 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
     if(hRestrictedToken)
         sbx_log(&g_sbx, "Layer 3: Restricted token (14 dangerous privileges removed)");
 
-    /* Layer 5: UI Isolation via AppContainer & Job Object */
-    g_sbx.layerSepDesktop = TRUE;
-    sbx_log(&g_sbx, "Layer 5: UI Window Station Security (Isolated token & AppContainer)");
+    if(useSepDesktop) {
+        g_sbx.layerSepDesktop = TRUE;
+        sbx_log(&g_sbx, "Layer 5: UI Window Station Security (Isolated token & AppContainer)");
+    }
 
     /* Setup STARTUPINFOEX */
     STARTUPINFOEXA siex; ZeroMemory(&siex, sizeof(siex));
@@ -434,20 +436,23 @@ static BOOL sbx_launch(const char *exePath, HWND notifyWnd) {
         return FALSE;
     }
 
-    /* Layer 4: Job Object */
-    HANDLE hJob = CreateJobObjectA(NULL, NULL);
-    if(hJob) {
-        JOBOBJECT_EXTENDED_LIMIT_INFORMATION jli; ZeroMemory(&jli, sizeof(jli));
-        jli.BasicLimitInformation.LimitFlags =
-            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE    |
-            JOB_OBJECT_LIMIT_PROCESS_MEMORY        |
-            JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
-        jli.ProcessMemoryLimit = 512 * 1024 * 1024; /* 512 MB */
-        SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &jli, sizeof(jli));
-        AssignProcessToJobObject(hJob, pi.hProcess);
-        g_sbx.hJob = hJob;
-        g_sbx.layerJobObject = TRUE;
-        sbx_log(&g_sbx, "Layer 4: Job Object (512MB limit, kill-on-close, no escape)");
+    if(useJob) {
+        HANDLE hJob = CreateJobObjectA(NULL, NULL);
+        if(hJob) {
+            JOBOBJECT_EXTENDED_LIMIT_INFORMATION jli; ZeroMemory(&jli, sizeof(jli));
+            jli.BasicLimitInformation.LimitFlags =
+                JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE    |
+                JOB_OBJECT_LIMIT_PROCESS_MEMORY        |
+                JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
+            jli.ProcessMemoryLimit = 512 * 1024 * 1024; /* 512 MB */
+            SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &jli, sizeof(jli));
+            AssignProcessToJobObject(hJob, pi.hProcess);
+            g_sbx.hJob = hJob;
+            g_sbx.layerJobObject = TRUE;
+            sbx_log(&g_sbx, "Layer 4: Job Object (512MB limit, kill-on-close, no escape)");
+        }
+    } else if (useJob) {
+        sbx_log(&g_sbx, "Job Object requested but failed to create");
     }
 
     ResumeThread(pi.hThread);
