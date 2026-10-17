@@ -428,9 +428,11 @@ static void PaintGeneralPreferences(HDC dc, int mainX, int mainY, int mainW, int
         };
         int dStartX = c2X + 14 + 10;
         int dSpacing = (colW - 48) / 7;
-        for (int ac = 0; ac < 8; ac++) {
-            DrawAccentDot(dc, dStartX + ac * dSpacing, c2Y + 128, accCols[ac], (g_cfg.accent == ac), ac);
-        }
+        { int sm_ = g_themeMode, sa_ = g_themeAccent; g_themeMode = 0; g_themeAccent = 0;     /* swatches show their TRUE colours */
+          for (int ac = 0; ac < 8; ac++) {
+              DrawAccentDot(dc, dStartX + ac * dSpacing, c2Y + 128, accCols[ac], (g_cfg.accent == ac), ac);
+          }
+          g_themeMode = sm_; g_themeAccent = sa_; }
 
         /* --- CARD 3: UI & Effects --- */
         int c3X = mainX + 2 * (colW + gap), c3Y = row1Y;

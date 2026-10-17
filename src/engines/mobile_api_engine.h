@@ -36,6 +36,9 @@
 #pragma comment(lib, "psapi.lib")
 
 #include "ai_together_engine.h"
+#include "fw_pro_engine.h"
+#include "link_core.h"
+#include "waf_core.h"
 #include "boot_rootkit_engine.h"
 
 #define MOBILE_API_DEFAULT_PORT 9009
@@ -82,10 +85,24 @@ typedef struct {
 /* ---- Global State for Mobile Engine --------------------------------------- */
 static CRITICAL_SECTION g_mobileCS;
 static BOOL             g_mobileCSInit = FALSE;
+
 static BOOL             g_mobileRunning = FALSE;
 static SOCKET           g_mobileListenSock = INVALID_SOCKET;
 static int              g_mobilePort = MOBILE_API_DEFAULT_PORT;
-static char             g_pairingPin[16] = "849201"; /* Dynamic 6-digit pair PIN */
+static char             g_pairingPin[16] = "";       /* generated at start from the OS CSPRNG; empty = pairing disabled */
+/* 6-digit PIN from CryptGenRandom (rejection sampling: no modulo bias). Never falls back to rand(). */
+static void mobile_rotate_pin(void) {
+    HCRYPTPROV prov = 0; unsigned v = 0; int got = 0;
+    if (CryptAcquireContextA(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        for (int i = 0; i < 64 && !got; i++) {
+            if (!CryptGenRandom(prov, sizeof v, (BYTE *)&v)) break;
+            if (v < 4293900000u) got = 1;            /* 900000 * 4771: rejection sampling, no modulo bias */
+        }
+        CryptReleaseContext(prov, 0);
+    }
+    if (got) snprintf(g_pairingPin, sizeof g_pairingPin, "%06u", 100000u + (v % 900000u));
+    else     g_pairingPin[0] = 0;                    /* no CSPRNG: pairing disabled rather than a guessable PIN */
+}
 
 static MobileToken      g_mobileTokens[MOBILE_API_MAX_TOKENS];
 static int              g_mobileTokenCount = 0;
@@ -113,6 +130,15 @@ typedef int  (*MobileGetThreatsJsonFn)(char *buf, size_t maxBuf, int *outTotal, 
 typedef BOOL (*MobileThreatActionFn)(const char *filePath, int action);
 
 typedef void (*MobileAddAlertFn)(const char *src, const char *sev, const char *msg);
+typedef BOOL (*MobileScanFn)(void);                 /* starts a REAL antivirus scan; FALSE if it could not start */
+static MobileScanFn g_pMobileScan = NULL;
+static void mobile_api_bind_scan(MobileScanFn fn) { g_pMobileScan = fn; }
+
+/* implemented in cluster_link_engine.h (included at the end of this file) */
+static BOOL link_connect_raw(const char *host, int port, const char *pin, int noBack, char *msg, size_t msgN);
+static void link_spawn_backlink(const char *clientIp, int port, const char *pin);
+static int  link_broadcast(const char *action, char *detail, size_t dn);
+static int  link_nodes_json(char *out, size_t n);
 
 static MobileGetEnginesJsonFn  g_pMobileGetEnginesJson  = NULL;
 static MobileGetAlertsJsonFn   g_pMobileGetAlertsJson   = NULL;
@@ -195,12 +221,8 @@ static void mobile_generate_token(char *out, int len) {
         }
         CryptReleaseContext(hProv, 0);
     }
-    /* Fallback pseudo-random */
-    srand((unsigned int)(time(NULL) ^ GetCurrentProcessId()));
-    for (int i = 0; i < len - 1; i++) {
-        out[i] = chars[rand() % (sizeof(chars) - 1)];
-    }
-    out[len - 1] = '\0';
+    /* No CSPRNG: return an EMPTY token (callers must refuse) - never a predictable one */
+    out[0] = '\0';
 }
 
 /* ---- Security: Anti-Brute-Force & Rate Limiting -------------------------- */
@@ -404,9 +426,6 @@ static void mobile_send_response(SOCKET s, int code, const char *contentType, co
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %d\r\n"
-        "Access-Control-Allow-Origin: *\r\n"
-        "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n"
-        "Access-Control-Allow-Headers: Content-Type, Authorization, X-Kaevex-Token, X-Kaevex-Device\r\n"
         "Connection: close\r\n\r\n",
         code, statusText,
         contentType ? contentType : "application/json",
@@ -473,7 +492,7 @@ static void handle_mobile_auth_pair(SOCKET s, const char *body, const char *clie
     mobile_get_json_string(body, "device_name", devName, sizeof(devName));
 
     EnterCriticalSection(&g_mobileCS);
-    if (strcmp(pin, g_pairingPin) != 0 && strcmp(pin, "849201") != 0) {
+    if (!g_pairingPin[0] || strlen(pin) != 6 || strcmp(pin, g_pairingPin) != 0) {
         LeaveCriticalSection(&g_mobileCS);
         mobile_record_failed_attempt(clientIp);
         mobile_send_json(s, 401, "{\"error\":\"Invalid Pairing PIN. Check server console or GUI Settings.\"}");
@@ -481,10 +500,16 @@ static void handle_mobile_auth_pair(SOCKET s, const char *body, const char *clie
     }
 
     mobile_record_successful_attempt(clientIp);
+    mobile_rotate_pin();                                 /* a PIN is single-use */
 
     /* Generate Session Token */
     char newToken[64] = {0};
     mobile_generate_token(newToken, 48);
+    if (!newToken[0]) {
+        LeaveCriticalSection(&g_mobileCS);
+        mobile_send_json(s, 500, "{\"error\":\"Secure random generator unavailable; pairing refused.\"}");
+        return;
+    }
 
     /* Store or update token */
     int idx = -1;
@@ -518,6 +543,13 @@ static void handle_mobile_auth_pair(SOCKET s, const char *body, const char *clie
         "\"expires_in\":2592000,"
         "\"server\":{\"name\":\"Kaevex Host Engine\",\"version\":\"1.0.0-PROD\",\"port\":%d}}",
         newToken, g_mobilePort);
+    {   /* peer asked us to link back: use the CONNECTING address, never a host supplied in the body */
+        int backPort = 0; char backPin[16] = {0};
+        if (mobile_get_json_int(body, "back_port", &backPort)) {
+            mobile_get_json_string(body, "back_pin", backPin, sizeof(backPin));
+            if (backPin[0]) link_spawn_backlink(clientIp, backPort, backPin);
+        }
+    }
 
     LeaveCriticalSection(&g_mobileCS);
     mobile_send_json(s, 200, resp);
@@ -534,13 +566,13 @@ static void handle_mobile_dashboard(SOCKET s) {
     int cpuPercent = mobile_get_real_cpu_percent();
 
     /* Gather real metrics */
-    long long inPkts = (g_pMobileRealInPkts && *g_pMobileRealInPkts > 0) ? (long long)*g_pMobileRealInPkts : 14850;
-    long long outPkts = (g_pMobileRealOutPkts && *g_pMobileRealOutPkts > 0) ? (long long)*g_pMobileRealOutPkts : 13200;
+    long long inPkts = g_pMobileRealInPkts ? (long long)*g_pMobileRealInPkts : 0;      /* 0 = not measured (never invented) */
+    long long outPkts = g_pMobileRealOutPkts ? (long long)*g_pMobileRealOutPkts : 0;
     long long wafDrops = (g_pMobileWafBlk ? *g_pMobileWafBlk : 0) + (g_pMobileRealDrops ? *g_pMobileRealDrops : 0);
     int threatCount = g_pMobileAvThreats ? *g_pMobileAvThreats : 0;
     int threatsQuar = 0;
     int threatsSafe = 0;
-    int activeConns = (g_pMobileNetConnCnt && *g_pMobileNetConnCnt > 0) ? *g_pMobileNetConnCnt : 12;
+    int activeConns = g_pMobileNetConnCnt ? *g_pMobileNetConnCnt : 0;
     BOOL isLocked = (g_pMobileLockdown && *g_pMobileLockdown) ? TRUE : FALSE;
 
     /* Get real threat counts from callback if bound */
@@ -553,15 +585,7 @@ static void handle_mobile_dashboard(SOCKET s) {
     if (g_pMobileGetEnginesJson) {
         g_pMobileGetEnginesJson(enginesJson, sizeof(enginesJson));
     } else {
-        snprintf(enginesJson, sizeof(enginesJson),
-            "{\"name\":\"Antivirus Core\",\"version\":\"3.0.0\",\"status\":\"RUNNING\",\"load\":18},"
-            "{\"name\":\"Network Monitor\",\"version\":\"2.0.0\",\"status\":\"RUNNING\",\"load\":24},"
-            "{\"name\":\"WebGuard WAF\",\"version\":\"3.0.0\",\"status\":\"RUNNING\",\"load\":12},"
-            "{\"name\":\"Adaptive Firewall\",\"version\":\"1.0.0\",\"status\":\"RUNNING\",\"load\":10},"
-            "{\"name\":\"RansomShield\",\"version\":\"2.0.0\",\"status\":\"RUNNING\",\"load\":8},"
-            "{\"name\":\"SmartSandbox\",\"version\":\"2.0.0\",\"status\":\"RUNNING\",\"load\":5},"
-            "{\"name\":\"CVE Agent\",\"version\":\"3.0.0\",\"status\":\"RUNNING\",\"load\":14},"
-            "{\"name\":\"App Discovery Hub\",\"version\":\"1.0.0\",\"status\":\"RUNNING\",\"load\":7}");
+        strcpy(enginesJson, "");   /* engine status unavailable: report none instead of inventing RUNNING entries */
     }
 
     /* Build alerts JSON */
@@ -570,8 +594,7 @@ static void handle_mobile_dashboard(SOCKET s) {
         g_pMobileGetAlertsJson(alertsJson, sizeof(alertsJson), 6);
     }
     if (!alertsJson[0]) {
-        snprintf(alertsJson, sizeof(alertsJson),
-            "{\"time\":\"NOW\",\"sev\":\"INFO\",\"src\":\"NetGuard\",\"msg\":\"Active network monitor scanning TCP sockets\"}");
+        alertsJson[0] = 0;   /* no alerts */
     }
 
     /* Build sparkline JSON */
@@ -583,7 +606,7 @@ static void handle_mobile_dashboard(SOCKET s) {
             g_pMobileSparkline[3], g_pMobileSparkline[4], g_pMobileSparkline[5],
             g_pMobileSparkline[6]);
     } else {
-        strcpy(sparklineJson, "[145,210,175,290,240,350,310]");
+        strcpy(sparklineJson, "[0,0,0,0,0,0,0]");
     }
 
     char *json = (char*)malloc(MOBILE_API_JSON_SIZE);
@@ -619,7 +642,7 @@ static void handle_mobile_dashboard(SOCKET s) {
         ramPercent, cpuPercent,
         isLocked ? "true" : "false",
         threatCount, threatsQuar, threatsSafe,
-        activeConns, wafDrops, (g_pMobileWafInsp ? *g_pMobileWafInsp : 480), (g_pMobileRealDrops ? (long long)*g_pMobileRealDrops : 0),
+        activeConns, wafDrops, (g_pMobileWafInsp ? *g_pMobileWafInsp : 0), (g_pMobileRealDrops ? (long long)*g_pMobileRealDrops : 0),
         inPkts, outPkts,
         sparklineJson,
         enginesJson,
@@ -634,35 +657,24 @@ static void handle_mobile_dashboard(SOCKET s) {
 static void handle_mobile_firewall_lockdown(SOCKET s, const char *body) {
     int enable = 1;
     mobile_get_json_int(body, "enable", &enable);
-
-    BOOL isLocked = enable ? TRUE : FALSE;
-    if (g_pMobileLockdown) *g_pMobileLockdown = isLocked;
-    if (isLocked) {
-        system("netsh advfirewall set allprofiles state on >nul 2>&1");
-    }
-
-    char resp[512];
+    char msg[300] = {0};
+    BOOL ok = fwp_lockdown(enable ? TRUE : FALSE, g_mobilePort, msg, sizeof(msg));
+    if (ok && g_pMobileLockdown) *g_pMobileLockdown = enable ? TRUE : FALSE;
+    char *em = kvai_escape_alloc(msg);
+    char resp[700];
     snprintf(resp, sizeof(resp),
-        "{\"status\":\"success\","
-        "\"action\":\"firewall_lockdown\","
-        "\"locked\":%s,"
-        "\"message\":\"%s\"}",
-        isLocked ? "true" : "false",
-        isLocked ? "EMERGENCY LOCKDOWN ACTIVATED: Host network isolated."
-                 : "Lockdown disengaged. Normal traffic rules restored.");
-
-    mobile_send_json(s, 200, resp);
+        "{\"status\":\"%s\",\"action\":\"firewall_lockdown\",\"locked\":%s,\"message\":\"%s\"}",
+        ok ? "success" : "error", (g_pMobileLockdown && *g_pMobileLockdown) ? "true" : "false", em ? em : "");
+    free(em);
+    mobile_send_json(s, ok ? 200 : 500, resp);
 }
 
 /* 4. Remote Antivirus Trigger & Actions */
 static void handle_mobile_threats_action(SOCKET s, const char *path, const char *body) {
     if (strstr(path, "/scan")) {
-        char resp[512];
-        snprintf(resp, sizeof(resp),
-            "{\"status\":\"success\","
-            "\"action\":\"scan_initiated\","
-            "\"message\":\"Full background system audit initiated across processes and startup keys.\"}");
-        mobile_send_json(s, 200, resp);
+        BOOL started = g_pMobileScan ? g_pMobileScan() : FALSE;
+        if (started) mobile_send_json(s, 200, "{\"status\":\"success\",\"action\":\"scan_initiated\",\"message\":\"Antivirus scan started on this node.\"}");
+        else mobile_send_json(s, 500, "{\"status\":\"error\",\"action\":\"scan_initiated\",\"message\":\"Scan could not be started (already running or engine unavailable).\"}");
         return;
     }
     if (strstr(path, "/mark-safe")) {
@@ -680,13 +692,14 @@ static void handle_mobile_threats_action(SOCKET s, const char *path, const char 
         }
         char resp[512];
         snprintf(resp, sizeof(resp),
-            "{\"status\":\"success\","
+            "{\"status\":\"%s\","
             "\"action\":\"marked_safe\","
             "\"file_target\":\"%s\","
             "\"applied_to_db\":%s,"
-            "\"message\":\"File hash recorded as trusted whitelist exclusion in Threat Database.\"}",
-            filePath, acted ? "true" : "false");
-        mobile_send_json(s, 200, resp);
+            "\"message\":\"%s\"}",
+            acted ? "success" : "error", filePath, acted ? "true" : "false",
+            acted ? "File hash recorded as trusted in the Threat Database." : "Not applied: file not found in the Threat Database.");
+        mobile_send_json(s, acted ? 200 : 404, resp);
         return;
     }
     if (strstr(path, "/quarantine")) {
@@ -704,13 +717,14 @@ static void handle_mobile_threats_action(SOCKET s, const char *path, const char 
         }
         char resp[512];
         snprintf(resp, sizeof(resp),
-            "{\"status\":\"success\","
+            "{\"status\":\"%s\","
             "\"action\":\"quarantined\","
             "\"file_target\":\"%s\","
             "\"applied_to_db\":%s,"
-            "\"message\":\"Malicious binary successfully isolated in encrypted quarantine vault.\"}",
-            filePath, acted ? "true" : "false");
-        mobile_send_json(s, 200, resp);
+            "\"message\":\"%s\"}",
+            acted ? "success" : "error", filePath, acted ? "true" : "false",
+            acted ? "File moved to quarantine." : "Not applied: quarantine failed or file not found.");
+        mobile_send_json(s, acted ? 200 : 404, resp);
         return;
     }
 
@@ -787,251 +801,107 @@ static void handle_mobile_network_connections(SOCKET s) {
 
 /* 6. Together AI (DeepSeek-V4-Pro) & Multi-Team Mobile Chat */
 static void handle_mobile_ai_chat(SOCKET s, const char *body) {
-    char prompt[1024] = {0};
-    char team[32] = "blue";
-    char apiKey[256] = {0};
-    char model[128] = {0};
-
+    char prompt[1024] = {0}, team[32] = "blue", apiKey[256] = {0}, model[128] = {0};
     mobile_get_json_string(body, "prompt", prompt, sizeof(prompt));
     mobile_get_json_string(body, "team", team, sizeof(team));
     mobile_get_json_string(body, "apiKey", apiKey, sizeof(apiKey));
     if (!apiKey[0]) mobile_get_json_string(body, "api_key", apiKey, sizeof(apiKey));
     mobile_get_json_string(body, "model", model, sizeof(model));
+    if (!prompt[0]) { mobile_send_json(s, 400, "{\"error\":\"Missing 'prompt' in request body.\"}"); return; }
 
-    if (!prompt[0]) {
-        mobile_send_json(s, 400, "{\"error\":\"Missing 'prompt' in request body.\"}");
-        return;
-    }
+    const char *role =
+        _stricmp(team, "red") == 0 ? "You are Kaevex RED TEAM Lead. Specialize in offensive security, vulnerability discovery and mitigations (authorized, defensive context only)." :
+        _stricmp(team, "purple") == 0 ? "You are Kaevex PURPLE TEAM Coordinator. Bridge offensive simulation with detection engineering and SIEM rules." :
+        _stricmp(team, "green") == 0 ? "You are Kaevex GREEN TEAM Compliance Officer. Focus on ISO 27001, NIST CSF 2.0, CIS Benchmarks and audit readiness." :
+        _stricmp(team, "yellow") == 0 ? "You are Kaevex YELLOW TEAM DevSecOps Architect. Focus on application security, secure SDLC and API defense." :
+        "You are Kaevex BLUE TEAM SOC AI Analyst. Specialize in telemetry analysis, incident triage, containment and perimeter defense.";
+    char sys[1400];
+    snprintf(sys, sizeof(sys), "%s Be concise, technical, use bullet points. You cannot run scans or apply fixes and must never claim you did. "
+        "Known live facts: %d threats recorded, %d active connections, firewall lockdown %s. Anything else about this host is unknown to you.",
+        role, g_pMobileAvThreats ? *g_pMobileAvThreats : 0, g_pMobileNetConnCnt ? *g_pMobileNetConnCnt : 0,
+        (g_pMobileLockdown && *g_pMobileLockdown) ? "ACTIVE" : "off");
 
-    /* Set up role prompt based on selected team */
-    char sysRole[1024];
-    if (_stricmp(team, "red") == 0) {
-        snprintf(sysRole, sizeof(sysRole),
-            "You are Kaevex RED TEAM Lead powered by Together AI DeepSeek-V4. "
-            "Specialize in offensive security, vulnerability discovery, penetration testing vectors, and exploit mitigations. "
-            "Format crisp, technical responses with bullet points.");
-    } else if (_stricmp(team, "purple") == 0) {
-        snprintf(sysRole, sizeof(sysRole),
-            "You are Kaevex PURPLE TEAM Coordinator powered by Together AI DeepSeek-V4. "
-            "Bridge offensive simulations with defensive detection engineering and SIEM alert rules. "
-            "Format crisp, technical responses with bullet points.");
-    } else if (_stricmp(team, "green") == 0) {
-        snprintf(sysRole, sizeof(sysRole),
-            "You are Kaevex GREEN TEAM Compliance Officer powered by Together AI DeepSeek-V4. "
-            "Focus on ISO 27001, NIST CSF 2.0, CIS Benchmarks, and audit readiness. "
-            "Format crisp, technical responses with bullet points.");
-    } else if (_stricmp(team, "yellow") == 0) {
-        snprintf(sysRole, sizeof(sysRole),
-            "You are Kaevex YELLOW TEAM DevSecOps Architect powered by Together AI DeepSeek-V4. "
-            "Focus on application security, secure SDLC, code review, and API defense. "
-            "Format crisp, technical responses with bullet points.");
+    int prov = kvai_cloud_provider(g_aiProvider);
+    char *reply = (char*)malloc(32768), *jsonOut = (char*)malloc(80000);
+    if (!reply || !jsonOut) { free(reply); free(jsonOut); mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}"); return; }
+    KvAiResult r;
+    BOOL ok = (g_aiProvider >= 0 && g_aiProvider < KVAI_PROVIDER_COUNT) &&
+              kvai_chat(prov, apiKey[0] ? apiKey : NULL, model[0] ? model : NULL, sys, prompt, 0.6f, 0, reply, 32768, 0, &r);
+    if (!(g_aiProvider >= 0 && g_aiProvider < KVAI_PROVIDER_COUNT)) { memset(&r, 0, sizeof r); snprintf(r.error, sizeof r.error, "Server is in Local mode: no cloud AI provider selected."); }
+
+    char *eReply = kvai_escape_alloc(ok ? reply : r.error), *ePrompt = kvai_escape_alloc(prompt), *eErr = kvai_escape_alloc(r.error), *eModel = kvai_escape_alloc(r.model);
+    if (ok) {
+        snprintf(jsonOut, 80000, "{\"status\":\"success\",\"provider\":\"%s\",\"model\":\"%s\",\"is_fallback\":false,\"latency_ms\":%u,"
+            "\"team\":\"%s\",\"prompt\":\"%s\",\"reply\":\"%s\",\"recommendations\":[]}",
+            g_kvProv[prov].id, eModel ? eModel : "", r.ms, team, ePrompt ? ePrompt : "", eReply ? eReply : "");
+        mobile_send_json(s, 200, jsonOut);
     } else {
-        snprintf(sysRole, sizeof(sysRole),
-            "You are Kaevex BLUE TEAM SOC AI Analyst powered by Together AI DeepSeek-V4. "
-            "Specialize in live telemetry analysis, incident triage, malware containment, and perimeter defense. "
-            "Format crisp, technical responses with bullet points.");
+        snprintf(jsonOut, 80000, "{\"status\":\"error\",\"provider\":\"%s\",\"model\":\"%s\",\"is_fallback\":true,\"upstream_status\":%d,"
+            "\"error\":\"%s\",\"team\":\"%s\",\"prompt\":\"%s\",\"reply\":\"AI request failed: %s\","
+            "\"recommendations\":[\"Fix the provider key/model in Settings > AI Engine or POST /api/v1/ai/config\"]}",
+            g_aiProvider < KVAI_PROVIDER_COUNT ? g_kvProv[prov].id : "local", eModel ? eModel : "", r.status, eErr ? eErr : "", team, ePrompt ? ePrompt : "", eReply ? eReply : "");
+        mobile_send_json(s, 502, jsonOut);
     }
-
-    char *aiResp = (char*)malloc(16384);
-    if (!aiResp) {
-        mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}");
-        return;
-    }
-    aiResp[0] = '\0';
-
-    int statusCode = 0;
-    BOOL ok = together_ai_chat_query(
-        apiKey[0] ? apiKey : NULL,
-        model[0] ? model : NULL,
-        sysRole,
-        prompt,
-        0.7f,
-        1024,
-        aiResp,
-        16384,
-        &statusCode
-    );
-
-    char *escapedResp = (char*)malloc(32768);
-    char *escapedPrompt = (char*)malloc(2048);
-    if (!escapedResp || !escapedPrompt) {
-        if (escapedResp) free(escapedResp);
-        if (escapedPrompt) free(escapedPrompt);
-        free(aiResp);
-        mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}");
-        return;
-    }
-
-    together_json_escape(prompt, escapedPrompt, 2048);
-
-    char targetModel[128] = {0};
-    together_ai_get_model(targetModel, sizeof(targetModel));
-    if (model[0]) strncpy(targetModel, model, sizeof(targetModel) - 1);
-
-    char *jsonOut = (char*)malloc(49152);
-    if (!jsonOut) {
-        free(escapedResp);
-        free(escapedPrompt);
-        free(aiResp);
-        mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}");
-        return;
-    }
-
-    if (ok && aiResp[0]) {
-        together_json_escape(aiResp, escapedResp, 32768);
-        snprintf(jsonOut, 49152,
-            "{\"status\":\"success\","
-            "\"provider\":\"Together AI\","
-            "\"model\":\"%s\","
-            "\"is_fallback\":false,"
-            "\"team\":\"%s\","
-            "\"prompt\":\"%s\","
-            "\"reply\":\"%s\","
-            "\"recommendations\":["
-              "\"DeepSeek-V4 cognitive analysis complete\","
-              "\"All defensive countermeasures operational\""
-            "]}",
-            targetModel, team, escapedPrompt, escapedResp);
-    } else {
-        /* Zero-downtime Local SOC Telemetry Intelligence Fallback */
-        together_ai_generate_local_fallback(prompt, team, aiResp, 16384);
-        together_json_escape(aiResp, escapedResp, 32768);
-        snprintf(jsonOut, 49152,
-            "{\"status\":\"success\","
-            "\"provider\":\"Together AI (Autonomous Local Fallback)\","
-            "\"model\":\"%s\","
-            "\"is_fallback\":true,"
-            "\"fallback_reason\":\"API key unconfigured or cloud endpoint unreachable. Served via autonomous on-device SOC intelligence.\","
-            "\"team\":\"%s\","
-            "\"prompt\":\"%s\","
-            "\"reply\":\"%s\","
-            "\"recommendations\":["
-              "\"Set Together API Key in Settings or via /api/v1/ai/config to enable cloud model\","
-              "\"Autonomous local defensive engines remain 100%% operational\""
-            "]}",
-            targetModel, team, escapedPrompt, escapedResp);
-    }
-
-    mobile_send_json(s, 200, jsonOut);
-
-    free(jsonOut);
-    free(escapedResp);
-    free(escapedPrompt);
-    free(aiResp);
+    free(eReply); free(ePrompt); free(eErr); free(eModel); free(reply); free(jsonOut);
 }
 
 /* 6b. Together AI Configuration Endpoint (GET/POST) */
 static void handle_mobile_ai_config(SOCKET s, const char *method, const char *body) {
     if (strcmp(method, "GET") == 0) {
-        char key[256] = {0};
-        char model[128] = {0};
-        together_ai_get_key(key, sizeof(key));
-        together_ai_get_model(model, sizeof(model));
-
-        char masked[64] = "None";
-        size_t kl = strlen(key);
-        if (kl > 8) {
-            snprintf(masked, sizeof(masked), "%.4s...%.4s", key, key + kl - 4);
-        } else if (kl > 0) {
-            strcpy(masked, "********");
-        }
-
-        char resp[1024];
+        int prov = kvai_cloud_provider(g_aiProvider);
+        char key[256] = {0}, model[128] = {0};
+        kvai_key_get(prov, key, sizeof(key)); kvai_model_get(prov, model, sizeof(model));
+        char masked[32] = "None"; size_t kl = strlen(key);
+        if (kl > 8) snprintf(masked, sizeof(masked), "...%s", key + kl - 4);   /* last 4 only */
+        else if (kl > 0) strcpy(masked, "********");
+        char resp[900];
         snprintf(resp, sizeof(resp),
-            "{\"status\":\"success\","
-            "\"provider\":\"Together AI\","
-            "\"model\":\"%s\","
-            "\"host\":\"api.together.xyz\","
-            "\"has_key\":%s,"
-            "\"key_masked\":\"%s\"}",
-            model,
-            key[0] ? "true" : "false",
-            masked);
+            "{\"status\":\"success\",\"provider\":\"%s\",\"provider_index\":%d,\"model\":\"%s\",\"host\":\"%s\",\"has_key\":%s,\"key_masked\":\"%s\",\"key_source\":\"%s\"}",
+            g_aiProvider < KVAI_PROVIDER_COUNT ? g_kvProv[prov].id : "local", g_aiProvider, model, g_kvProv[prov].host,
+            key[0] ? "true" : "false", masked, kvai_key_source(prov));
+        SecureZeroMemory(key, sizeof key);
         mobile_send_json(s, 200, resp);
     } else if (strcmp(method, "POST") == 0) {
-        char key[256] = {0};
-        char model[128] = {0};
+        char key[256] = {0}, model[128] = {0}, provName[24] = {0};
         mobile_get_json_string(body, "apiKey", key, sizeof(key));
         if (!key[0]) mobile_get_json_string(body, "api_key", key, sizeof(key));
         mobile_get_json_string(body, "model", model, sizeof(model));
-
-        if (key[0]) together_ai_save_key(key);
-        if (model[0]) together_ai_set_model(model);
-
-        mobile_send_json(s, 200, "{\"status\":\"success\",\"message\":\"Together AI configuration updated successfully.\"}");
-    } else {
-        mobile_send_json(s, 405, "{\"error\":\"Method not allowed.\"}");
-    }
+        mobile_get_json_string(body, "provider", provName, sizeof(provName));
+        if (provName[0]) {
+            int found = -1;
+            for (int i = 0; i < KVAI_PROVIDER_COUNT; i++) if (_stricmp(provName, g_kvProv[i].id) == 0) found = i;
+            if (_stricmp(provName, "local") == 0) found = KVAI_P_LOCAL;
+            if (found < 0) { mobile_send_json(s, 400, "{\"error\":\"Unknown provider. Use together, groq, nvidia or local.\"}"); return; }
+            g_aiProvider = found;
+        }
+        if (key[0] && g_aiProvider < KVAI_PROVIDER_COUNT) kvai_key_save(g_aiProvider, key);
+        if (model[0] && g_aiProvider < KVAI_PROVIDER_COUNT) kvai_model_set(g_aiProvider, model);
+        SecureZeroMemory(key, sizeof key);
+        mobile_send_json(s, 200, "{\"status\":\"success\",\"message\":\"AI configuration updated for the selected provider.\"}");
+    } else mobile_send_json(s, 405, "{\"error\":\"Method not allowed.\"}");
 }
 
 /* 7. Multi-Server Cluster Management Endpoints */
 static void handle_mobile_cluster_nodes(SOCKET s, const char *method, const char *path, const char *body) {
-    EnterCriticalSection(&g_mobileCS);
-
+    (void)path;
     if (strcmp(method, "GET") == 0) {
-        char json[MOBILE_API_JSON_SIZE];
-        int p = snprintf(json, sizeof(json),
-            "{\"status\":\"success\",\"cluster_count\":%d,\"servers\":[",
-            g_clusterServerCount + 1);
-
-        /* Add Self as Node 0 */
-        char selfHost[64] = "Host-Master"; DWORD hLen = sizeof(selfHost);
-        GetComputerNameA(selfHost, &hLen);
-        BOOL isSelfLocked = (g_pMobileLockdown && *g_pMobileLockdown) ? TRUE : FALSE;
-        p += snprintf(json + p, sizeof(json) - p,
-            "{\"id\":0,\"name\":\"%s (This Server)\",\"ip\":\"127.0.0.1\",\"port\":%d,\"role\":\"Master\",\"status\":\"ONLINE\",\"ping_ms\":1,\"threats\":%d,\"is_locked\":%s}",
-            selfHost, g_mobilePort, g_pMobileAvThreats ? *g_pMobileAvThreats : 0, isSelfLocked ? "true" : "false");
-
-        for (int i = 0; i < g_clusterServerCount; i++) {
-            p += snprintf(json + p, sizeof(json) - p,
-                ",{\"id\":%d,\"name\":\"%s\",\"ip\":\"%s\",\"port\":%d,\"role\":\"%s\",\"status\":\"%s\",\"ping_ms\":%d,\"threats\":%d,\"is_locked\":%s}",
-                g_clusterServers[i].id,
-                g_clusterServers[i].name,
-                g_clusterServers[i].ip,
-                g_clusterServers[i].port,
-                g_clusterServers[i].role,
-                g_clusterServers[i].status,
-                g_clusterServers[i].pingMs > 0 ? g_clusterServers[i].pingMs : (rand() % 12 + 2),
-                g_clusterServers[i].threatCount,
-                g_clusterServers[i].isLocked ? "true" : "false"
-            );
-        }
-        snprintf(json + p, sizeof(json) - p, "]}");
-        LeaveCriticalSection(&g_mobileCS);
-        mobile_send_json(s, 200, json);
-        return;
+        char *json = (char*)malloc(MOBILE_API_JSON_SIZE);
+        if (!json) { mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}"); return; }
+        link_nodes_json(json, MOBILE_API_JSON_SIZE);
+        mobile_send_json(s, 200, json); free(json); return;
     }
-
     if (strcmp(method, "POST") == 0) {
-        /* Add new server */
-        if (g_clusterServerCount >= MOBILE_API_MAX_SERVERS) {
-            LeaveCriticalSection(&g_mobileCS);
-            mobile_send_json(s, 400, "{\"error\":\"Cluster capacity reached (max 32 servers).\"}");
-            return;
-        }
-
-        ManagedServer *srv = &g_clusterServers[g_clusterServerCount];
-        memset(srv, 0, sizeof(*srv));
-        srv->id = g_clusterServerCount + 1;
-        mobile_get_json_string(body, "name", srv->name, sizeof(srv->name));
-        mobile_get_json_string(body, "ip", srv->ip, sizeof(srv->ip));
-        mobile_get_json_int(body, "port", &srv->port);
-        if (srv->port <= 0) srv->port = 9009;
-        mobile_get_json_string(body, "token", srv->token, sizeof(srv->token));
-        mobile_get_json_string(body, "role", srv->role, sizeof(srv->role));
-        if (!srv->role[0]) strncpy(srv->role, "Worker", 31);
-        strncpy(srv->status, "ONLINE", 31);
-        srv->pingMs = (rand() % 10) + 2;
-        srv->lastChecked = time(NULL);
-
-        g_clusterServerCount++;
-        LeaveCriticalSection(&g_mobileCS);
-
-        mobile_send_json(s, 201, "{\"status\":\"success\",\"message\":\"Remote server successfully joined to Kaevex Multi-Server cluster mesh.\"}");
-        return;
+        /* Link to another node: body {"ip":"..","port":9009,"pin":"123456"} - a real pairing handshake. */
+        char ip[64] = {0}, pin[16] = {0}; int port = MOBILE_API_DEFAULT_PORT;
+        mobile_get_json_string(body, "ip", ip, sizeof(ip)); mobile_get_json_string(body, "pin", pin, sizeof(pin));
+        mobile_get_json_int(body, "port", &port);
+        if (!ip[0] || strlen(pin) != 6 || !link_valid_host(ip)) { mobile_send_json(s, 400, "{\"error\":\"Need ip, port and 6-digit pin of the node to link.\"}"); return; }
+        char msg[300] = {0};
+        BOOL ok = link_connect_raw(ip, port, pin, 0, msg, sizeof(msg));
+        char *em = kvai_escape_alloc(msg); char resp[500];
+        snprintf(resp, sizeof(resp), "{\"status\":\"%s\",\"message\":\"%s\"}", ok ? "success" : "error", em ? em : ""); free(em);
+        mobile_send_json(s, ok ? 201 : 502, resp); return;
     }
-
-    LeaveCriticalSection(&g_mobileCS);
     mobile_send_json(s, 405, "{\"error\":\"Method not allowed.\"}");
 }
 
@@ -1039,32 +909,55 @@ static void handle_mobile_cluster_nodes(SOCKET s, const char *method, const char
 static void handle_mobile_cluster_broadcast(SOCKET s, const char *body) {
     char action[64] = {0};
     mobile_get_json_string(body, "action", action, sizeof(action));
+    const char *peerAction = strcmp(action, "lockdown-all") == 0 ? "lockdown" : strcmp(action, "unlock-all") == 0 ? "unlock" : strcmp(action, "scan-all") == 0 ? "scan" : NULL;
+    if (!peerAction) { mobile_send_json(s, 400, "{\"error\":\"Unknown broadcast action. Supported: lockdown-all, unlock-all, scan-all.\"}"); return; }
 
-    if (strcmp(action, "lockdown-all") == 0) {
-        if (g_pMobileLockdown) *g_pMobileLockdown = TRUE;
-        EnterCriticalSection(&g_mobileCS);
-        for (int i = 0; i < g_clusterServerCount; i++) {
-            g_clusterServers[i].isLocked = 1;
-            strncpy(g_clusterServers[i].status, "LOCKED", 31);
-        }
-        LeaveCriticalSection(&g_mobileCS);
-        mobile_send_json(s, 200,
-            "{\"status\":\"success\","
-            "\"action\":\"lockdown-all\","
-            "\"affected_servers\":100,"
-            "\"message\":\"EMERGENCY BROADCAST SENT: All cluster nodes have engaged emergency network isolation.\"}");
-        return;
+    /* 1) this node, for real */
+    BOOL localOk = FALSE; char lmsg[300] = {0};
+    if (strcmp(peerAction, "scan") == 0) localOk = g_pMobileScan ? g_pMobileScan() : FALSE;
+    else { localOk = fwp_lockdown(strcmp(peerAction, "lockdown") == 0, g_mobilePort, lmsg, sizeof(lmsg)); if (localOk && g_pMobileLockdown) *g_pMobileLockdown = (strcmp(peerAction, "lockdown") == 0); }
+    /* 2) every linked node, over the network; counts are confirmations, not intentions */
+    char detail[1200] = {0}; int peersOk = link_broadcast(peerAction, detail, sizeof(detail));
+    char *ed = kvai_escape_alloc(detail);
+    char resp[2000];
+    snprintf(resp, sizeof(resp), "{\"status\":\"%s\",\"action\":\"%s\",\"local_applied\":%s,\"peers_confirmed\":%d,\"affected_servers\":%d,\"detail\":\"%s\"}",
+             localOk ? "success" : "partial", action, localOk ? "true" : "false", peersOk, peersOk + (localOk ? 1 : 0), ed ? ed : "");
+    free(ed);
+    mobile_send_json(s, 200, resp);
+}
+
+/* Firewall status / policy (GET status, GET export, POST import[+apply]) */
+static void handle_mobile_firewall_policy(SOCKET s, const char *method, const char *path, const char *body) {
+    if (strstr(path, "/status")) {
+        char r[600];
+        snprintf(r, sizeof(r), "{\"status\":\"success\",\"admin\":%s,\"profiles_on_mask\":%d,\"managed_rules\":%d,\"tamper_watch\":%s,\"guard_seconds_left\":%d,\"lockdown\":%s}",
+                 fwp_is_admin() ? "true" : "false", fwp_profiles_on(), g_fwpCount, fwp_watch_running() ? "true" : "false", fwp_guard_remaining(),
+                 (g_pMobileLockdown && *g_pMobileLockdown) ? "true" : "false");
+        mobile_send_json(s, 200, r); return;
     }
-
-    if (strcmp(action, "scan-all") == 0) {
-        mobile_send_json(s, 200,
-            "{\"status\":\"success\","
-            "\"action\":\"scan-all\","
-            "\"message\":\"BROADCAST: Autonomous deep file and memory audits scheduled on all cluster nodes.\"}");
-        return;
+    if (strcmp(method, "GET") == 0) {
+        char *txt = fwp_policy_export_text(); if (!txt) { mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}"); return; }
+        char *e = kvai_escape_alloc(txt); free(txt);
+        size_t cap = strlen(e ? e : "") + 64; char *out = (char*)malloc(cap);
+        if (out) { snprintf(out, cap, "{\"status\":\"success\",\"policy\":\"%s\"}", e ? e : ""); mobile_send_json(s, 200, out); free(out); }
+        free(e); return;
     }
-
-    mobile_send_json(s, 400, "{\"error\":\"Unknown broadcast action. Supported: 'lockdown-all', 'scan-all'.\"}");
+    if (strcmp(method, "POST") == 0) {
+        int apply = 0; mobile_get_json_int(body, "apply", &apply);
+        const char *pv = kvai_find_key(body, "policy");
+        if (!pv || *pv != '"') { mobile_send_json(s, 400, "{\"error\":\"Missing 'policy' string.\"}"); return; }
+        char *txt = (char*)malloc(MOBILE_API_BUF_SIZE); if (!txt) { mobile_send_json(s, 500, "{\"error\":\"Out of memory.\"}"); return; }
+        kvai_read_str(pv, txt, MOBILE_API_BUF_SIZE);
+        int bad = 0; int ok = fwp_policy_import_text(txt, 1, &bad); free(txt);
+        fwp_policy_save();
+        FwpApplyResult ar; memset(&ar, 0, sizeof ar); BOOL applied = FALSE;
+        if (apply && ok > 0) applied = fwp_apply_all(&ar, NULL, 0);
+        char r[500]; char *ee = kvai_escape_alloc(ar.firstError);
+        snprintf(r, sizeof(r), "{\"status\":\"%s\",\"imported\":%d,\"rejected\":%d,\"applied\":%s,\"rules_added\":%d,\"error\":\"%s\"}",
+                 (ok > 0 && (!apply || applied)) ? "success" : "error", ok, bad, applied ? "true" : "false", ar.added, ee ? ee : ""); free(ee);
+        mobile_send_json(s, 200, r); return;
+    }
+    mobile_send_json(s, 405, "{\"error\":\"Method not allowed.\"}");
 }
 
 static void handle_mobile_boot_audit(SOCKET s) {
@@ -1151,6 +1044,12 @@ static DWORD WINAPI mobile_client_worker(LPVOID pArg) {
         return 0;
     }
 
+    /* Only private / VPN address ranges may talk to the node API (it is plain HTTP) */
+    if (!link_is_private_ip(clientIp)) {
+        mobile_send_response(s, 403, "application/json", "{\"error\":\"Forbidden: the node API only accepts private-network clients.\"}");
+        free(buf); closesocket(s); return 0;
+    }
+
     /* Telemetry: Increment inspected WAF requests counter */
     if (g_pMobileWafInsp) (*g_pMobileWafInsp)++;
 
@@ -1167,7 +1066,12 @@ static DWORD WINAPI mobile_client_worker(LPVOID pArg) {
     }
 
     /* 2. INLINE PROACTIVE SHIELD: WAF Inspection (SQLi, XSS, Path Traversal, RCE) */
-    MobileWafVerdict wafVerdict = mobile_waf_inspect_payload(path, body);
+    WafVerdict wafV; char wHdr[8192]; wHdr[0] = 0;
+    { const char *h = strstr(buf, "\r\n"); if (h) { h += 2; const char *he = strstr(h, "\r\n\r\n"); size_t hl = he ? (size_t)(he - h) : strlen(h); size_t w = 0; for (size_t i = 0; i < hl && w + 1 < sizeof wHdr; i++) if (h[i] != '\r') wHdr[w++] = h[i]; wHdr[w] = 0; } }
+    { WafRequest wrq = { method, path, wHdr, (const unsigned char *)body, strlen(body) }; waf_inspect(&wrq, 2, &wafV); }
+    struct { int isMalicious; const char *threatType, *cwe, *mitre; char detail[256]; } wafVerdict;
+    wafVerdict.isMalicious = wafV.blocked; wafVerdict.threatType = wafV.top[0] ? wafV.top : "Policy"; wafVerdict.cwe = wafV.nhits ? wafV.hits[0].cwe : "N/A"; wafVerdict.mitre = wafV.nhits ? wafV.hits[0].mitre : "N/A";
+    snprintf(wafVerdict.detail, sizeof wafVerdict.detail, "%s (rule %s, score %d)", wafV.nhits ? wafV.hits[0].name : "", wafV.nhits ? wafV.hits[0].rule : "", wafV.score);
     if (wafVerdict.isMalicious) {
         if (g_pMobileWafBlk) (*g_pMobileWafBlk)++;
         mobile_record_failed_attempt(clientIp);
@@ -1240,6 +1144,9 @@ static DWORD WINAPI mobile_client_worker(LPVOID pArg) {
     else if (strncmp(path, "/api/v1/ai/config", 17) == 0) {
         handle_mobile_ai_config(s, method, body);
     }
+    else if (strncmp(path, "/api/v1/firewall/policy", 23) == 0 || strncmp(path, "/api/v1/firewall/status", 23) == 0) {
+        handle_mobile_firewall_policy(s, method, path, body);
+    }
     else if (strncmp(path, "/api/v1/cluster/broadcast", 25) == 0 && strcmp(method, "POST") == 0) {
         handle_mobile_cluster_broadcast(s, body);
     }
@@ -1302,7 +1209,7 @@ static DWORD WINAPI mobile_api_listener_thread(LPVOID pArg) {
     g_mobileListenSock = srv;
     g_mobileRunning = TRUE;
 
-    printf("[MOBILE-API] Server online and listening on 0.0.0.0:%d (PIN: %s)\n", port, g_pairingPin);
+    printf("[MOBILE-API] Server online and listening on 0.0.0.0:%d (private-network clients only; PIN shown in Settings)\n", port);
 
     while (g_mobileRunning) {
         struct sockaddr_in clientAddr;
@@ -1340,9 +1247,8 @@ static BOOL mobile_api_start(int port) {
     WSADATA wsa;
     WSAStartup(MAKEWORD(2,2), &wsa);
 
-    /* Generate randomized pairing PIN on start */
-    srand((unsigned int)time(NULL));
-    snprintf(g_pairingPin, sizeof(g_pairingPin), "%06d", (rand() % 900000) + 100000);
+    /* Generate the pairing PIN from the OS CSPRNG */
+    mobile_rotate_pin();
 
     HANDLE hTh = CreateThread(NULL, 0, mobile_api_listener_thread, (LPVOID)(intptr_t)port, 0, NULL);
     if (hTh) {
@@ -1363,5 +1269,7 @@ static void mobile_api_stop(void) {
 static const char* mobile_api_get_pin(void) {
     return g_pairingPin;
 }
+
+#include "cluster_link_engine.h"
 
 #endif /* MOBILE_API_ENGINE_H */

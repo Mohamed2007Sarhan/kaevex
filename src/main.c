@@ -68,21 +68,29 @@ static void SetupConsoleIO(void) {
     }
 }
 
+/* Brings a RESPONSIVE running instance to the front. A hung instance is terminated so a new launch can start
+ * (previously a stuck first instance made every later launch silently do nothing). */
+static BOOL RaiseExistingOrKill(HWND hw, BOOL raise) {
+    DWORD_PTR r = 0;
+    if (SendMessageTimeoutA(hw, WM_NULL, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 2500, &r)) {
+        if (raise) { ShowWindow(hw, SW_SHOW); ShowWindow(hw, SW_RESTORE); SetForegroundWindow(hw); }
+        return TRUE;
+    }
+    DWORD pid = 0; GetWindowThreadProcessId(hw, &pid);
+    if (pid && pid != GetCurrentProcessId()) { HANDLE h = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid); if (h) { TerminateProcess(h, 1); WaitForSingleObject(h, 3000); CloseHandle(h); } }
+    return FALSE;
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     (void)hPrevInstance;
 
-    /* Modern Per-Monitor V2 DPI awareness initialization */
-    HMODULE hUserDpi = GetModuleHandleA("user32.dll");
-    if (hUserDpi) {
+    /* DPI: the UI uses fixed-pixel GDI drawing. Use "GDI-scaled unaware" mode (Windows 10 1809+): proportional size, sharp text.
+       (The manifest requests the same via <gdiScaling>; this covers launchers that ignore it.) */
+    {
+        HMODULE hUserDpi = GetModuleHandleA("user32.dll");
         typedef BOOL (WINAPI *SetCtxProc)(HANDLE);
-        typedef BOOL (WINAPI *SetDpiProc)(void);
-        SetCtxProc setCtx = (SetCtxProc)GetProcAddress(hUserDpi, "SetProcessDpiAwarenessContext");
-        if (setCtx) {
-            setCtx((HANDLE)-4); /* DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 */
-        } else {
-            SetDpiProc setDpi = (SetDpiProc)GetProcAddress(hUserDpi, "SetProcessDPIAware");
-            if (setDpi) setDpi();
-        }
+        SetCtxProc setCtx = hUserDpi ? (SetCtxProc)GetProcAddress(hUserDpi, "SetProcessDpiAwarenessContext") : NULL;
+        if (setCtx) setCtx((HANDLE)-5);        /* DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED */
     }
 
     /* Parse Unicode command-line arguments into UTF-8 argv */
@@ -118,7 +126,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             /* If an instance is already running, let it manage everything */
             HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
-            if (hwExisting) {
+            if (hwExisting && RaiseExistingOrKill(hwExisting, FALSE)) {
                 return 0;
             }
             /* Start all engines, Mobile API, and Tray silently with window hidden */
@@ -128,10 +136,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         /* --- Mode B: Explicit GUI Flag --- */
         if (_stricmp(arg1, "--gui") == 0 || _stricmp(arg1, "-g") == 0 || _stricmp(arg1, "/gui") == 0) {
             HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
-            if (hwExisting) {
-                ShowWindow(hwExisting, SW_SHOW);
-                ShowWindow(hwExisting, SW_RESTORE);
-                SetForegroundWindow(hwExisting);
+            if (hwExisting && RaiseExistingOrKill(hwExisting, TRUE)) {
                 return 0;
             }
             return kaevex_gui_main(hInstance, NULL, lpCmdLine, (nCmdShow <= 0) ? SW_SHOWNORMAL : nCmdShow, FALSE);
@@ -155,10 +160,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
      * If not running: launch the unified platform with GUI visible.
      */
     HWND hwExisting = FindWindowA("KaevexGUIModern", NULL);
-    if (hwExisting) {
-        ShowWindow(hwExisting, SW_SHOW);
-        ShowWindow(hwExisting, SW_RESTORE);
-        SetForegroundWindow(hwExisting);
+    if (hwExisting && RaiseExistingOrKill(hwExisting, TRUE)) {
         return 0;
     }
 

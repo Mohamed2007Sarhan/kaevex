@@ -33,8 +33,10 @@
   </compatibility>
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">True/PM</dpiAware>
-      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor</dpiAwareness>
+      <!-- The UI is drawn with fixed pixel geometry. Per-monitor DPI awareness made it tiny on 125-200% screens and
+           the old bitmap scaling made it blurry. GDI scaling lets Windows scale the whole window proportionally
+           while rendering GDI text/primitives at the real screen resolution (sharp). -->
+      <gdiScaling xmlns="http://schemas.microsoft.com/SMI/2017/WindowsSettings">true</gdiScaling>
     </windowsSettings>
   </application>
 </assembly>

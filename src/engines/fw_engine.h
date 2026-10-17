@@ -12,7 +12,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#define FW_MAX_RULES 512
+#include <shlwapi.h>
+#define FW_MAX_RULES 4096
 
 typedef struct {
     char name[128];
@@ -242,29 +243,9 @@ static void fw_correlate_traffic(void) {
             }
         }
 
-        if (activeSockets > 0) {
-            unsigned long basePackets = (totalInPkts + totalOutPkts);
-            if (basePackets > 0) {
-                r->hits = (basePackets / (tcpTable ? (tcpTable->dwNumEntries + 1) : 10)) * activeSockets;
-            } else {
-                r->hits = (unsigned long)activeSockets * 128;
-            }
-        } else if (_stricmp(r->action, "Allow") == 0) {
-            if (r->program[0] && GetFileAttributesA(r->program) != INVALID_FILE_ATTRIBUTES) {
-                if (strstr(r->name, "Web") || strstr(r->name, "Browser") || strstr(r->name, "Chrome") ||
-                    strstr(r->name, "Firefox") || strstr(r->name, "Edge")) {
-                    r->hits = totalInPkts / 20;
-                } else if (strstr(r->name, "System") || strstr(r->name, "Core") || strstr(r->name, "Windows")) {
-                    r->hits = totalInPkts / 50;
-                } else {
-                    r->hits = (totalInPkts > 1000) ? (totalInPkts / 200) : 0;
-                }
-            } else {
-                r->hits = 0;
-            }
-        } else {
-            r->hits = 0;
-        }
+        /* "hits" = live sockets currently using this rule's local port. A real number; the old code
+           invented packet counts by dividing interface totals by arbitrary constants. */
+        r->hits = (unsigned long)activeSockets;
     }
 
     if (tcpTable) free(tcpTable);
@@ -272,54 +253,25 @@ static void fw_correlate_traffic(void) {
 }
 
 /* --- Load all firewall rules ---------------------------------------------- */
+/* Fast and language independent: rules are read from the firewall policy in the registry (no netsh, no cmd.exe).
+ * The old code ran "netsh ... show rule name=all" on the UI thread: 10-60 s on PCs with thousands of rules, and its
+ * English text parser found nothing on non-English Windows. */
 static int fw_load_rules(void) {
-    char buf[65536] = {0};
-    fw_run_capture("netsh advfirewall firewall show rule name=all", buf, sizeof(buf));
-
     g_fwRuleCount = 0;
-    FwRule *cur = NULL;
-
-    char *line = strtok(buf, "\r\n");
-    while(line && g_fwRuleCount < FW_MAX_RULES) {
-        while(*line == ' ' || *line == '\t') line++;
-
-        if(strncmp(line, "Rule Name:", 10) == 0) {
-            cur = &g_fwRules[g_fwRuleCount++];
-            ZeroMemory(cur, sizeof(*cur));
-            char *v = line + 10; while(*v == ' ') v++;
-            strncpy(cur->name, v, 127);
-            strcpy(cur->remoteIP, "*");
-            strcpy(cur->remotePort, "*");
-            strcpy(cur->localPort, "*");
-            strcpy(cur->profile, "All");
-        } else if(cur) {
-            #define FIELD(prefix, dest, destLen) \
-                if(strncmp(line, prefix, strlen(prefix))==0){ \
-                    char *v=line+strlen(prefix); while(*v==' ')v++; \
-                    strncpy(dest,v,destLen-1); }
-            FIELD("Program:",   cur->program,    MAX_PATH)
-            FIELD("Direction:", cur->direction,  15)
-            FIELD("Action:",    cur->action,     15)
-            FIELD("Protocol:",  cur->protocol,   15)
-            FIELD("LocalPort:", cur->localPort,  31)
-            FIELD("RemotePort:",cur->remotePort, 31)
-            FIELD("RemoteIP:",  cur->remoteIP,   63)
-            FIELD("Enabled:",   cur->enabled,     7)
-            FIELD("Profiles:",  cur->profile,    31)
-            #undef FIELD
-        }
-        line = strtok(NULL, "\r\n");
-    }
-
-    /* If netsh returned 0 rules, load genuine rules from Windows Registry */
-    if (g_fwRuleCount == 0) {
-        fw_load_from_registry();
-    }
-
-    /* Correlate real live traffic hits */
+    fw_load_from_registry();
     fw_correlate_traffic();
-
     return g_fwRuleCount;
+}
+
+/* Names such as "@FirewallAPI.dll,-80201" are resource references; resolve them to readable text (call from a worker thread). */
+static void fw_resolve_names(void) {
+    for (int i = 0; i < g_fwRuleCount; i++) {
+        if (g_fwRules[i].name[0] != '@') continue;
+        wchar_t in[256], out[256];
+        if (!MultiByteToWideChar(CP_ACP, 0, g_fwRules[i].name, -1, in, 256)) continue;
+        if (SUCCEEDED(SHLoadIndirectString(in, out, 256, NULL)) && out[0])
+            WideCharToMultiByte(CP_ACP, 0, out, -1, g_fwRules[i].name, (int)sizeof(g_fwRules[i].name), "?", NULL);
+    }
 }
 
 /* ?????? Add a firewall rule ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
@@ -430,10 +382,25 @@ static void fw_set_enabled(BOOL enable) {
 }
 
 /* ?????? Get current firewall state ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????? */
+/* Registry based (netsh prints translated text, e.g. on Arabic Windows "ON" never matches). TRUE if any profile is on. */
+static BOOL fw_is_enabled_raw(void) {
+    static const char *prof[3] = { "DomainProfile", "StandardProfile", "PublicProfile" };
+    for (int i = 0; i < 3; i++) {
+        char k[256]; snprintf(k, sizeof k, "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\%s", prof[i]);
+        HKEY h; DWORD v = 0, sz = sizeof v;
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, k, 0, KEY_READ, &h) == ERROR_SUCCESS) {
+            LONG rc = RegQueryValueExA(h, "EnableFirewall", NULL, NULL, (BYTE *)&v, &sz);
+            RegCloseKey(h);
+            if (rc == ERROR_SUCCESS && v) return TRUE;
+        }
+    }
+    return FALSE;
+}
+/* cached for 2 s: it is called from paint code */
 static BOOL fw_is_enabled(void) {
-    char out[1024] = {0};
-    fw_run_capture("netsh advfirewall show allprofiles state", out, sizeof(out));
-    return (strstr(out, "ON") != NULL);
+    static DWORD t = 0; static BOOL v = FALSE;
+    DWORD now = GetTickCount(); if (!t || now - t > 2000) { v = fw_is_enabled_raw(); t = now; }
+    return v;
 }
 
 /* ?????? Add Kaevex default protection rules ???????????????????????????????????????????????????????????????????????????????????????????????? */

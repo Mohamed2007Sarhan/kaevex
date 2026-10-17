@@ -37,6 +37,7 @@
 #include "upd_engine.h"
 #include "sbx_engine.h"
 #include "boot_rootkit_engine.h"
+#include "fw_pro_engine.h"
 
 #define KAEVEX_VERSION "1.0.0-PROD"
 #define DEFAULT_PORT  9009
@@ -185,10 +186,6 @@ static void get_timestamp(char *buf, size_t sz) {
     time_t t = time(NULL);
     struct tm *tm = localtime(&t);
     strftime(buf, sz, "%Y-%m-%d %H:%M:%S", tm);
-}
-
-static void random_ip(char *buf) {
-    sprintf(buf, "%d.%d.%d.%d", rand()%250+1, rand()%254+1, rand()%254+1, rand()%254+1);
 }
 
 static int is_ip_banned(const char *ip) {
@@ -1461,6 +1458,75 @@ static void cmd_custom_mode(void) {
     printf("    Configuration state saved to Windows Registry.\n\n");
 }
 
+/* ---- Firewall Pro CLI (automation). Works on the same policy file as the GUI. ---- */
+static void cli_fw_alert(const char *sev, const char *msg) { printf("  [%s] %s\n", sev, msg); }
+static void cmd_fw(const char *arg) {
+    fwp_init(cli_fw_alert); fwp_policy_load();
+    char sub[32] = {0}; const char *rest = arg ? arg : "";
+    while (*rest == ' ') rest++;
+    int n = 0; while (rest[n] && rest[n] != ' ' && n < 31) { sub[n] = rest[n]; n++; }
+    rest += n; while (*rest == ' ') rest++;
+    if (!sub[0] || _stricmp(sub, "help") == 0) {
+        printf("\nfw list | fw add <rule> | fw del <name> | fw sim <rule> | fw apply | fw state\n"
+               "fw snapshot | fw snapshots | fw restore <file> | fw logs [filter] | fw logging | fw lockdown on|off | fw tree <pid>\n\n"
+               "Rule: allow|block in|out|both tcp|udp|icmp4|icmp6|any name=\"X\" [app=\"C:\\p.exe\"] [lport=] [rport=80,443]\n"
+               "      [raddr=1.2.3.4/24,LocalSubnet] [domain=example.com] [prio=10] [group=G] [iface=lan,wifi] [profile=private]\n"
+               "      [days=mon,tue] [time=22:00-06:00] [off]\n\n");
+    } else if (_stricmp(sub, "list") == 0) {
+        printf("\n%-5s %-28s %s\n", "PRIO", "NAME", "RULE");
+        for (int i = 0; i < g_fwpCount; i++) { char d[600]; fwp_describe(&g_fwpRules[i], d, sizeof d); printf("%-5d %-28s %s\n", g_fwpRules[i].priority, g_fwpRules[i].name, d); }
+        printf("\n%d rule(s) in the Kaevex policy (not yet applied unless you ran 'fw apply').\n\n", g_fwpCount);
+    } else if (_stricmp(sub, "add") == 0) {
+        FwpRule r; char err[200];
+        if (!fwp_parse_rule_text(rest, &r, err, sizeof err)) { printf("  Rejected: %s\n\n", err); return; }
+        int idx = -1; for (int i = 0; i < g_fwpCount; i++) if (strcmp(g_fwpRules[i].name, r.name) == 0) idx = i;
+        if (idx >= 0) g_fwpRules[idx] = r; else if (g_fwpCount < FWP_MAX_RULES) g_fwpRules[g_fwpCount++] = r; else { printf("  Policy full.\n\n"); return; }
+        fwp_policy_save(); printf("  Rule '%s' %s. Run 'fw apply' to enforce.\n\n", r.name, idx >= 0 ? "updated" : "added");
+    } else if (_stricmp(sub, "del") == 0) {
+        char nm[100]; snprintf(nm, sizeof nm, "%s", rest); for (char *c = nm; *c; c++) if (*c == '"') memmove(c, c + 1, strlen(c));
+        int idx = -1; for (int i = 0; i < g_fwpCount; i++) if (strcmp(g_fwpRules[i].name, nm) == 0) idx = i;
+        if (idx < 0) { printf("  No rule named '%s'.\n\n", nm); return; }
+        for (int k = idx; k < g_fwpCount - 1; k++) g_fwpRules[k] = g_fwpRules[k + 1]; g_fwpCount--; fwp_policy_save();
+        printf("  Removed from policy. Run 'fw apply' to remove it from Windows Firewall.\n\n");
+    } else if (_stricmp(sub, "sim") == 0) {
+        char t2[600]; snprintf(t2, sizeof t2, "allow name=sim %s", rest); FwpRule r; char err[200];
+        if (!fwp_parse_rule_text(t2, &r, err, sizeof err)) { printf("  %s\n\n", err); return; }
+        FwpConn c; memset(&c, 0, sizeof c); c.dir = r.dir == FWP_IN ? FWP_IN : FWP_OUT; c.proto = r.proto == FWP_ANY ? FWP_TCP : r.proto;
+        snprintf(c.program, sizeof c.program, "%s", r.program); snprintf(c.remoteIp, sizeof c.remoteIp, "%s", r.remoteAddrs[0] ? r.remoteAddrs : "0.0.0.0"); c.remotePort = atoi(r.remotePorts); c.localPort = atoi(r.localPorts);
+        time_t now = time(NULL); struct tm tmv; localtime_s(&tmv, &now); int m = -1; int act = fwp_eval(g_fwpRules, g_fwpCount, &c, &tmv, &m);
+        printf("  %s (rule: %s)\n\n", act == FWP_BLOCK ? "BLOCK" : "ALLOW", m >= 0 ? g_fwpRules[m].name : "default policy");
+    } else if (_stricmp(sub, "apply") == 0) {
+        FwpApplyResult ar; char snap[MAX_PATH] = "";
+        printf("  Applying %d rule(s) (a snapshot is taken first)...\n", g_fwpCount);
+        BOOL ok = fwp_apply_all(&ar, snap, sizeof snap);
+        printf("  %s: %d added, %d removed, %d failed%s%s\n  Snapshot: %s\n\n", ok ? "OK" : "FAILED", ar.added, ar.deleted, ar.failed, ar.firstError[0] ? " - " : "", ar.firstError, snap[0] ? snap : "(none)");
+    } else if (_stricmp(sub, "state") == 0) {
+        int m = fwp_profiles_on(); printf("  Admin: %s | Domain: %s | Private: %s | Public: %s | policy rules: %d\n\n", fwp_is_admin() ? "yes" : "NO", (m & 1) ? "ON" : "off", (m & 2) ? "ON" : "off", (m & 4) ? "ON" : "off", g_fwpCount);
+    } else if (_stricmp(sub, "snapshot") == 0) {
+        char p[MAX_PATH]; printf(fwp_snapshot(p, sizeof p, "cli") ? "  Saved: %s\n\n" : "  Failed (administrator rights needed)\n\n", p);
+    } else if (_stricmp(sub, "snapshots") == 0) {
+        static char nm[64][MAX_PATH]; int k = fwp_list_snapshots(nm, 64); for (int i = 0; i < k; i++) printf("  %s\n", nm[i]); printf("  %d snapshot(s)\n\n", k);
+    } else if (_stricmp(sub, "restore") == 0) {
+        printf(fwp_restore_snapshot(rest) ? "  Restored.\n\n" : "  Restore failed (name must be a file from 'fw snapshots'; admin required).\n\n");
+    } else if (_stricmp(sub, "logging") == 0) {
+        printf(fwp_enable_logging() ? "  Firewall logging enabled (allowed + dropped).\n\n" : "  Failed (administrator rights needed).\n\n");
+    } else if (_stricmp(sub, "logs") == 0) {
+        FwpLogEntry *lg = (FwpLogEntry *)malloc(sizeof(FwpLogEntry) * 6000); if (!lg) return; int k = fwp_read_log(lg, 6000);
+        if (k < 0) { printf("  No firewall log yet. Run 'fw logging' (admin), generate traffic, retry.\n\n"); free(lg); return; }
+        FwpProc pr[1024]; int np = fwp_processes(pr, 1024); int shown = 0;
+        for (int i = k - 1; i >= 0 && shown < 40; i--) { char nm[64] = ""; for (int q = 0; q < np; q++) if (pr[q].pid == lg[i].pid && lg[i].pid) snprintf(nm, sizeof nm, "%s", pr[q].name); if (!fwp_log_matches(&lg[i], rest, nm)) continue;
+            printf("  %s %s %-5s %-4s %s:%d -> %s:%d %s\n", lg[i].date, lg[i].time, lg[i].action, lg[i].proto, lg[i].src, lg[i].sport, lg[i].dst, lg[i].dport, nm); shown++; }
+        printf("  %d of %d entries shown (newest first)\n\n", shown, k); free(lg);
+    } else if (_stricmp(sub, "lockdown") == 0) {
+        char m[300]; BOOL on = _stricmp(rest, "on") == 0; if (!on && _stricmp(rest, "off") != 0) { printf("  fw lockdown on|off\n\n"); return; }
+        fwp_lockdown(on, 9009, m, sizeof m); printf("  %s\n\n", m);
+    } else if (_stricmp(sub, "tree") == 0) {
+        char m[300]; unsigned pid = (unsigned)strtoul(rest, NULL, 10); if (!pid) { printf("  fw tree <pid>\n\n"); return; }
+        fwp_block_tree(pid, "cli", m, sizeof m); fwp_policy_save(); printf("  %s\n\n", m);
+    } else printf("  Unknown fw command. Try 'fw help'.\n\n");
+}
+
+
 static void print_help(void) {
     set_color(C_WHITE);
     printf("\n  [ KAEVEX COMMAND LINE INTERFACE REFERENCE ]\n");
@@ -1474,6 +1540,7 @@ static void print_help(void) {
     printf("  %-24s %s\n", "connections", "Active network sockets correlated to application identities");
     printf("  %-24s %s\n", "link <appA> <appB>", "Cryptographically bind two applications with an Integration Key");
     printf("  %-24s %s\n", "keys", "List cryptographically generated application integration tokens");
+    printf("  %-24s %s\n", "fw <list|add|del|sim|apply|...>", "Firewall Pro: rules, simulate, apply, snapshots, logs, lockdown (fw help)");
     printf("  %-24s %s\n", "cve-scan", "Compare installed inventory with the configured advisory catalog");
     printf("  %-24s %s\n", "cve-fix", "Run targeted package updates for catalog candidates");
     printf("  %-24s %s\n", "sandbox-run <exe>", "Launch an EXE in a persistent Sandboxie box with network blocked");
@@ -1627,6 +1694,19 @@ int kaevex_cli_main(int argc, char **argv) {
             cmd_sandbox_run(argc > 2 ? argv[2] : "");
         } else if (_stricmp(cmd, "link") == 0) {
             cmd_link(argc > 2 ? argv[2] : "", argc > 3 ? argv[3] : "");
+        } else if (_stricmp(cmd, "fw") == 0 || _stricmp(cmd, "firewall") == 0) {
+            char joined[1500] = {0};
+            for (int ai = 2; ai < argc; ai++) {
+                int needQ = strchr(argv[ai], ' ') != NULL && !strchr(argv[ai], '=');
+                size_t used = strlen(joined);
+                if (ai > 2 && used + 1 < sizeof joined) strcat(joined, " ");
+                /* re-quote key="value with spaces" that the shell already unquoted */
+                const char *eq = strchr(argv[ai], '=');
+                if (eq && strchr(eq, ' ')) { char tmp[700]; snprintf(tmp, sizeof tmp, "%.*s=\"%s\"", (int)(eq - argv[ai]), argv[ai], eq + 1); strncat(joined, tmp, sizeof joined - strlen(joined) - 1); }
+                else if (needQ) { strncat(joined, "\"", sizeof joined - strlen(joined) - 1); strncat(joined, argv[ai], sizeof joined - strlen(joined) - 2); strncat(joined, "\"", sizeof joined - strlen(joined) - 1); }
+                else strncat(joined, argv[ai], sizeof joined - strlen(joined) - 1);
+            }
+            cmd_fw(joined);
         } else if (_stricmp(cmd, "keys") == 0) {
             cmd_keys();
         } else if (_stricmp(cmd, "custom-mode") == 0 || _stricmp(cmd, "custom") == 0 || _stricmp(cmd, "wizard") == 0) {
@@ -1736,6 +1816,8 @@ int kaevex_cli_main(int argc, char **argv) {
             cmd_cve_fix();
         } else if (_stricmp(cmd, "sandbox-run") == 0) {
             cmd_sandbox_run(arg);
+        } else if (_stricmp(cmd, "fw") == 0 || _stricmp(cmd, "firewall") == 0) {
+            cmd_fw(arg);
         } else if (_stricmp(cmd, "link") == 0) {
             char a1[128] = {0}, a2[128] = {0};
             if (sscanf(arg, "%127s %127s", a1, a2) == 2) {

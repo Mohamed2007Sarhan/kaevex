@@ -23,6 +23,7 @@
 #include <time.h>
 
 #pragma comment(lib, "winmm.lib")
+#include "ledger_core.h"
 
 /* --- Forensics Immutable Audit Log --------------------------------------- */
 static char g_forensicsPath[MAX_PATH] = {0};
@@ -43,16 +44,95 @@ static void threat_forensics_init(void) {
     }
 }
 
+/* --- HMAC chain (tamper-evident sealing) --------------------------------------- */
+static CRITICAL_SECTION g_ledgerCS; static volatile LONG g_ledgerInit = 0;
+static uint8_t g_ledgerKey[32]; static int g_ledgerKeyOk = 0;
+static uint8_t g_ledgerPrev[32]; static long g_ledgerNextIdx = -1;     /* -1 = not yet loaded */
+
+static void ledger_chain_path(char *o, size_t n) { snprintf(o, n, "%s", g_forensicsPath); char *d = strrchr(o, '.'); if (d) strcpy(d, ".chain"); else strcat(o, ".chain"); }
+
+/* 32-byte random key, stored per-user with DPAPI. Never derived from anything guessable. */
+static int ledger_load_key(void) {
+    if (g_ledgerKeyOk) return 1;
+    HKEY hk; BYTE blob[512]; DWORD sz = sizeof blob, type = 0;
+    if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Kaevex", 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hk, NULL) != ERROR_SUCCESS) return 0;
+    if (RegQueryValueExA(hk, "LedgerKeyProtected", NULL, &type, blob, &sz) == ERROR_SUCCESS && type == REG_BINARY) {
+        DATA_BLOB in = { sz, blob }, out = { 0, NULL };
+        if (CryptUnprotectData(&in, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &out)) {
+            if (out.cbData == 32) { memcpy(g_ledgerKey, out.pbData, 32); g_ledgerKeyOk = 1; }
+            SecureZeroMemory(out.pbData, out.cbData); LocalFree(out.pbData);
+        }
+    }
+    if (!g_ledgerKeyOk) {
+        HCRYPTPROV pv = 0; uint8_t k[32];
+        if (CryptAcquireContextA(&pv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+            if (CryptGenRandom(pv, 32, k)) {
+                DATA_BLOB in = { 32, k }, out = { 0, NULL };
+                if (CryptProtectData(&in, L"Kaevex ledger key", NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN, &out)) {
+                    RegSetValueExA(hk, "LedgerKeyProtected", 0, REG_BINARY, out.pbData, out.cbData); LocalFree(out.pbData);
+                    memcpy(g_ledgerKey, k, 32); g_ledgerKeyOk = 1;
+                }
+            }
+            CryptReleaseContext(pv, 0);
+        }
+        SecureZeroMemory(k, sizeof k);
+    }
+    RegCloseKey(hk); return g_ledgerKeyOk;
+}
+
+static char *ledger_slurp(const char *path, size_t *len) {
+    FILE *f = fopen(path, "rb"); if (!f) return NULL;
+    fseek(f, 0, SEEK_END); long sz = ftell(f); fseek(f, 0, SEEK_SET);
+    if (sz < 0 || sz > 64L * 1024 * 1024) { fclose(f); return NULL; }
+    char *t = (char *)malloc((size_t)sz + 1); if (!t) { fclose(f); return NULL; }
+    size_t rd = fread(t, 1, (size_t)sz, f); t[rd] = 0; fclose(f); if (len) *len = rd; return t;
+}
+
+/* Full verification of the log against its chain. Returns the verdict (state LEDGER_*). */
+static void threat_ledger_verify(LedgerVerdict *v) {
+    if (!g_forensicsPath[0]) threat_forensics_init();
+    memset(v, 0, sizeof *v);
+    if (!ledger_load_key()) { v->state = LEDGER_BROKEN; snprintf(v->why, sizeof v->why, "ledger key unavailable"); return; }
+    char cp[MAX_PATH]; ledger_chain_path(cp, sizeof cp);
+    char *log = ledger_slurp(g_forensicsPath, NULL), *chain = ledger_slurp(cp, NULL);
+    ledger_verify(g_ledgerKey, log ? log : "", chain ? chain : "", v);
+    free(log); free(chain);
+}
+
 static void threat_forensics_write(const char *engine, const char *sev, const char *msg) {
-    if(!g_forensicsPath[0]) threat_forensics_init();
-    FILE *f = fopen(g_forensicsPath, "a");
-    if(!f) return;
+    if (InterlockedCompareExchange(&g_ledgerInit, 1, 0) == 0) { InitializeCriticalSection(&g_ledgerCS); InterlockedExchange(&g_ledgerInit, 2); }
+    while (g_ledgerInit != 2) Sleep(1);
+    if (!g_forensicsPath[0]) threat_forensics_init();
+    EnterCriticalSection(&g_ledgerCS);
+    ledger_load_key();
+    char cp[MAX_PATH]; ledger_chain_path(cp, sizeof cp);
+    if (g_ledgerNextIdx < 0) {                                  /* resume the chain: next index = lines in log, prev = last mac */
+        long lines = 0; size_t n = 0; char *log = ledger_slurp(g_forensicsPath, &n);
+        if (log) { for (size_t i = 0; i < n; i++) if (log[i] == '\n') lines++; free(log); }
+        memset(g_ledgerPrev, 0, 32);
+        char *chain = ledger_slurp(cp, NULL);
+        if (chain) { const char *c = chain; unsigned long idx; char hex[80]; int pos;
+            while (*c && sscanf(c, "%lu %64s%n", &idx, hex, &pos) == 2) { ledger_unhex(hex, g_ledgerPrev, 32); c += pos; while (*c == '\n' || *c == '\r') c++; }
+            free(chain); }
+        g_ledgerNextIdx = lines;
+    }
+    char clean[300]; snprintf(clean, sizeof clean, "%s", msg ? msg : ""); for (char *c = clean; *c; c++) if (*c == '\n' || *c == '\r') *c = ' ';
     time_t t = time(NULL); struct tm *tm = localtime(&t);
-    fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] [%-8s] %-16s %s\n",
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-            tm->tm_hour, tm->tm_min, tm->tm_sec,
-            sev, engine, msg);
-    fclose(f);
+    char line[700]; int ll = snprintf(line, sizeof line, "[%04d-%02d-%02d %02d:%02d:%02d] [%-8s] %-16s %s",
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, sev, engine, clean);
+    if (ll > 0 && (size_t)ll < sizeof line) {
+        FILE *f = fopen(g_forensicsPath, "ab");
+        if (f) {
+            fprintf(f, "%s\n", line); fclose(f);
+            if (g_ledgerKeyOk) {
+                uint8_t mac[32]; ledger_mac(g_ledgerKey, g_ledgerPrev, line, (size_t)ll, mac);
+                char hx[65]; ledger_hex(mac, 32, hx);
+                FILE *cf = fopen(cp, "ab"); if (cf) { fprintf(cf, "%ld %s\n", g_ledgerNextIdx, hx); fclose(cf); memcpy(g_ledgerPrev, mac, 32); }
+            }
+            g_ledgerNextIdx++;
+        }
+    }
+    LeaveCriticalSection(&g_ledgerCS);
 }
 
 static int threat_forensics_read(char lines[][290], int maxLines) {
