@@ -1,26 +1,11 @@
 @echo off
-title Kaevex Security Platform v1.0 — Admin Console
-cd /d "%~dp0"
-
+title Kaevex Security Platform - Administrator
+cd /d "%~dp0release\windows"
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [!] Requesting administrative privileges...
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    echo [!] Requesting administrator rights (needed for firewall, lockdown, logging and fixes)...
+    powershell -NoProfile -Command "Start-Process -FilePath '%~dp0release\windows\kaevex.exe' -WorkingDirectory '%~dp0release\windows' -Verb RunAs"
     exit /b
 )
-
-echo ========================================================================
-echo   KAEVEX SECURITY PLATFORM v1.0 — SOC ENTERPRISE (ADMIN)
-echo ========================================================================
-echo.
-echo [*] Launching Kaevex Tray Agent...
-start "" "%~dp0dist\Kaevex-Tray.exe"
-timeout /t 1 /nobreak >nul
-
-echo [*] Launching Kaevex SOC Dashboard...
-start "" "%~dp0dist\Kaevex-GUI.exe"
-echo [OK] Kaevex running. Tray icon visible in notification area.
-echo.
-echo [*] Press any key to open CLI management shell, or close this window.
-pause >nul
-"%~dp0dist\kaevex-cli.exe"
+start "" "kaevex.exe"
+exit

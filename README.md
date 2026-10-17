@@ -91,11 +91,6 @@ c:\Users\Moham\Desktop\keavex\fire\
 │   ├── threat-guard\               # CrowdSec reputation feeds
 │   └── packet-analysis\            # Zeek protocol parsers
 │
-├── web-dashboard\                  # Modern React / TypeScript / Vite Web UI
-│   ├── src\                        # Frontend components & Tailwind styles
-│   ├── mock-backend.js             # Local development REST mock server
-│   └── package.json                # Frontend build configuration
-│
 ├── scripts\                        # Administrative automation & build tools
 │   ├── build.bat                   # Full automated build script
 │   ├── Kaevex-Admin.bat            # UAC-elevated launcher
