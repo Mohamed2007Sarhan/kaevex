@@ -112,3 +112,12 @@ All 21 pages functional with live data:
 - Add authentication layer (JWT)
 - Add HTTPS/TLS for the dashboard
 - Package as Windows Service
+
+## Unreleased - verified-features pass
+- AI layer rewritten: per-provider DPAPI keys, correct model IDs, strict UTF-8/JSON, HTTP error reporting, live key test.
+- Firewall Pro: rule language, priorities/schedules, per-app sandbox, process-tree blocking, live connections, pfirewall.log viewer, snapshots with guarded rollback, tamper protection, DNS/hosts guard, program-hash guard, adaptive baseline.
+- Real node linking (`KAEVEX-LINK-V2://`): pairing, latency, remote lockdown/scan/policy push, alert ingest.
+- CVE Intelligence: CISA KEV + NVD matched against installed versions, AI-planned, winget upgrades verified by re-reading versions.
+- AI team agents receive real host-check evidence; `/checks` and whitelisted `/fix <ID>` commands.
+- Built-in Self-Test (Dashboard > System Status): real tests of subsystems and network integrity.
+- HMAC-chained forensics log (tamper-evident). Removed: fake KPI trends, fake members, fake status text, hard-coded PIN and API key, `web-dashboard/`.

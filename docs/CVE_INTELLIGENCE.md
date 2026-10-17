@@ -1,23 +1,21 @@
-# CVE detection and remediation status
+# CVE Intelligence
 
-The CVE view inventories installed Windows applications from the registry and reads OS build metadata. Its bundled application and OS CVE catalogs were cleared because the entries were unverified and included unrelated-product matches. A catalog match, when present, remains a candidate rather than proof; installed KB state is not verified.
+Open it from **Patch & CVE > AI Fix CVEs**. Implementation: `src/engines/cve_intel_core.h` (portable, unit-tested) and `cve_intel_engine.h` (Windows).
 
-The GUI can fetch NVD 2.0 CVEs published in the preceding seven days using WinHTTP. Requests use valid `pubStartDate`/`pubEndDate` filters and paginate at 2,000 records per page; the UI retains the newest 512 advisories as `NVD Intel`. These entries are not matched to CPE product/version ranges and cannot trigger Auto-Fix. This is recent-feed coverage, not a complete historical CVE database. CISA KEV/vendor feeds are not connected. The source supports an optional `NVD_API_KEY` environment variable.
+## Pipeline
+1. **Inventory** - installed applications from the registry (name, publisher, version, executable).
+2. **Intelligence** - the CISA *Known Exploited Vulnerabilities* catalog (one download, cached 24 h) and NVD 2.0 records, cached in `%APPDATA%\Kaevex\cve_cache.bin`.
+   NVD allows ~5 requests / 30 s without a key; set the `NVD_API_KEY` environment variable for ~10x faster scans.
+3. **Matching** - KEV entries propose *candidates*; the NVD record is then checked against the **installed version** using its CPE ranges
+   (`versionStart/End Including/Excluding`, exact versions). Product-name matching is heuristic, so every finding carries a confidence
+   (HIGH / MEDIUM / LOW). Examples handled: "Visual Studio Code" is *not* `visual_studio`; generic products such as "windows" never match; unknown versions are never flagged.
+4. **AI plan** - the selected AI provider receives the CVE facts and a *closed list* of installed winget package IDs (from `winget export`) and must answer with JSON:
+   `UPGRADE_WINGET` (only an ID from that list), `CONTAIN_NETWORK`, `MANUAL` or `NONE`. Anything else - free text commands, unknown IDs, injected text from CVE descriptions - is rejected. Without AI, a deterministic rule-based plan is used.
+5. **Enforcement** - `winget upgrade --id <ID> --exact --silent` (no shell), or a Windows Firewall block rule with a 90 s confirm-or-rollback safety net. Network containment is never automatic and never counts as "fixed".
+6. **Verification** - the registry is re-read and the CVE re-evaluated. Only then is the finding **FIXED (verified)**. "Re-verify" repeats this after manual updates.
 
-A live run on the normal Windows host verified the app's WinHTTP fetch/parser against NVD: 2,825 records downloaded and parsed for the seven-day window; 512 retained for display. The feed can fail later due to network/API availability and preserves the last successful data on failure.
-
-Optional periodic checks are saved per-user and run only while the GUI is open. They refresh the local registry/build-catalog inventory and can synchronize the seven-day NVD feed at the selected interval (15 minutes, 1 hour, 6 hours, or 24 hours). They do not run as a service or while the program is closed.
-
-Auto-Fix can issue `winget upgrade --id` for a local application candidate only when it has a package ID. Success means the installer process exited successfully before timeout; it does not prove that a CVE is fixed. If the update fails and a verified executable path is available, Auto-Fix may add inbound and outbound Windows Firewall block rules as network containment. This can break that app's network functions and is disclosed in Ask Before Applying; Quiet Mode skips the confirmation. Partial rule creation is rolled back where possible. OS build matches are advisory only: installed KB state is not verified and no OS policy is changed automatically.
-
-The registry watcher can trigger a local inventory/catalog re-scan after changes. It is not an external threat-intelligence feed.
-
-## SmartSandbox
-
-The GUI and CLI share the Sandboxie launcher. It accepts existing `.exe` files only, requires Sandboxie Plus and its WFP support to be installed, applies and verifies deny-all network settings and reduced admin rights before launch, and aborts if configuration or launch fails. The current machine has no Sandboxie installation, so only fail-closed behavior can be verified here; no app was launched.
-
-## AI Team
-
-Full Team sends one or five role-specific text prompts to the configured provider. Its manual local-review action collects current installed-app count, local catalog-candidate count, firewall status, and Sandboxie/WFP status. The team does not execute application exploits/fuzzing, inspect application source files, or apply fixes. Periodic role observations show process/listener/firewall telemetry only; they are not AI-driven tests. Provider/network/key failure must not be presented as a completed security test.
-
-The NVIDIA-compatible provider uses `z-ai/glm-5.3-flash` through NVIDIA's OpenAI-compatible endpoint. Configure a valid replacement key in the app or `NVIDIA_API_KEY`; keys are protected with DPAPI when saved by the Windows app. The key pasted into the earlier conversation was exposed and should be revoked; it was not used for this verification.
+## Limits
+- NVD/CPE data can be incomplete or wrong; a match is evidence, not proof. LOW confidence findings are never patched automatically.
+- Windows OS updates (KBs) are not evaluated.
+- Applications that do not register a version in the Uninstall registry keys cannot be matched.
+- Portable apps and software not listed in the registry are invisible to the scan.
